@@ -46,7 +46,17 @@ python3 scripts/fetch.py             # 抓最新資料（第一次加 --backfill
 cd docs && python3 -m http.server    # 打開 http://localhost:8000
 ```
 
+## 改了東西要更新網站
+
+```bash
+./publish.sh "說明這次改了什麼"
+```
+
+會先拉下機器人每天 commit 的資料，再推上你的修改。
+
 ## 要定期維護的地方
+
+- **重要事件日期**：`docs/data/events.json`（FOMC、CPI、非農、PCE、PPI、會議紀要）。BLS 和 BEA 公布隔年時程後補上，目前填到 2026 年底。
 
 - **FOMC 日期**：`scripts/fomc.py`。Fed 每年夏天公布下一年的日期（2028 年的大約 2027 年 8 月），補上就好。
 - **Yahoo 被擋**：yfinance 是非官方的，從 GitHub 的伺服器抓偶爾會失敗。這時殖利率和 EFFR 照常更新，只有 Fed 定價那天會缺。持續失敗的話，可以改成在自己電腦上跑 `fetch.py` 再 push。

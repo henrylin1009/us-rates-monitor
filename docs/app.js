@@ -4,7 +4,7 @@
 
   const TENORS = ["1m", "2m", "3m", "4m", "6m", "1y", "2y", "3y", "5y", "7y", "10y", "20y", "30y"];
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "全部": 1e6 };
-  const D = { yields: [], effr: [], path: [], summ: [], meta: {} };
+  const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [] };
   const S = {
     yView: "tenor", fView: "path",
     tenors: ["2y", "10y", "30y"], range: "1Y",
@@ -12,6 +12,7 @@
     changeWin: "1D",
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
+    events: ["fomc", "cpi", "nfp"], reactSort: "recent",
     pathCmp: ["1W", "1M"], spagRange: "6M", spagEvery: 5,
   };
 
@@ -19,7 +20,7 @@
   const $ = (s) => document.querySelector(s);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const num = (x) => (x === "" || x == null ? null : +x);
-  const bp = (x, d = 0) => (x == null || isNaN(x) ? "–" : (x > 0 ? "+" : "") + x.toFixed(d));
+  const bp = (x, d = 0) => { if (x == null || isNaN(x)) return "–"; const r = +x.toFixed(d); return (r > 0 ? "+" : "") + (r === 0 ? 0 : r).toFixed(d); };
   const pct = (x) => (x == null ? "–" : Math.round(x * 100) + "%");
   const fmtD = (s) => s; // ISO
   const shiftDays = (iso, k) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + k); return d.toISOString().slice(0, 10); };
@@ -83,6 +84,120 @@
   }
   const rangeChips = (key, after) => chips("期間", Object.keys(RANGES).map((r) => [r, r]), S[key], false, (v) => { S[key] = v; after(); });
 
+  // ---------- 重要事件 ----------
+  const EVT = {
+    fomc: { glyph: "◆", name: "FOMC", symbol: "diamond" },
+    cpi: { glyph: "●", name: "CPI", symbol: "circle" },
+    nfp: { glyph: "■", name: "非農", symbol: "square" },
+    pce: { glyph: "▲", name: "PCE", symbol: "triangle-up" },
+    ppi: { glyph: "▼", name: "PPI", symbol: "triangle-down" },
+    minutes: { glyph: "★", name: "會議紀要", symbol: "star" },
+  };
+  const EVT_ORDER = ["fomc", "cpi", "nfp", "pce", "ppi", "minutes"];
+  const LOOKAHEAD = 14; // 往後標幾天
+  const evtColor = (t) => ({ fomc: css("--ink"), cpi: css("--s4"), nfp: css("--s5"), pce: css("--s3"), ppi: css("--s2"), minutes: css("--muted") }[t]);
+  const lastYieldDate = () => (D.yields.length ? D.yields[D.yields.length - 1].date : "");
+
+  // FOMC 決議：用 EFFR 目標區間上緣的變化判斷
+  function fomcDecision(date) {
+    const before = atOrBefore(D.effr, "date", date);
+    const after = D.effr.find((r) => r.date > date);
+    if (!before || !after || before.target_high === "" || after.target_high === "") return null;
+    const d = Math.round((num(after.target_high) - num(before.target_high)) * 100);
+    return d > 0 ? `升息 ${d}bp` : d < 0 ? `降息 ${-d}bp` : "不動";
+  }
+  // 事件當天市場反應：和前一個交易日比
+  const yIdx = {};
+  function reaction(date) {
+    const i = yIdx[date];
+    if (i == null || i === 0) return null;
+    const a = D.yields[i], b = D.yields[i - 1];
+    const d = (t) => (num(a[t]) == null || num(b[t]) == null ? null : (num(a[t]) - num(b[t])) * 100);
+    const d2 = d("2y"), d10 = d("10y");
+    const r = { d2, d10, d30: d("30y"), curve: d2 == null || d10 == null ? null : d10 - d2, regime: d2 == null || d10 == null ? "" : regime(d2, d10), fed: null };
+    const k = D.summ.findIndex((x) => x.asof === date);
+    if (k > 0 && D.summ[k].cum_yearend_bp !== "" && D.summ[k - 1].cum_yearend_bp !== "") r.fed = num(D.summ[k].cum_yearend_bp) - num(D.summ[k - 1].cum_yearend_bp);
+    return r;
+  }
+  function evtHover(e) {
+    let h = `<b>${e.label}</b>　${e.date}`;
+    if (e.type === "fomc") { const dec = fomcDecision(e.date); if (dec) h += `　${dec}`; }
+    const r = reaction(e.date);
+    if (r) {
+      h += `<br>2y ${bp(r.d2, 1)}bp · 10y ${bp(r.d10, 1)}bp · 2s10s ${bp(r.curve, 1)}bp`;
+      if (r.regime) h += `<br>${r.regime}`;
+      if (r.fed != null) h += ` · 到年底定價 ${bp(r.fed, 1)}bp`;
+    } else if (e.date > lastYieldDate()) h += "<br>即將公布";
+    return h;
+  }
+  const eventsOn = () => !["5Y", "全部"].includes(S.range);
+  // 把事件加進時間序列圖：底部一排記號 + 未來事件虛線
+  function addEvents(traces, layout, start) {
+    if (!eventsOn() || !D.events.length) return;
+    const last = lastYieldDate(), horizon = shiftDays(last, LOOKAHEAD);
+    const types = EVT_ORDER.filter((t) => S.events.includes(t));
+    const shapes = layout.shapes || [], ann = layout.annotations || [];
+    let hasFuture = false;
+    types.forEach((t, k) => {
+      const evs = D.events.filter((e) => e.type === t && e.date >= start && e.date <= horizon);
+      if (!evs.length) return;
+      const y = 0.03 + k * 0.045, c = evtColor(t);
+      const colors = evs.map((e) => {
+        if (t !== "fomc") return c;
+        const dec = fomcDecision(e.date) || "";
+        return dec.startsWith("升") ? css("--up") : dec.startsWith("降") ? css("--down") : c;
+      });
+      traces.push({
+        x: evs.map((e) => e.date), y: evs.map(() => y), yaxis: "y2", type: "scatter", mode: "markers", name: EVT[t].name,
+        marker: { symbol: evs.map((e) => EVT[t].symbol + (e.date > last ? "-open" : "")), size: 9, color: colors, line: { width: 1.5, color: colors } },
+        text: evs.map(evtHover), hovertemplate: "%{text}<extra></extra>", showlegend: false,
+      });
+      evs.filter((e) => e.date > last).forEach((e) => {
+        hasFuture = true;
+        shapes.push({ type: "line", x0: e.date, x1: e.date, yref: "paper", y0: 0, y1: 1, line: { color: c, width: 1, dash: "dot" } });
+        ann.push({ x: e.date, yref: "paper", y: 1, text: EVT[t].name + " " + e.date.slice(5).replace("-", "/"), showarrow: false, textangle: -90, xanchor: "right", yanchor: "top", font: { size: 10, color: c } });
+      });
+    });
+    layout.yaxis2 = { overlaying: "y", range: [0, 1], visible: false, fixedrange: true };
+    layout.shapes = shapes; layout.annotations = ann;
+    if (hasFuture) {
+      layout.xaxis = { ...layout.xaxis, range: [start, horizon] };
+      shapes.push({ type: "rect", x0: last, x1: horizon, yref: "paper", y0: 0, y1: 1, fillcolor: css("--chip"), opacity: 0.5, line: { width: 0 }, layer: "below" });
+    }
+  }
+  function eventChips(after) {
+    const w = chips("事件", EVT_ORDER.map((t) => [t, EVT[t].glyph + " " + EVT[t].name]), S.events, true, after);
+    if (!eventsOn()) { const n = document.createElement("span"); n.textContent = "（5Y／全部不顯示）"; n.style.alignSelf = "center"; w.appendChild(n); }
+    return w;
+  }
+  // 最近事件反應表
+  function renderReactions(el) {
+    const last = lastYieldDate();
+    let rows = D.events.filter((e) => S.events.includes(e.type) && e.date <= last).map((e) => ({ e, r: reaction(e.date) })).filter((x) => x.r);
+    rows = rows.slice(-24);
+    if (S.reactSort === "size") rows.sort((a, b) => Math.abs(b.r.d2 || 0) - Math.abs(a.r.d2 || 0));
+    else rows.reverse();
+    rows = rows.slice(0, 12);
+    const next = D.events.filter((e) => S.events.includes(e.type) && e.date > last).slice(0, 3);
+    const c = (x) => (x == null ? "" : x > 0.05 ? "up" : x < -0.05 ? "down" : "");
+    let h = `<div class="react-head"><h3>最近事件反應</h3><div class="chips">`
+      + `<button data-s="recent" class="${S.reactSort === "recent" ? "on" : ""}">最近</button>`
+      + `<button data-s="size" class="${S.reactSort === "size" ? "on" : ""}">2y 反應最大</button></div></div>`;
+    if (next.length) h += `<p class="hint">接下來：${next.map((e) => `<span class="badge">${e.date.slice(5).replace("-", "/")} ${e.label}</span>`).join(" ")}</p>`;
+    if (!rows.length) { el.innerHTML = h + `<p class="hint">選取的事件在這段資料裡還沒有。</p>`; }
+    else {
+      h += "<table><thead><tr><th>日期</th><th>事件</th><th>2y</th><th>10y</th><th>30y</th><th>2s10s</th><th>型態</th><th>到年底定價</th></tr></thead><tbody>";
+      rows.forEach(({ e, r }) => {
+        const lab = e.type === "fomc" ? `${e.label}${fomcDecision(e.date) ? "：" + fomcDecision(e.date) : ""}` : e.label;
+        h += `<tr><td class="n">${e.date}</td><td>${lab}</td>`
+          + [r.d2, r.d10, r.d30, r.curve].map((x) => `<td class="n ${c(x)}">${bp(x, 1)}</td>`).join("")
+          + `<td>${r.regime}</td><td class="n ${c(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
+      });
+      el.innerHTML = h + "</tbody></table>";
+    }
+    el.querySelectorAll("button[data-s]").forEach((b) => (b.onclick = () => { S.reactSort = b.dataset.s; renderReactions(el); }));
+  }
+
   // ---------- 摘要 ----------
   function regime(d2, d10) {
     const slope = d10 - d2, level = (d2 + d10) / 2;
@@ -109,12 +224,17 @@
       h += tile(`下次 FOMC ${f.next_meeting.slice(5).replace("-", "/")}`, bp(num(f.next_move_bp), 1) + "bp", lead);
       h += tile("到年底累積", bp(num(f.cum_yearend_bp), 0) + "bp", `12 個月後 ${bp(num(f.cum_12m_bp), 0)}bp`);
     }
+    const nx = D.events.filter((e) => ["fomc", "cpi", "nfp", "pce"].includes(e.type) && e.date > a.date).slice(0, 2);
+    if (nx.length) {
+      const days = (iso) => Math.round((new Date(iso) - new Date(a.date)) / 864e5);
+      h += tile("接下來", `${nx[0].date.slice(5).replace("-", "/")} ${EVT[nx[0].type].name}`, nx.map((e, i) => (i ? `${e.date.slice(5).replace("-", "/")} ${EVT[e.type].name}` : `${days(e.date)} 天後`)).join(" · "));
+    }
     $("#tiles").innerHTML = h;
   }
 
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
-    tenor: "各期限殖利率的時間序列。",
+    tenor: "各期限殖利率的時間序列。底部記號是重要事件，滑鼠移上去看當天市場反應；右邊灰色區塊是接下來兩週的事件。",
     curve: "整條曲線的形狀，和過去比較。x 軸照期限排，間距相等。",
     spread: "期限利差。往上 = 變陡，往下 = 變平；低於 0 是倒掛。",
     change: "各期限在這段期間漲跌幾 bp。看是短端還是長端帶動，判斷 bull/bear steepening 或 flattening。",
@@ -122,19 +242,22 @@
     vsfed: "2y 殖利率對比 ZQ 隱含的 12 個月後政策利率。2y 大致反映 Fed 預期，兩條線的差距可以想成期限溢酬加雜訊。",
   };
   function renderYields() {
-    const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView];
+    const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
     if (!D.yields.length) return empty(id, "還沒有殖利率資料。第一次請在 GitHub Actions 手動執行，勾選「補齊歷史資料」。");
     clearEmpty(id);
     const P = palette(), v = S.yView, rr = () => renderYields();
 
     if (v === "tenor") {
-      ctl.append(chips("期限", TENORS.map((t) => [t, t]), S.tenors, true, rr), rangeChips("range", rr));
+      ctl.append(chips("期限", TENORS.map((t) => [t, t]), S.tenors, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = TENORS.filter((t) => S.tenors.includes(t)).map((t, i) => ({
         x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
         line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.2f}%",
       }));
-      plot(id, tr, baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
+      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
+      if (rows.length) addEvents(tr, L, rows[0].date);
+      plot(id, tr, L);
+      renderReactions($("#y-table"));
     }
 
     if (v === "curve") {
@@ -155,14 +278,16 @@
 
     if (v === "spread") {
       const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"] };
-      ctl.append(chips("利差", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr));
+      ctl.append(chips("利差", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = Object.keys(defs).filter((k) => S.spreads.includes(k)).map((k, i) => ({
         x: rows.map((r) => r.date), y: rows.map((r) => { const a = num(r[defs[k][0]]), b = num(r[defs[k][1]]); return a == null || b == null ? null : (b - a) * 100; }),
         name: k, type: "scatter", mode: "lines", line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.0f}bp",
       }));
       const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
+      if (rows.length) addEvents(tr, L, rows[0].date);
       plot(id, tr, L);
+      renderReactions($("#y-table"));
     }
 
     if (v === "change") {
@@ -263,13 +388,15 @@
 
     if (v === "cum") {
       const opts = [["next_move_bp", "下次會議"], ["cum_yearend_bp", "到年底"], ["cum_6m_bp", "6 個月後"], ["cum_12m_bp", "12 個月後"]];
-      ctl.append(chips("期限", opts, S.cum, true, rr), rangeChips("range", rr));
+      ctl.append(chips("期限", opts, S.cum, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.summ, "asof", S.range);
       const tr = opts.filter(([k]) => S.cum.includes(k)).map(([k, n], i) => ({
         x: rows.map((r) => r.asof), y: rows.map((r) => num(r[k])), name: n, type: "scatter", mode: "lines",
         line: { color: P[i % P.length], width: 1.8 }, hovertemplate: "%{y:+.1f}bp",
       }));
-      plot(id, tr, baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } }));
+      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } });
+      if (rows.length) addEvents(tr, L, rows[0].asof);
+      plot(id, tr, L);
     }
 
     if (v === "spag") {
@@ -321,6 +448,8 @@
   async function main() {
     [D.yields, D.effr, D.path, D.summ] = await Promise.all(["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv"].map(load));
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
+    try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
+    D.yields.forEach((r, i) => (yIdx[r.date] = i));
     const ly = D.yields[D.yields.length - 1];
     $("#asof").textContent = ly ? `資料日期 ${ly.date}` : "尚無資料";
     if (D.meta.updated) $("#updated").textContent = ` 最後更新：${D.meta.updated}。`;

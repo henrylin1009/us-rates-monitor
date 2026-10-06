@@ -1,0 +1,475 @@
+{
+ "_note": "日期來源：BLS（CPI/非農/PPI）、BEA（PCE）、Fed（FOMC）。會議紀要 = 會後 21 天。2027 年的 CPI/非農/PPI/PCE 等 BLS、BEA 公布後再補。2025 年 10–11 月因政府關門，部分數據延後或停發。",
+ "events": [
+  {
+   "date": "2025-09-17",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2025-10-08",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（9月會議）"
+  },
+  {
+   "date": "2025-10-24",
+   "type": "cpi",
+   "label": "CPI（2025/09）"
+  },
+  {
+   "date": "2025-10-29",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2025-11-19",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（10月會議）"
+  },
+  {
+   "date": "2025-11-20",
+   "type": "nfp",
+   "label": "非農（2025/09）"
+  },
+  {
+   "date": "2025-11-25",
+   "type": "ppi",
+   "label": "PPI（2025/09）"
+  },
+  {
+   "date": "2025-12-05",
+   "type": "pce",
+   "label": "PCE（2025/09）"
+  },
+  {
+   "date": "2025-12-10",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2025-12-16",
+   "type": "nfp",
+   "label": "非農（2025/10/11）"
+  },
+  {
+   "date": "2025-12-18",
+   "type": "cpi",
+   "label": "CPI（2025/11）"
+  },
+  {
+   "date": "2025-12-31",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（12月會議）"
+  },
+  {
+   "date": "2026-01-09",
+   "type": "nfp",
+   "label": "非農（2025/12）"
+  },
+  {
+   "date": "2026-01-13",
+   "type": "cpi",
+   "label": "CPI（2025/12）"
+  },
+  {
+   "date": "2026-01-14",
+   "type": "ppi",
+   "label": "PPI（2025/11）"
+  },
+  {
+   "date": "2026-01-22",
+   "type": "pce",
+   "label": "PCE（2025/10/11）"
+  },
+  {
+   "date": "2026-01-28",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-01-30",
+   "type": "ppi",
+   "label": "PPI（2025/12）"
+  },
+  {
+   "date": "2026-02-11",
+   "type": "nfp",
+   "label": "非農（2026/01）"
+  },
+  {
+   "date": "2026-02-13",
+   "type": "cpi",
+   "label": "CPI（2026/01）"
+  },
+  {
+   "date": "2026-02-18",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（1月會議）"
+  },
+  {
+   "date": "2026-02-20",
+   "type": "pce",
+   "label": "PCE（2025/12）"
+  },
+  {
+   "date": "2026-02-27",
+   "type": "ppi",
+   "label": "PPI（2026/01）"
+  },
+  {
+   "date": "2026-03-06",
+   "type": "nfp",
+   "label": "非農（2026/02）"
+  },
+  {
+   "date": "2026-03-11",
+   "type": "cpi",
+   "label": "CPI（2026/02）"
+  },
+  {
+   "date": "2026-03-13",
+   "type": "pce",
+   "label": "PCE（2026/01）"
+  },
+  {
+   "date": "2026-03-18",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-03-18",
+   "type": "ppi",
+   "label": "PPI（2026/02）"
+  },
+  {
+   "date": "2026-04-03",
+   "type": "nfp",
+   "label": "非農（2026/03）"
+  },
+  {
+   "date": "2026-04-08",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（3月會議）"
+  },
+  {
+   "date": "2026-04-09",
+   "type": "pce",
+   "label": "PCE（2026/02）"
+  },
+  {
+   "date": "2026-04-10",
+   "type": "cpi",
+   "label": "CPI（2026/03）"
+  },
+  {
+   "date": "2026-04-14",
+   "type": "ppi",
+   "label": "PPI（2026/03）"
+  },
+  {
+   "date": "2026-04-29",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-04-30",
+   "type": "pce",
+   "label": "PCE（2026/03）"
+  },
+  {
+   "date": "2026-05-08",
+   "type": "nfp",
+   "label": "非農（2026/04）"
+  },
+  {
+   "date": "2026-05-12",
+   "type": "cpi",
+   "label": "CPI（2026/04）"
+  },
+  {
+   "date": "2026-05-13",
+   "type": "ppi",
+   "label": "PPI（2026/04）"
+  },
+  {
+   "date": "2026-05-20",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（4月會議）"
+  },
+  {
+   "date": "2026-05-28",
+   "type": "pce",
+   "label": "PCE（2026/04）"
+  },
+  {
+   "date": "2026-06-05",
+   "type": "nfp",
+   "label": "非農（2026/05）"
+  },
+  {
+   "date": "2026-06-10",
+   "type": "cpi",
+   "label": "CPI（2026/05）"
+  },
+  {
+   "date": "2026-06-11",
+   "type": "ppi",
+   "label": "PPI（2026/05）"
+  },
+  {
+   "date": "2026-06-17",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-06-25",
+   "type": "pce",
+   "label": "PCE（2026/05）"
+  },
+  {
+   "date": "2026-07-02",
+   "type": "nfp",
+   "label": "非農（2026/06）"
+  },
+  {
+   "date": "2026-07-08",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（6月會議）"
+  },
+  {
+   "date": "2026-07-14",
+   "type": "cpi",
+   "label": "CPI（2026/06）"
+  },
+  {
+   "date": "2026-07-15",
+   "type": "ppi",
+   "label": "PPI（2026/06）"
+  },
+  {
+   "date": "2026-07-29",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-07-30",
+   "type": "pce",
+   "label": "PCE（2026/06）"
+  },
+  {
+   "date": "2026-08-07",
+   "type": "nfp",
+   "label": "非農（2026/07）"
+  },
+  {
+   "date": "2026-08-12",
+   "type": "cpi",
+   "label": "CPI（2026/07）"
+  },
+  {
+   "date": "2026-08-13",
+   "type": "ppi",
+   "label": "PPI（2026/07）"
+  },
+  {
+   "date": "2026-08-19",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（7月會議）"
+  },
+  {
+   "date": "2026-08-26",
+   "type": "pce",
+   "label": "PCE（2026/07）"
+  },
+  {
+   "date": "2026-09-04",
+   "type": "nfp",
+   "label": "非農（2026/08）"
+  },
+  {
+   "date": "2026-09-10",
+   "type": "ppi",
+   "label": "PPI（2026/08）"
+  },
+  {
+   "date": "2026-09-11",
+   "type": "cpi",
+   "label": "CPI（2026/08）"
+  },
+  {
+   "date": "2026-09-16",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-09-30",
+   "type": "pce",
+   "label": "PCE（2026/08）"
+  },
+  {
+   "date": "2026-10-02",
+   "type": "nfp",
+   "label": "非農（2026/09）"
+  },
+  {
+   "date": "2026-10-07",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（9月會議）"
+  },
+  {
+   "date": "2026-10-14",
+   "type": "cpi",
+   "label": "CPI（2026/09）"
+  },
+  {
+   "date": "2026-10-15",
+   "type": "ppi",
+   "label": "PPI（2026/09）"
+  },
+  {
+   "date": "2026-10-28",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-10-29",
+   "type": "pce",
+   "label": "PCE（2026/09）"
+  },
+  {
+   "date": "2026-11-06",
+   "type": "nfp",
+   "label": "非農（2026/10）"
+  },
+  {
+   "date": "2026-11-10",
+   "type": "cpi",
+   "label": "CPI（2026/10）"
+  },
+  {
+   "date": "2026-11-13",
+   "type": "ppi",
+   "label": "PPI（2026/10）"
+  },
+  {
+   "date": "2026-11-18",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（10月會議）"
+  },
+  {
+   "date": "2026-11-25",
+   "type": "pce",
+   "label": "PCE（2026/10）"
+  },
+  {
+   "date": "2026-12-04",
+   "type": "nfp",
+   "label": "非農（2026/11）"
+  },
+  {
+   "date": "2026-12-09",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2026-12-10",
+   "type": "cpi",
+   "label": "CPI（2026/11）"
+  },
+  {
+   "date": "2026-12-15",
+   "type": "ppi",
+   "label": "PPI（2026/11）"
+  },
+  {
+   "date": "2026-12-23",
+   "type": "pce",
+   "label": "PCE（2026/11）"
+  },
+  {
+   "date": "2026-12-30",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（12月會議）"
+  },
+  {
+   "date": "2027-01-27",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-02-17",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（1月會議）"
+  },
+  {
+   "date": "2027-03-17",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-04-07",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（3月會議）"
+  },
+  {
+   "date": "2027-04-28",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-05-19",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（4月會議）"
+  },
+  {
+   "date": "2027-06-09",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-06-30",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（6月會議）"
+  },
+  {
+   "date": "2027-07-28",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-08-18",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（7月會議）"
+  },
+  {
+   "date": "2027-09-15",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-10-06",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（9月會議）"
+  },
+  {
+   "date": "2027-10-27",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-11-17",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（10月會議）"
+  },
+  {
+   "date": "2027-12-08",
+   "type": "fomc",
+   "label": "FOMC 決議"
+  },
+  {
+   "date": "2027-12-29",
+   "type": "minutes",
+   "label": "FOMC 會議紀要（12月會議）"
+  }
+ ]
+}

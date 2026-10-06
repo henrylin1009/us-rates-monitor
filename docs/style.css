@@ -101,3 +101,11 @@ th { color: var(--muted); font-weight: 500; }
 .notes ul { padding-left: 20px; }
 .src { margin-top: 14px; }
 .empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted); text-align: center; padding: 20px; }
+
+.react-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+h3 { font-size: 14.5px; margin: 0; }
+#y-table .hint { margin: 6px 0 8px; max-width: none; }
+#y-table .badge { margin: 2px 2px 2px 0; }
+td.up { color: var(--up); }
+td.down { color: var(--down); }
+#y-table td:nth-child(2), #y-table td:nth-child(7), #y-table th:nth-child(2), #y-table th:nth-child(7) { text-align: left; }
