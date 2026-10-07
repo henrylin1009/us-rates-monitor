@@ -304,8 +304,41 @@
       const pre = atOrBefore(D.summ, "asof", shiftDays(e.date, -1));
       const priced = pre && pre.next_meeting === e.date && pre.next_move_bp !== "" ? num(pre.next_move_bp) : null;
       const r = reaction(e.date);
-      return { date: e.date, dec, priced, surprise: dec == null || priced == null ? null : dec - priced, d2: r ? r.d2 : null, fed: r ? r.fed : null };
+      // 會前一天 price 的會後利率水準（畫圖用）
+      const pr = pre ? D.path.find((x) => x.asof === pre.asof && x.meeting === e.date) : null;
+      return { date: e.date, dec, priced, pricedRate: pr ? num(pr.post) : null, surprise: dec == null || priced == null ? null : dec - priced, d2: r ? r.d2 : null, fed: r ? r.fed : null };
     });
+  }
+  // 實際 EFFR（實線）vs 會前一天 price 的利率（菱形）+ 今天 price 的未來路徑（虛線）
+  function renderFomcChart() {
+    if (!D.effr.length) return empty("c-fomc", "No EFFR data");
+    const start = shiftDays(D.effr[D.effr.length - 1].date, -731);
+    const eff = D.effr.filter((r) => r.date >= start && r.effr !== "");
+    const ink = css("--ink"), acc = css("--s1"), muted = css("--muted");
+    const decTxt = (d) => (d == null ? "–" : d > 0 ? `hike ${d}bp` : d < 0 ? `cut ${-d}bp` : "hold");
+    const traces = [{ x: eff.map((r) => r.date), y: eff.map((r) => num(r.effr)), name: "Actual (EFFR)", mode: "lines", line: { color: ink, width: 2, shape: "hv" }, hovertemplate: "%{y:.2f}%<extra>EFFR</extra>" }];
+    const sur = fomcSurprises().filter((x) => x.pricedRate != null);
+    if (sur.length) traces.push({
+      x: sur.map((x) => x.date), y: sur.map((x) => x.pricedRate), name: "Priced day before", mode: "markers",
+      marker: { symbol: "diamond", size: 11, color: acc, line: { color: css("--surface"), width: 1.5 } },
+      customdata: sur.map((x) => [decTxt(x.dec), bp(x.priced, 1), x.surprise == null ? "–" : bp(x.surprise, 1)]),
+      hovertemplate: "Priced %{y:.2f}% (%{customdata[1]}bp)<br>Decision: %{customdata[0]}<br>Surprise: %{customdata[2]}bp<extra>FOMC</extra>",
+    });
+    const asof = D.path.length ? D.path[D.path.length - 1].asof : null;
+    const fwd = asof ? D.path.filter((x) => x.asof === asof) : [];
+    if (fwd.length) {
+      const e0 = eff[eff.length - 1];
+      traces.push({
+        x: [e0.date, ...fwd.map((x) => x.meeting)], y: [num(fwd[0].pre), ...fwd.map((x) => num(x.post))],
+        name: `Priced now (${asof})`, mode: "lines+markers", line: { color: acc, width: 2, dash: "dash", shape: "hv" }, marker: { size: 5, color: acc },
+        customdata: ["", ...fwd.map((x) => bp(num(x.cum_bp), 1))], hovertemplate: "%{y:.2f}% · %{customdata}bp cum<extra>Priced now</extra>",
+      });
+    }
+    const lay = baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
+    lay.shapes = asof ? [{ type: "line", xref: "x", yref: "paper", x0: asof, x1: asof, y0: 0, y1: 1, line: { color: muted, width: 1, dash: "dot" } }] : [];
+    lay.annotations = asof ? [{ x: asof, y: 1, xref: "x", yref: "paper", text: "today", showarrow: false, yanchor: "bottom", font: { color: muted, size: 11 } }] : [];
+    clearEmpty("c-fomc");
+    plot("c-fomc", traces, lay);
   }
   function renderFomcTable() {
     const el = $("#fomc-table"); if (!el) return;
@@ -319,7 +352,8 @@
         + `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td><td class="n ${cls(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
     });
     const first = D.summ.length ? D.summ[0].asof : null;
-    el.innerHTML = h + "</tbody></table>" + `<p class="hint">Pricing history starts on ${first || "–"}, so meetings before that show the decision and the 2y move but no surprise yet. The table fills in from each new meeting.</p>`;
+    const note = `<p class="hint">Pricing history starts on ${first || "–"}, so meetings before that have no diamond and no surprise yet. Both fill in from each new meeting.</p>`;
+    el.innerHTML = note + fold("fomc", "Meeting-by-meeting numbers", `<div class="table-wrap">${h}</tbody></table></div>`);
   }
 
   // ---------- 圖一：殖利率 ----------
@@ -791,15 +825,15 @@
     b.title = d ? "Switch to light mode" : "Switch to dark mode";
     b.setAttribute("aria-label", b.title);
   }
-  // ---------- 分頁：#overview / #rates / #events ----------
-  const PAGES = ["overview", "rates", "events"];
+  // ---------- 分頁：#overview / #rates / #calendar（舊的 #events 也導到 calendar）----------
+  const PAGES = ["overview", "rates", "calendar"];
   const RENDER = {
     overview: () => { renderNext(); renderHero(); },
-    rates: () => { renderYields(); renderFed(); renderFomcTable(); },
-    events: () => renderCalendar(),
+    rates: () => { renderYields(); renderFed(); renderFomcChart(); renderFomcTable(); },
+    calendar: () => renderCalendar(),
   };
   function route() {
-    const h = location.hash.slice(1);
+    const h = location.hash.slice(1) === "events" ? "calendar" : location.hash.slice(1);
     S.page = PAGES.includes(h) ? h : "overview";
     document.querySelectorAll(".page").forEach((el) => (el.hidden = el.dataset.page !== S.page));
     document.querySelectorAll(".tabs a").forEach((a) => { const on = a.dataset.page === S.page; a.classList.toggle("on", on); on ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"); });
