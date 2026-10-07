@@ -28,6 +28,7 @@ jobs:
         run: |
           python scripts/test_fedpricing.py
           python scripts/test_calendars.py
+          python scripts/test_surprise.py
       - name: 抓資料
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}

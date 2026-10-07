@@ -19,6 +19,7 @@ import fomc
 from calendars import update_calendars
 from fedpricing import implied_month_rate, price_path
 from macro import update_macro
+from surprise import update_surprise
 from fomc import MEETINGS
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -247,6 +248,10 @@ def main() -> int:
         update_macro(get, read_csv, write_csv)
     except Exception as e:  # noqa: BLE001
         print(f"✗ update_macro 失敗：{e}")
+    try:
+        update_surprise(get, read_csv, write_csv)
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_surprise 失敗：{e}")
     write_meta()
     return 1 if errors == 3 else 0
 
