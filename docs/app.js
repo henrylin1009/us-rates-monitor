@@ -13,7 +13,7 @@
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], pricedCmp: ["1W"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null, histMeeting: null, calAll: false,
+    pathCmp: ["1W", "1M"], pricedCmp: ["1W"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null, histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -23,6 +23,8 @@
   const rgba = (hex, a) => { const h = hex.replace("#", ""); const n = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   const num = (x) => (x === "" || x == null ? null : +x);
   const bp = (x, d = 0) => { if (x == null || isNaN(x)) return "–"; const r = +x.toFixed(d); return (r > 0 ? "+" : "") + (r === 0 ? 0 : r).toFixed(d); };
+  // 表格預設收起來，點 summary 才展開；開關狀態記在 S.folds，重畫時保留
+  const fold = (key, label, html) => `<details class="fold" data-fold="${key}"${S.folds[key] ? " open" : ""}><summary>${label}</summary>${html}</details>`;
   const pct = (x) => (x == null ? "–" : Math.round(x * 100) + "%");
   // bp 換成「幾次一碼」：desk 習慣講 "1.3 hikes priced"
   const moves = (b) => { if (b == null || isNaN(b)) return "–"; const n = b / 25; return Math.abs(n) < 0.005 ? "no change" : `${Math.abs(n).toFixed(2)} ${n > 0 ? "hikes" : "cuts"}`; };
@@ -190,14 +192,14 @@
     if (next.length) h += `<p class="hint">Next: ${next.map((e) => `<span class="badge">${e.date.slice(5).replace("-", "/")} ${e.label}</span>`).join(" ")}</p>`;
     if (!rows.length) { el.innerHTML = h + `<p class="hint">None of the selected events fall in this period yet.</p>`; }
     else {
-      h += "<table><thead><tr><th>Date</th><th>Event</th><th>2y</th><th>10y</th><th>30y</th><th>2s10s</th><th>Regime</th><th>Year-end pricing</th></tr></thead><tbody>";
+      let t = "<table><thead><tr><th>Date</th><th>Event</th><th>2y</th><th>10y</th><th>30y</th><th>2s10s</th><th>Regime</th><th>Year-end pricing</th></tr></thead><tbody>";
       rows.forEach(({ e, r }) => {
         const lab = e.type === "fomc" ? `${e.label}${fomcDecision(e.date) ? ": " + fomcDecision(e.date) : ""}` : e.label;
-        h += `<tr><td class="n">${e.date}</td><td>${lab}</td>`
+        t += `<tr><td class="n">${e.date}</td><td>${lab}</td>`
           + [r.d2, r.d10, r.d30, r.curve].map((x) => `<td class="n ${c(x)}">${bp(x, 1)}</td>`).join("")
           + `<td>${r.regime}</td><td class="n ${c(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
       });
-      el.innerHTML = h + "</tbody></table>";
+      el.innerHTML = h + fold("react", `Show table (${rows.length} events)`, t + "</tbody></table>");
     }
     el.querySelectorAll("button[data-s]").forEach((b) => (b.onclick = () => { S.reactSort = b.dataset.s; renderReactions(el); }));
   }
@@ -464,8 +466,8 @@
           + `<td class="n"><b>${bp(cum[i], 1)}</b></td><td class="n">${moves(cum[i])}</td><td class="n">${num(r.post).toFixed(3)}%</td>`
           + cols.map(([, y]) => { const d = y[i] == null ? null : cum[i] - y[i]; return `<td class="n ${d == null ? "" : c(d)}">${d == null ? "–" : bp(d, 1)}</td>`; }).join("") + "</tr>";
       });
-      $("#f-table").innerHTML = h + "</tbody></table>"
-        + `<p class="hint">One move = 25bp. Cumulative is measured from today's EFFR (${start.toFixed(2)}%). Δ columns show how much cumulative pricing has changed: positive = more hawkish than then. These numbers come straight from futures prices; the Meeting odds tab adds an independence assumption on top.</p>`;
+      $("#f-table").innerHTML = fold("fTable", "Show table", h + "</tbody></table>"
+        + `<p class="hint">One move = 25bp. Cumulative is measured from today's EFFR (${start.toFixed(2)}%). Δ columns show how much cumulative pricing has changed: positive = more hawkish than then. These numbers come straight from futures prices; the Meeting odds tab adds an independence assumption on top.</p>`);
     }
 
     if (v === "path") {
@@ -544,8 +546,8 @@
       [...levels].reverse().forEach((lo) => {
         h += `<tr><td>${lab(lo)}${lo === Math.round(today.lo * 100) ? " <small>(today)</small>" : ""}</td>` + cols.map(([, s]) => `<td class="n">${((s.out.get(lo) || 0) * 100).toFixed(1)}%</td>`).join("") + "</tr>";
       });
-      $("#f-table").innerHTML = h + "</tbody></table>"
-        + `<p class="hint">Each day's probabilities use that day's ZQ prices and the same method as Meeting odds. History starts on ${A[0]} and grows every trading day.</p>`;
+      $("#f-table").innerHTML = fold("fTable", "Show table", h + "</tbody></table>"
+        + `<p class="hint">Each day's probabilities use that day's ZQ prices and the same method as Meeting odds. History starts on ${A[0]} and grows every trading day.</p>`);
     }
 
     if (v === "cum") {
@@ -633,8 +635,8 @@
         + `<td class="n">${bp(num(r.move_bp), 1)}</td><td class="n">${bp(num(r.cum_bp), 1)}</td>`
         + `<td class="n">${pct(t.lo)}</td><td class="n">${pct(t.eq)}</td><td class="n">${pct(t.hi)}</td></tr>`;
     });
-    $("#f-table").innerHTML = h + "</tbody></table>"
-      + `<p class="hint">"Pre-meeting" and "post-meeting implied" are the average expectations from futures, not actual rate levels; the probability columns compare with today's target range.</p>`;
+    $("#f-table").innerHTML = fold("fTable", "Show table", h + "</tbody></table>"
+      + `<p class="hint">"Pre-meeting" and "post-meeting implied" are the average expectations from futures, not actual rate levels; the probability columns compare with today's target range.</p>`);
   }
   // FedWatch 式矩陣：列 = 會議，欄 = 目標區間，格子 = 機率
   function renderDistTable(rows, levels, dists, base) {
@@ -652,8 +654,8 @@
         return `<td class="n${k === bk ? " top" : ""}" style="background:${bg}">${(p * 100).toFixed(1)}%</td>`;
       }).join("") + "</tr>";
     });
-    $("#f-table").innerHTML = h + "</tbody></table>"
-      + `<p class="hint">Each cell is the probability that the target range sits at that level after the meeting; each row sums to 100%. Bold is the most likely level. Futures only give the average expectation, so each meeting is assumed to land on the two nearest levels; the further out, the less precise.</p>`;
+    $("#f-table").innerHTML = fold("fTable", "Show table", h + "</tbody></table>"
+      + `<p class="hint">Each cell is the probability that the target range sits at that level after the meeting; each row sums to 100%. Bold is the most likely level. Futures only give the average expectation, so each meeting is assumed to land on the two nearest levels; the further out, the less precise.</p>`);
   }
 
   // ---------- 行事曆：仿 Fed 官網 FOMC calendar，左邊月份、右邊當月事件，由上往下 ----------
@@ -717,6 +719,7 @@
     if (D.meta.updated) $("#updated").textContent = ` Last updated: ${D.meta.updated}.`;
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
+    document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
     renderAll();
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) { syncThemeBtn(); renderAll(); } });

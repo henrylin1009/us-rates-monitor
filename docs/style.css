@@ -157,3 +157,11 @@ table.dist td.top { font-weight: 600; }
   .cal-m { padding: 8px 0 0; }
   .cal-ev { grid-template-columns: 96px 18px 1fr; }
 }
+
+/* 收起來的表格 */
+details.fold { margin: 6px 0 4px; }
+details.fold > summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 6px 0; list-style: none; user-select: none; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: "▸"; display: inline-block; width: 1em; transition: transform .15s; }
+details.fold[open] > summary::before { transform: rotate(90deg); }
+details.fold > summary:hover { color: var(--ink); }
