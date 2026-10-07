@@ -912,11 +912,13 @@
     plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis() }));
   }
 
+  // 一年 2% 換成每個月的速度：1.02^(1/12) − 1 ≈ 0.165%
+  const PACE2 = (Math.pow(1.02, 1 / 12) - 1) * 100;
   // CPI 拆項三種看法：時間序列的貢獻疊圖、最新一個月的橫條、各項 × 月份的熱力圖
   function renderCpiParts(comps) {
     const P = palette(), v = S.cpiView, narrow = innerWidth < 600;
     const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
-      latest: "The latest month only: each component's own m/m change (bar), against the month before (dot) and its 12-month average (tick). The quickest read on release day.",
+      latest: "The latest month only: each component's own m/m change (bar), against the month before (dot) and its 12-month average (tick). This is one month, not a year: 0.3% m/m is about 3.6% annualized. The dashed line is the monthly pace of 2% a year; red bars run hotter than that, green cooler. Energy and food swing far more than the rest and carry small weights (see Contributions).",
       heat: "Each component's m/m change over the last 24 months. Colour is how unusual the move is for that component (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
     $("#cpi-hint").textContent = hint;
     if (v === "time") {
@@ -935,10 +937,13 @@
       const d = rows.map(([c, n]) => { const m = mom(ser(c)), l = m[m.length - 1], p = m[m.length - 2], a = m.slice(-12); return { n, l, p, avg: a.reduce((x, y) => x + y.v, 0) / a.length }; }).reverse();
       const month = d[d.length - 1].l ? monthName(d[d.length - 1].l.date) : "";
       return plot("c-cpi-parts", [
-        { y: d.map((x) => x.n), x: d.map((x) => x.l.v), name: `${month} m/m`, type: "bar", orientation: "h", marker: { color: d.map((x) => (x.l.v >= 0 ? rgba(P[1], 0.75) : rgba(P[2], 0.75))) }, hovertemplate: "%{y}: %{x:+.2f}%<extra></extra>" },
+        { y: d.map((x) => x.n), x: d.map((x) => x.l.v), name: `${month} m/m`, type: "bar", orientation: "h", marker: { color: d.map((x) => (x.l.v > PACE2 ? rgba(css("--up"), 0.75) : rgba(css("--down"), 0.6))) },
+          customdata: d.map((x) => (Math.pow(1 + x.l.v / 100, 12) - 1) * 100), hovertemplate: "%{y}: %{x:+.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>" },
         { y: d.map((x) => x.n), x: d.map((x) => (x.p ? x.p.v : null)), name: "Month before", mode: "markers", marker: { size: 9, color: css("--ink"), symbol: "circle-open", line: { width: 2 } }, hovertemplate: "%{y} month before: %{x:+.2f}%<extra></extra>" },
         { y: d.map((x) => x.n), x: d.map((x) => x.avg), name: "12-month average", mode: "markers", marker: { size: 16, color: css("--muted"), symbol: "line-ns", line: { width: 2.5, color: css("--muted") } }, hovertemplate: "%{y} 12m average: %{x:+.2f}%<extra></extra>" },
-      ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 10, b: narrow ? 100 : 40 }, ...(narrow ? { legend: { ...baseLayout().legend, y: -0.15, yanchor: "top" } } : {}), xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, tickfont: { color: css("--ink"), size: 12 } } }));
+      ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 24, b: narrow ? 100 : 40 },
+        shapes: [{ type: "line", xref: "x", yref: "paper", x0: PACE2, x1: PACE2, y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
+        annotations: [{ x: PACE2, y: 1, xref: "x", yref: "paper", yanchor: "bottom", xanchor: "left", showarrow: false, text: "2% a year pace (0.17%/month)", font: { size: 11, color: css("--muted") } }], ...(narrow ? { legend: { ...baseLayout().legend, y: -0.15, yanchor: "top" } } : {}), xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, tickfont: { color: css("--ink"), size: 12 } } }));
     }
     // 熱力圖：顏色 = 和自己 2015-19 平均差幾個標準差
     const months = mom(ser("cpi")).slice(narrow ? -12 : -24).map((p) => p.date);
