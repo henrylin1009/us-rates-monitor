@@ -14,7 +14,8 @@ GitHub Actions（週一到週五 23:40 UTC）
       ├ 美國財政部 Daily Par Yield Curve → docs/data/yields.csv
       ├ 紐約 Fed EFFR                    → docs/data/effr.csv
       ├ ZQ 期貨（Yahoo Finance）          → docs/data/zq.csv
-      └ scripts/fedpricing.py 算定價      → docs/data/fed_path.csv、fed_summary.csv
+      ├ scripts/fedpricing.py 算定價      → docs/data/fed_path.csv、fed_summary.csv
+      └ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
 GitHub Pages（main 分支 /docs）
   └ docs/index.html + app.js（Plotly）讀上面的 CSV
 ```

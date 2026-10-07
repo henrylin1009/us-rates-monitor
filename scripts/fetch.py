@@ -18,6 +18,7 @@ import requests
 import fomc
 from calendars import update_calendars
 from fedpricing import implied_month_rate, price_path
+from macro import update_macro
 from fomc import MEETINGS
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -242,6 +243,10 @@ def main() -> int:
             errors += 1
             print(f"✗ {step.__name__} 失敗：{e}")
     compute_pricing()
+    try:
+        update_macro(get, read_csv, write_csv)
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_macro 失敗：{e}")
     write_meta()
     return 1 if errors == 3 else 0
 

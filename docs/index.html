@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -30,6 +30,8 @@
   <div class="wrap">
     <a href="#overview" data-page="overview">Overview</a>
     <a href="#rates" data-page="rates">Rates</a>
+    <a href="#inflation" data-page="inflation">Inflation</a>
+    <a href="#jobs" data-page="jobs">Jobs</a>
     <a href="#calendar" data-page="calendar">Calendar</a>
   </div>
 </nav>
@@ -67,6 +69,34 @@
       </div>
     </div>
   </section>
+  <div class="duo">
+    <section class="panel card" id="p-infl-card">
+      <div class="panel-head">
+        <div class="hero-title">
+          <h2>Inflation</h2>
+          <p class="takeaway" id="infl-take"></p>
+          <p class="dline" id="infl-date"></p>
+        </div>
+        <a class="more" href="#inflation">Details →</a>
+      </div>
+      <div class="kline" id="infl-k"></div>
+      <h3>Core PCE and Core CPI, YoY, last 5 years</h3>
+      <div class="mini" id="c-infl-mini"></div>
+    </section>
+    <section class="panel card" id="p-jobs-card">
+      <div class="panel-head">
+        <div class="hero-title">
+          <h2>Jobs</h2>
+          <p class="takeaway" id="jobs-take"></p>
+          <p class="dline" id="jobs-date"></p>
+        </div>
+        <a class="more" href="#jobs">Details →</a>
+      </div>
+      <div class="kline" id="jobs-k"></div>
+      <h3>Unemployment rate, last 5 years</h3>
+      <div class="mini" id="c-jobs-mini"></div>
+    </section>
+  </div>
 </div>
 
 <div class="page" id="pg-rates" data-page="rates">
@@ -113,6 +143,17 @@
     <div class="table-wrap" id="f-table"></div>
   </section>
 
+  <section class="panel" id="p-decomp">
+    <div class="panel-head">
+      <div>
+        <h2>10y breakdown: real yield + inflation expectations</h2>
+        <p class="hint">The 10y yield splits into the real yield (TIPS) and breakeven inflation. When the long end moves, this shows whether it is the market's inflation expectations or the real rate doing the work.</p>
+      </div>
+      <div class="seg" id="d-range"><button data-v="3M">3M</button><button data-v="1Y" class="on">1Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+    </div>
+    <div class="chart" id="c-decomp"></div>
+    <div id="decomp-table"></div>
+  </section>
   <section class="panel" id="p-fomc">
     <div class="panel-head">
       <div>
@@ -140,6 +181,69 @@
   </section>
 </div>
 
+<div class="page" id="pg-inflation" data-page="inflation">
+  <section class="panel">
+    <div class="panel-head">
+      <div class="hero-title">
+        <h2>Core PCE and Core CPI</h2>
+        <p class="takeaway" id="infl-take2"></p>
+        <p class="dline" id="infl-date2"></p>
+      </div>
+      <div class="seg-col">
+        <div class="seg" id="i-views"><button data-v="yoy" class="on">YoY</button><button data-v="a3">3m annualized</button><button data-v="a6">6m annualized</button></div>
+        <div class="seg" id="i-years"><button data-v="5" class="on">5Y</button><button data-v="10">10Y</button><button data-v="25">25Y</button></div>
+      </div>
+    </div>
+    <p class="hint">The Fed targets 2% on PCE; core strips out food and energy. Annualized rates turn earlier than YoY. Open diamonds are the Fed's own year-end projection (SEP median).</p>
+    <div class="chart" id="c-infl"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>CPI breakdown</h2><p class="hint">Month-on-month change in the three core pieces, last 12 months: which part of the basket is doing the rising. Food and energy swing several percent a month, so they are in the table only.</p></div></div>
+    <div class="chart" id="c-cpi-parts"></div>
+    <div id="cpi-table"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>PPI</h2><p class="hint">Producer prices. Secondary, but several PPI parts feed straight into PCE, so desks use it to firm up the PCE forecast. <span id="ppi-date"></span></p></div></div>
+    <div class="chart short" id="c-ppi"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>Market inflation expectations</h2><p class="hint" id="infl-mkt"></p></div></div>
+  </section>
+</div>
+
+<div class="page" id="pg-jobs" data-page="jobs">
+  <section class="panel">
+    <div class="panel-head">
+      <div class="hero-title">
+        <h2>Unemployment and participation</h2>
+        <p class="takeaway" id="jobs-take2"></p>
+        <p class="dline" id="jobs-date2"></p>
+      </div>
+    </div>
+    <p class="hint">Unemployment is the Fed's employment target. Participation tells you the quality of a move: unemployment falling because people leave the labor force is weaker than it looks. Open diamonds are the Fed's year-end projection (SEP median).</p>
+    <div class="chart" id="c-jobs"></div>
+    <p class="sahm" id="sahm"></p>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>Nonfarm payrolls</h2><p class="hint">Jobs added each month (thousands), last 2 years, with the 3-month average to smooth the noise.</p></div></div>
+    <div class="chart short" id="c-nfp"></div>
+  </section>
+  <div class="duo">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Average hourly earnings</h2><p class="hint">Wage growth feeds services inflation (supercore). Roughly 3 to 3.5% is consistent with 2% inflation.</p></div></div>
+      <div class="chart short" id="c-ahe"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><div><h2>Initial jobless claims</h2><p class="hint">The most timely labor signal. <span id="claims-date"></span></p></div></div>
+      <div class="chart short" id="c-claims"></div>
+    </section>
+  </div>
+  <section class="panel">
+    <div class="panel-head"><div><h2>JOLTS job openings</h2><p class="hint">Secondary: noisy and lagging. <span id="jolts-date"></span></p></div></div>
+    <div class="chart short" id="c-jolts"></div>
+  </section>
+</div>
+
 <div class="page" id="pg-calendar" data-page="calendar">
   <section class="panel" id="p-cal">
     <div class="panel-head">
@@ -155,6 +259,6 @@
 </div>
 </main>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
