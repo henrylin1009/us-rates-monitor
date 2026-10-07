@@ -13,7 +13,7 @@
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null,
+    pathCmp: ["1W", "1M"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null, histMeeting: null,
   };
 
   // ---------- 小工具 ----------
@@ -389,6 +389,7 @@
   const F_HINT = {
     path: "The implied policy rate after each FOMC meeting. Compare with a week or a month ago to see how much the market has repriced.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Always relative to today's range: grey = same as today, deeper orange = higher, deeper green = lower.",
+    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range.",
     cum: "Cumulative bp priced relative to today's EFFR, one point per day, to see whether pricing is getting more hawkish or dovish.",
     spag: "The black line is the actual EFFR; the orange line is today's expected path; dotted lines are expectations from earlier dates. The bigger the gap, the more the market has repriced.",
   };
@@ -468,6 +469,44 @@
       renderDistTable(rows, levels, dists, base);
     }
 
+    if (v === "hist") {
+      // 選一次會議，看它各個結果的機率每天怎麼變（FedWatch 的 historical）
+      const upcoming = pathOn(last).map((r) => r.meeting);
+      if (!upcoming.includes(S.histMeeting)) S.histMeeting = upcoming[0];
+      const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" });
+      ctl.append(chips("Meeting", upcoming.map((m) => [m, mon(m)]), S.histMeeting, false, (x) => { S.histMeeting = x; rr(); }));
+      const m = S.histMeeting, today = baseRange(last);
+      // 每天：那天的路徑 → 分布 → 取出這次會議那一列，換成絕對的區間下緣
+      const series = A.map((a) => {
+        const rows = pathOn(a), i = rows.findIndex((r) => r.meeting === m);
+        if (i < 0) return null;
+        const b = baseRange(a), d = levelDist(rows).dists[i], out = new Map();
+        d.forEach((p, k) => out.set(Math.round((b.lo + k * 0.25) * 100), p));
+        return { a, out };
+      }).filter(Boolean);
+      const lows = new Set();
+      series.forEach(({ out }) => out.forEach((p, lo) => { if (p >= 0.01) lows.add(lo); }));
+      const levels = [...lows].sort((x, y) => x - y), ks = levels.map((lo) => Math.round((lo / 100 - today.lo) / 0.25));
+      const lab = (lo) => `${(lo / 100).toFixed(2)}–${(lo / 100 + 0.25).toFixed(2)}`;
+      const tr = levels.map((lo, j) => ({
+        x: series.map((s) => s.a), y: series.map((s) => (s.out.get(lo) || 0) * 100), name: lab(lo) + (ks[j] === 0 ? " (today)" : ""),
+        type: "scatter", mode: "lines", stackgroup: "p", line: { width: 0.5, color: css("--surface") }, fillcolor: levelColor(ks[j], ks),
+        hovertemplate: `${lab(lo)}%: %{y:.1f}%<extra></extra>`,
+      }));
+      plot(id, tr, baseLayout({ legend: { ...baseLayout().legend, traceorder: "reversed" },
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
+      // 表：今天、一週前、一個月前、最早
+      const cols = [["Today", series[series.length - 1]]];
+      [["1W", "1 week ago"], ["1M", "1 month ago"]].forEach(([k, n]) => { const a = nearestAsof(series.map((s) => s.a), shiftDays(last, -cmpDays[k])); const s = series.find((x) => x.a === a); if (s && s !== cols[0][1]) cols.push([n, s]); });
+      if (series[0] !== cols[cols.length - 1][1]) cols.push(["First (" + series[0].a + ")", series[0]]);
+      let h = `<table><thead><tr><th>Target range after ${mon(m)}</th>` + cols.map(([n, s]) => `<th>${n}<br><small>${s.a}</small></th>`).join("") + "</tr></thead><tbody>";
+      [...levels].reverse().forEach((lo) => {
+        h += `<tr><td>${lab(lo)}${lo === Math.round(today.lo * 100) ? " <small>(today)</small>" : ""}</td>` + cols.map(([, s]) => `<td class="n">${((s.out.get(lo) || 0) * 100).toFixed(1)}%</td>`).join("") + "</tr>";
+      });
+      $("#f-table").innerHTML = h + "</tbody></table>"
+        + `<p class="hint">Each day's probabilities use that day's ZQ prices and the same method as Meeting odds. History starts on ${A[0]} and grows every trading day.</p>`;
+    }
+
     if (v === "cum") {
       const opts = [["next_move_bp", "Next meeting"], ["cum_yearend_bp", "Year-end"], ["cum_6m_bp", "6 months"], ["cum_12m_bp", "12 months"]];
       ctl.append(chips("Horizon", opts, S.cum, true, rr), rangeChips("range", rr), eventChips(rr));
@@ -527,6 +566,9 @@
   }
   // 今天的目標區間（asof 當天或之前最後一筆 EFFR）
   function baseRange(asof) {
+    // 用那天路徑的起點（算定價用的 EFFR）找所在的一碼區間，和定價算法一致；會議當天 EFFR 還沒反映決議時也不會錯位
+    const p0 = pathOn(asof)[0];
+    if (p0) { const lo = Math.floor(num(p0.pre) / 0.25 + 1e-9) * 0.25; return { lo, hi: lo + 0.25 }; }
     const e = atOrBefore(D.effr, "date", asof) || D.effr[D.effr.length - 1] || {};
     const lo = num(e.target_low), hi = num(e.target_high);
     return lo == null || hi == null ? { lo: num(e.effr) - 0.125, hi: num(e.effr) + 0.125 } : { lo, hi };
