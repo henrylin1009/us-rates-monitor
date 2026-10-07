@@ -4,9 +4,9 @@
 
   const TENORS = ["1m", "2m", "3m", "4m", "6m", "1y", "2y", "3y", "5y", "7y", "10y", "20y", "30y"];
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
-  const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [] };
+  const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", iYears: "5", dRange: "1Y",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
@@ -606,6 +606,11 @@
           S.pathCmp.forEach((k, j) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(j + 1) % P.length], 1.6, "dot"]); });
           tr = snaps.map((x) => pathTrace(...x));
         }
+        // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
+        const lastM = pathOn(last).slice(-1)[0], dots = D.sep.filter((r) => r.fedfunds !== "" && `${r.year}-12-31` >= last && (!lastM || `${r.year}-12-31` <= shiftDays(lastM.meeting, 45)));
+        if (dots.length) tr.push({ x: dots.map((r) => `${r.year}-12-31`), y: dots.map((r) => +r.fedfunds), name: "Fed dots (SEP median)", mode: "markers",
+          marker: { symbol: "diamond-open", size: 11, color: css("--ink"), line: { width: 2 } }, customdata: dots.map((r) => r.year),
+          hovertemplate: "%{y:.2f}%: Fed median for end-%{customdata} (midpoint of the target range)<extra></extra>" });
         const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) },
           shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }],
           annotations: [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] });
@@ -825,11 +830,194 @@
     b.title = d ? "Switch to light mode" : "Switch to dark mode";
     b.setAttribute("aria-label", b.title);
   }
+  // ---------- 通膨、就業（FRED 月資料） ----------
+  // 月資料一欄 → [{date, v}]，跳過空白
+  const ser = (col, rows = D.macro) => rows.filter((r) => r[col] !== "" && r[col] != null).map((r) => ({ date: r.date, v: +r[col] }));
+  // 變化率：k 期前比較，ann = 換算成年率（12 個月）
+  const rate = (s, k, ann) => s.slice(k).map((p, i) => ({ date: p.date, v: (ann ? Math.pow(p.v / s[i].v, 12 / k) - 1 : p.v / s[i].v - 1) * 100 }));
+  const yoy = (s) => rate(s, 12, false), mom = (s) => rate(s, 1, false), annK = (s, k) => rate(s, k, true);
+  const diff = (s) => s.slice(1).map((p, i) => ({ date: p.date, v: p.v - s[i].v }));
+  const avgK = (s, k) => s.slice(k - 1).map((p, i) => ({ date: p.date, v: s.slice(i, i + k).reduce((a, x) => a + x.v, 0) / k }));
+  const lastV = (s) => (s.length ? s[s.length - 1] : null);
+  const fromYears = (s, y) => { if (!s.length) return s; const start = shiftDays(s[s.length - 1].date, -Math.round(365.25 * y)); return s.filter((p) => p.date >= start); };
+  const monthName = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+  const f1 = (x, d = 1) => (x == null || isNaN(x) ? "–" : x.toFixed(d));
+  const localToday = () => { const n = new Date(); return new Date(n.getTime() - n.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const xy = (s) => ({ x: s.map((p) => p.date), y: s.map((p) => p.v) });
+  const MON3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // events.json 的標籤 "CPI (Sep 2026)" → "2026-09-01"
+  const evtMonth = (label) => { const m = /\((\w{3}) (\d{4})\)/.exec(label || ""); return m && MON3.includes(m[1]) ? `${m[2]}-${String(MON3.indexOf(m[1]) + 1).padStart(2, "0")}-01` : null; };
+
+  // 資料月份 + 下次公布；如果已經公布了更新的月份但我們還沒有，就變橘色
+  function dataLine(col, type, name, label = "") {
+    const s = ser(col), l = lastV(s); if (!l) return `<span class="muted">No data yet</span>`;
+    const today = localToday();
+    const nxt = D.events.find((e) => e.type === type && e.date >= today);
+    const missed = D.events.some((e) => e.type === type && e.date < today && (evtMonth(e.label) || "") > l.date);
+    return `<span class="${missed ? "up" : "muted"}">${label}${monthName(l.date)} data${missed ? " · newer release not loaded yet" : ""}`
+      + `${nxt ? ` · next ${name} ${md(nxt.date)}` : ""}</span>`;
+  }
+  // SEP 中位數：每個預測年度畫在那年 12/31
+  const sepPts = (col) => D.sep.filter((r) => r[col] !== "").map((r) => ({ date: `${r.year}-12-31`, v: +r[col], year: r.year }));
+  // 只畫接下來 2 個年底，太遠的預測會把圖拉太長
+  const sepTrace = (col, name, color, after) => {
+    const p = sepPts(col).filter((x) => !after || (x.date >= after && x.date <= shiftDays(after, 730)));
+    return p.length ? { ...xy(p), name, mode: "markers", marker: { symbol: "diamond-open", size: 10, color, line: { width: 2 } },
+      customdata: p.map((x) => x.year), hovertemplate: `%{y:.1f}% (Fed median for end-%{customdata})<extra>${name}</extra>` } : null;
+  };
+  const hline = (y, text) => ({ shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: y, y1: y, line: { color: css("--muted"), width: 1, dash: "dash" } }],
+    annotations: text ? [{ xref: "paper", x: 0, y, text, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] : [] });
+  const pctAxis = (extra = {}) => ({ ...baseLayout().yaxis, ticksuffix: "%", ...extra });
+
+  // 一句結論
+  function inflTakeaway() {
+    const pce = ser("core_pce"); if (pce.length < 13) return "";
+    const y = lastV(yoy(pce)).v, a3 = lastV(annK(pce, 3)).v;
+    let streak = 0; const ys = yoy(pce); for (let i = ys.length - 1; i >= 0 && ys[i].v >= 2.05; i--) streak++;
+    const mom3 = a3 > y + 0.2 ? "running hotter than the yearly rate, so momentum is building" : a3 < y - 0.2 ? "running cooler than the yearly rate, so momentum is easing" : "in line with the yearly rate";
+    return `Core PCE is ${f1(y)}% YoY; the 3-month annualized rate is ${f1(a3)}%, ${mom3}.`
+      + (streak >= 3 ? ` YoY has been above the 2% target for ${streak} months in a row.` : "");
+  }
+  function jobsTakeaway() {
+    const u = ser("unrate"), p = diff(ser("payems")); if (u.length < 4 || p.length < 3) return "";
+    const du = u[u.length - 1].v - u[u.length - 4].v, p3 = lastV(avgK(p, 3)).v;
+    const sahm = lastV(ser("sahm"));
+    return `Unemployment is ${f1(lastV(u).v)}%, ${Math.abs(du) < 0.05 ? "unchanged" : (du > 0 ? "up " : "down ") + f1(Math.abs(du)) + "pt"} over 3 months; payrolls are adding ${p3.toFixed(0)}k a month on a 3-month average.`
+      + (sahm ? ` The Sahm rule reads ${sahm.v.toFixed(2)}${sahm.v >= 0.5 ? ", above the 0.5 recession trigger." : " (trigger is 0.5)."}` : "");
+  }
+
+  // 首頁兩張卡
+  function renderMacroCards() {
+    if (!D.macro.length) { ["#infl-take", "#jobs-take"].forEach((s) => ($(s).textContent = "Inflation and jobs data load after the next daily update.")); return; }
+    const P = palette(), pce = yoy(ser("core_pce")), cpi = yoy(ser("core_cpi")), start = shiftDays(lastV(pce).date, -365 * 5);
+    $("#infl-take").textContent = inflTakeaway();
+    $("#infl-date").innerHTML = dataLine("core_pce", "pce", "PCE");
+    const be = D.be.filter((r) => r.be10 !== "").pop();
+    $("#infl-k").innerHTML = `<span>Core PCE <b class="num">${f1(lastV(pce).v)}%</b></span><span>Core CPI <b class="num">${f1(lastV(cpi).v)}%</b></span>`
+      + (be ? `<span>10y breakeven <b class="num">${(+be.be10).toFixed(2)}%</b></span>` : "");
+    const ti = [{ ...xy(pce.filter((p) => p.date >= start)), name: "Core PCE YoY", line: { color: P[0], width: 2 } },
+      { ...xy(cpi.filter((p) => p.date >= start)), name: "Core CPI YoY", line: { color: P[3], width: 1.6 } }];
+    const sp = sepTrace("core_pce", "Fed projection", P[0], lastV(pce).date); if (sp) ti.push(sp);
+    plot("c-infl-mini", ti, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis(), ...hline(2, "2% target") }));
+
+    const u = ser("unrate"), uS = u.filter((p) => p.date >= start), pay = diff(ser("payems")), sahm = lastV(ser("sahm"));
+    $("#jobs-take").textContent = jobsTakeaway();
+    $("#jobs-date").innerHTML = dataLine("unrate", "nfp", "NFP");
+    $("#jobs-k").innerHTML = `<span>Unemployment <b class="num">${f1(lastV(u).v)}%</b></span><span>Payrolls <b class="num">${bp(lastV(pay).v, 0)}k</b></span>`
+      + (sahm ? `<span>Sahm <b class="num ${sahm.v >= 0.5 ? "up" : ""}">${sahm.v.toFixed(2)}</b></span>` : "");
+    const tj = [{ ...xy(uS), name: "Unemployment rate", line: { color: P[2], width: 2 } }];
+    const su = sepTrace("unrate", "Fed projection", P[2], lastV(u).date); if (su) tj.push(su);
+    plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis() }));
+  }
+
+  // Inflation 頁
+  const I_VIEWS = { yoy: ["YoY", (s) => yoy(s)], a3: ["3m annualized", (s) => annK(s, 3)], a6: ["6m annualized", (s) => annK(s, 6)] };
+  function renderInflation() {
+    if (!D.macro.length) return empty("c-infl", "No inflation data yet");
+    const P = palette(), f = I_VIEWS[S.iView][1];
+    $("#infl-take2").textContent = inflTakeaway();
+    $("#infl-date2").innerHTML = dataLine("core_pce", "pce", "PCE", "Core PCE: ") + `<span class="muted"> &nbsp;|&nbsp; </span>` + dataLine("core_cpi", "cpi", "CPI", "Core CPI: ");
+    const pce = fromYears(f(ser("core_pce")), S.iYears), cpi = fromYears(f(ser("core_cpi")), S.iYears);
+    const tr = [{ ...xy(pce), name: `Core PCE ${I_VIEWS[S.iView][0]}`, line: { color: P[0], width: 2.2 }, hovertemplate: "%{y:.2f}%" },
+      { ...xy(cpi), name: `Core CPI ${I_VIEWS[S.iView][0]}`, line: { color: P[3], width: 1.6 }, hovertemplate: "%{y:.2f}%" }];
+    const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
+    clearEmpty("c-infl");
+    const narrow = innerWidth < 600, lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
+    plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
+
+    // CPI 拆項：最近 12 個月 m/m
+    const comps = [["cpi_goods", "Core goods"], ["cpi_shelter", "Shelter"], ["cpi_supercore", "Services ex shelter (supercore, approx.)"], ["cpi_food", "Food"], ["cpi_energy", "Energy"]];
+    // 圖只放核心三塊；食物、能源一個月可以動好幾 %，會把核心壓扁，放在表裡
+    const tb = comps.slice(0, 3).map(([c, n], i) => { const m = mom(ser(c)).slice(-12); return { ...xy(m), name: n, type: "bar", marker: { color: P[i % P.length] }, hovertemplate: "%{y:.2f}%" }; });
+    plot("c-cpi-parts", tb, baseLayout({ barmode: "group", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+    let h = "<table><thead><tr><th>Component</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
+    comps.forEach(([c, n]) => { const s = ser(c); h += `<tr><td>${n}</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`; });
+    $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
+      + `<p class="hint">Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
+
+    // PPI
+    const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
+    plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
+      baseLayout({ yaxis: pctAxis() }));
+    $("#ppi-date").innerHTML = dataLine("ppi", "ppi", "PPI");
+
+    const be = D.be.filter((r) => r.be10 !== "");
+    const b0 = be[be.length - 1], b1 = b0 ? atOrBefore(be, "date", shiftDays(b0.date, -30)) : null;
+    $("#infl-mkt").innerHTML = b0 ? `10y breakeven is <b class="num">${(+b0.be10).toFixed(2)}%</b>`
+      + (b1 ? ` (<span class="${cls((b0.be10 - b1.be10) * 100)}">${bp((b0.be10 - b1.be10) * 100, 0)}bp</span> over 1 month)` : "")
+      + ` on ${b0.date}. <a class="more" href="#rates">See the 10y breakdown on Rates →</a>` : "No breakeven data yet.";
+  }
+
+  // Jobs 頁
+  function renderJobs() {
+    if (!D.macro.length) return empty("c-jobs", "No jobs data yet");
+    const P = palette();
+    $("#jobs-take2").textContent = jobsTakeaway();
+    $("#jobs-date2").innerHTML = dataLine("unrate", "nfp", "NFP");
+    const u = fromYears(ser("unrate"), 5), part = fromYears(ser("civpart"), 5);
+    const tr = [{ ...xy(u), name: "Unemployment rate", line: { color: P[2], width: 2.2 }, hovertemplate: "%{y:.1f}%" },
+      { ...xy(part), name: "Participation rate (right)", yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "%{y:.1f}%" }];
+    const su = sepTrace("unrate", "Fed projection", P[2], lastV(u) ? lastV(u).date : null); if (su) tr.push(su);
+    clearEmpty("c-jobs");
+    const narrow = innerWidth < 600;
+    plot("c-jobs", tr, baseLayout({ margin: { l: narrow ? 40 : 52, r: narrow ? 44 : 52, t: 10, b: narrow ? 90 : 40 }, yaxis: pctAxis(),
+      ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" } } : {}),
+      yaxis2: { ...pctAxis(), overlaying: "y", side: "right", showgrid: false } }));
+    const sh = ser("sahm"), s0 = lastV(sh);
+    $("#sahm").innerHTML = s0 ? `<span class="light ${s0.v >= 0.5 ? "on" : s0.v >= 0.3 ? "warn" : ""}"></span> Sahm rule <b class="num">${s0.v.toFixed(2)}</b> `
+      + `<span class="muted">(${monthName(s0.date)}). It triggers at 0.5: the 3-month average unemployment rate rising 0.5pt above its 12-month low has marked the start of every US recession since 1970.</span>` : "";
+
+    const pay = diff(ser("payems")), p24 = pay.slice(-24), a3 = avgK(pay, 3).slice(-24);
+    plot("c-nfp", [{ ...xy(p24), name: "Monthly change", type: "bar", marker: { color: p24.map((p) => (p.v < 0 ? css("--up") : rgba(P[0], 0.75))) }, hovertemplate: "%{y:+.0f}k" },
+      { ...xy(a3), name: "3-month average", line: { color: css("--ink"), width: 2 }, hovertemplate: "%{y:+.0f}k" }],
+      baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+
+    const ahe = ser("ahe");
+    plot("c-ahe", [{ ...xy(fromYears(yoy(ahe), 5)), name: "YoY", line: { color: P[4], width: 2 }, hovertemplate: "%{y:.1f}%" },
+      { ...xy(fromYears(annK(ahe, 3), 5)), name: "3m annualized", line: { color: P[4], width: 1.3, dash: "dot" }, hovertemplate: "%{y:.1f}%" }], baseLayout({ yaxis: pctAxis() }));
+
+    const cl = D.claims.filter((r) => r.icsa !== "").map((r) => ({ date: r.date, v: r.icsa / 1000 })), c2 = fromYears(cl, 2);
+    plot("c-claims", [{ ...xy(c2), name: "Weekly", line: { color: rgba(P[1], 0.55), width: 1.2 }, hovertemplate: "%{y:.0f}k" },
+      { ...xy(fromYears(avgK(cl, 4), 2)), name: "4-week average", line: { color: P[1], width: 2.2 }, hovertemplate: "%{y:.0f}k" }],
+      baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k" } }));
+    const c0 = lastV(cl); $("#claims-date").innerHTML = c0 ? `<span class="muted">Week ending ${md(c0.date)} · released every Thursday</span>` : "";
+
+    const jo = fromYears(ser("jolts"), 5).map((p) => ({ date: p.date, v: p.v / 1000 }));
+    plot("c-jolts", [{ ...xy(jo), name: "Job openings", line: { color: P[0], width: 2 }, hovertemplate: "%{y:.2f}m" }], baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "m" } }));
+    const j0 = lastV(ser("jolts")); $("#jolts-date").innerHTML = j0 ? `<span class="muted">${monthName(j0.date)} data · JOLTS runs about two months behind</span>` : "";
+  }
+
+  // Rates 頁：10y = 實質利率 + breakeven
+  function renderDecomp() {
+    const be = D.be.filter((r) => r.be10 !== "" && r.real10 !== "");
+    if (!be.length) return empty("c-decomp", "No breakeven data yet");
+    const P = palette(), rows = inRange(be, "date", S.dRange);
+    const nom = rows.map((r) => { const y = D.yields[yIdx[r.date]]; return y ? num(y["10y"]) : null; });
+    clearEmpty("c-decomp");
+    plot("c-decomp", [
+      { x: rows.map((r) => r.date), y: rows.map((r) => +r.real10), name: "Real yield (TIPS)", stackgroup: "a", line: { color: P[0], width: 0.5 }, fillcolor: rgba(P[0], 0.35), hovertemplate: "%{y:.2f}%" },
+      { x: rows.map((r) => r.date), y: rows.map((r) => +r.be10), name: "Breakeven inflation", stackgroup: "a", line: { color: P[1], width: 0.5 }, fillcolor: rgba(P[1], 0.3), hovertemplate: "%{y:.2f}%" },
+      { x: rows.map((r) => r.date), y: nom, name: "10y nominal", line: { color: css("--ink"), width: 1.6 }, hovertemplate: "%{y:.2f}%" },
+    ], baseLayout({ yaxis: pctAxis() }));
+    const last = be[be.length - 1];
+    let h = "<table><thead><tr><th>Change since</th><th>10y nominal (bp)</th><th>Real yield (bp)</th><th>Breakeven (bp)</th><th>Driven by</th></tr></thead><tbody>";
+    [["1W", 7], ["1M", 30], ["3M", 91], ["1Y", 365]].forEach(([k, d]) => {
+      const a = atOrBefore(be, "date", shiftDays(last.date, -d)); if (!a) return;
+      const dr = (last.real10 - a.real10) * 100, db = (last.be10 - a.be10) * 100;
+      const who = Math.abs(dr) + Math.abs(db) < 3 ? "little change" : Math.abs(dr) > Math.abs(db) ? "real yield" : "inflation expectations";
+      h += `<tr><td>${cmpLabel[k] || k}</td><td class="n ${cls(dr + db)}">${bp(dr + db, 0)}</td><td class="n ${cls(dr)}">${bp(dr, 0)}</td><td class="n ${cls(db)}">${bp(db, 0)}</td><td>${who}</td></tr>`;
+    });
+    $("#decomp-table").innerHTML = `<div class="table-wrap">${h}</tbody></table></div>`
+      + `<p class="hint">Real + breakeven adds up to the 10y TIPS-implied nominal yield, which sits a few bp from the Treasury 10y (black line). Data from FRED (T10YIE, DFII10), ${last.date}.</p>`;
+  }
+
   // ---------- 分頁：#overview / #rates / #calendar（舊的 #events 也導到 calendar）----------
-  const PAGES = ["overview", "rates", "calendar"];
+  const PAGES = ["overview", "rates", "inflation", "jobs", "calendar"];
   const RENDER = {
-    overview: () => { renderNext(); renderHero(); },
-    rates: () => { renderYields(); renderFed(); renderFomcChart(); renderFomcTable(); },
+    overview: () => { renderNext(); renderHero(); renderMacroCards(); },
+    rates: () => { renderYields(); renderFed(); renderDecomp(); renderFomcChart(); renderFomcTable(); },
+    inflation: () => renderInflation(),
+    jobs: () => renderJobs(),
     calendar: () => renderCalendar(),
   };
   function route() {
@@ -843,7 +1031,8 @@
   function renderAll() { RENDER[S.page](); }
 
   async function main() {
-    [D.yields, D.effr, D.path, D.summ] = await Promise.all(["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv"].map(load));
+    [D.yields, D.effr, D.path, D.summ, D.macro, D.claims, D.be, D.sep] = await Promise.all(
+      ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv"].map(load));
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     D.yields.forEach((r, i) => (yIdx[r.date] = i));
@@ -852,6 +1041,9 @@
     if (D.meta.updated) $("#updated").textContent = ` Last updated: ${D.meta.updated}.`;
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
+    bindSeg("#i-views", "iView", renderInflation);
+    bindSeg("#i-years", "iYears", renderInflation);
+    bindSeg("#d-range", "dRange", renderDecomp);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
     window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
