@@ -925,15 +925,22 @@
     const narrow = innerWidth < 600, lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
     plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
 
-    // CPI 拆項：最近 12 個月 m/m
-    const comps = [["cpi_goods", "Core goods"], ["cpi_shelter", "Shelter"], ["cpi_supercore", "Services ex shelter (supercore, approx.)"], ["cpi_food", "Food"], ["cpi_energy", "Energy"]];
-    // 圖只放核心三塊；食物、能源一個月可以動好幾 %，會把核心壓扁，放在表裡
-    const tb = comps.slice(0, 3).map(([c, n], i) => { const m = mom(ser(c)).slice(-12); return { ...xy(m), name: n, type: "bar", marker: { color: P[i % P.length] }, hovertemplate: "%{y:.2f}%" }; });
-    plot("c-cpi-parts", tb, baseLayout({ barmode: "group", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
-    let h = "<table><thead><tr><th>Component</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
-    comps.forEach(([c, n]) => { const s = ser(c); h += `<tr><td>${n}</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`; });
+    // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
+    // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
+    const comps = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore, approx.)", 25.3], ["cpi_food", "Food", 13.6], ["cpi_energy", "Energy", 6.4]];
+    const tb = comps.map(([c, n, w], i) => {
+      const m = mom(ser(c)).slice(-12);
+      return { x: m.map((p) => p.date), y: m.map((p) => (p.v * w) / 100), customdata: m.map((p) => p.v), name: n, type: "bar", marker: { color: P[i % P.length] },
+        hovertemplate: `%{y:+.2f}pt (${n.split(" (")[0]} itself %{customdata:+.2f}% m/m)<extra></extra>` };
+    });
+    const head = mom(ser("cpi")).slice(-12);
+    tb.push({ ...xy(head), name: "Headline CPI m/m", mode: "markers", marker: { symbol: "diamond", size: 10, color: css("--ink"), line: { color: css("--surface"), width: 1.5 } }, hovertemplate: "Headline %{y:+.2f}%<extra></extra>" });
+    const nb = innerWidth < 600 ? { legend: { ...baseLayout().legend, y: -0.1, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 140 } } : {};
+    plot("c-cpi-parts", tb, baseLayout({ ...nb, barmode: "relative", bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+    let h = "<table><thead><tr><th>Component</th><th>Weight</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
+    comps.forEach(([c, n, w]) => { const s = ser(c); h += `<tr><td>${n}</td><td class="n">${w}%</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`; });
     $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
-      + `<p class="hint">Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
+      + `<p class="hint">Weights are approximate BLS relative importance, so the bars add up close to, not exactly, the headline. Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
 
     // PPI
     const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
