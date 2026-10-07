@@ -56,6 +56,12 @@ body {
 h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
 .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
 .asof { color: var(--muted); font-size: 13px; }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.theme-btn {
+  font: inherit; font-size: 16px; line-height: 1; width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--chip); color: var(--ink);
+}
+.theme-btn:hover { border-color: var(--muted); }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
@@ -109,3 +115,10 @@ h3 { font-size: 14.5px; margin: 0; }
 td.up { color: var(--up); }
 td.down { color: var(--down); }
 #y-table td:nth-child(2), #y-table td:nth-child(7), #y-table th:nth-child(2), #y-table th:nth-child(7) { text-align: left; }
+
+table.dist th, table.dist td { text-align: center; padding: 6px 8px; }
+table.dist th:first-child, table.dist td:first-child { text-align: left; }
+table.dist th small { font-weight: 400; }
+table.dist th.today { color: var(--ink); }
+table.dist td.zero { color: var(--line); }
+table.dist td.top { font-weight: 600; }

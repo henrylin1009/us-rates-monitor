@@ -19,6 +19,8 @@
   // ---------- 小工具 ----------
   const $ = (s) => document.querySelector(s);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+  const rgba = (hex, a) => { const h = hex.replace("#", ""); const n = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
   const num = (x) => (x === "" || x == null ? null : +x);
   const bp = (x, d = 0) => { if (x == null || isNaN(x)) return "–"; const r = +x.toFixed(d); return (r > 0 ? "+" : "") + (r === 0 ? 0 : r).toFixed(d); };
   const pct = (x) => (x == null ? "–" : Math.round(x * 100) + "%");
@@ -311,7 +313,7 @@
       ctl.append(rangeChips("range", rr));
       let rows = inRange(D.yields, "date", S.range);
       const step = Math.max(1, Math.floor(rows.length / 400)); rows = rows.filter((_, i) => i % step === 0 || i === rows.length - 1);
-      const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light";
+      const dark = isDark();
       plot(id, [{
         type: "heatmap", x: rows.map((r) => r.date), y: TENORS, z: TENORS.map((t) => rows.map((r) => num(r[t]))),
         colorscale: dark ? "Viridis" : "YlGnBu", reversescale: !dark, colorbar: { ticksuffix: "%", thickness: 10, outlinewidth: 0, tickfont: { color: css("--muted") } },
@@ -336,7 +338,7 @@
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
     path: "每次 FOMC 之後的隱含政策利率。和一週前、一個月前比，看市場這段時間把預期改了多少。",
-    probs: "每次會議升息、不動、降息的機率（自算 FedWatch）。",
+    probs: "每次 FOMC 開完之後，政策利率落在各個區間的機率（FedWatch 畫法）。基準永遠是今天的目標區間：灰色 = 和今天一樣，橘色越深 = 比今天高越多，綠色越深 = 比今天低越多。",
     cum: "相對現在 EFFR，市場累積 price 了幾 bp。每天一個點，看定價越來越鷹還是越來越鴿。",
     spag: "實線是 EFFR 實際走過的路；每條淡線是某一天市場預期的未來路徑。淡線一直在改方向，就是市場一直在修正預期。",
   };
@@ -377,13 +379,18 @@
     }
 
     if (v === "probs") {
-      const rows = pathOn(last);
-      const mk = (key, name, color) => ({ x: rows.map((r) => r.meeting), y: rows.map((r) => num(r[key]) * 100), name, type: "bar", marker: { color },
-        text: rows.map((r) => (num(r[key]) >= 0.05 ? Math.round(num(r[key]) * 100) + "%" : "")), textposition: "inside", insidetextanchor: "middle",
-        textfont: { color: "#fff", size: 11 }, hovertemplate: "%{y:.0f}%" });
-      plot(id, [mk("p_cut", "降息", css("--down")), mk("p_hold", "不動", css("--muted")), mk("p_hike", "升息", css("--up"))],
-        baseLayout({ barmode: "stack", xaxis: { ...baseLayout().xaxis, type: "category" }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
-      renderTable(rows);
+      const rows = pathOn(last), { levels, dists } = levelDist(rows), base = baseRange(last);
+      const tr = levels.map((k) => {
+        const c = levelColor(k, levels);
+        return { x: rows.map((r) => r.meeting), y: dists.map((d) => (d.get(k) || 0) * 100), name: rangeLabel(base, k) + (k === 0 ? "（今天）" : ""),
+          type: "bar", marker: { color: c, line: { color: css("--surface"), width: 1 } },
+          text: dists.map((d) => ((d.get(k) || 0) >= 0.1 ? rangeLabel(base, k, true) + "<br>" + Math.round(d.get(k) * 100) + "%" : "")),
+          textposition: "inside", insidetextanchor: "middle", textangle: 0, textfont: { color: Math.abs(k) >= 2 || k === 0 ? "#fff" : css("--ink"), size: 10.5 },
+          hovertemplate: `${rangeLabel(base, k)}%：%{y:.1f}%<extra></extra>` };
+      });
+      plot(id, tr, baseLayout({ barmode: "stack", hovermode: "x unified", legend: { ...baseLayout().legend, traceorder: "reversed" },
+        xaxis: { ...baseLayout().xaxis, type: "category" }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
+      renderDistTable(rows, levels, dists, base);
     }
 
     if (v === "cum") {
@@ -425,15 +432,66 @@
     }
   }
 
+  // 從今天的利率出發，一次一次會議往下接：每次會議把隱含變動拆成最接近的兩檔（lo_bp / hi_bp），
+  // 和前面的分佈相乘累加 → 每次會議後「相對今天」各檔的機率。平均值剛好等於會議後隱含利率。
+  function levelDist(rows) {
+    let cur = new Map([[0, 1]]);
+    const dists = rows.map((r) => {
+      const next = new Map(), moves = [[Math.round(num(r.lo_bp) / 25), num(r.p_lo)], [Math.round(num(r.hi_bp) / 25), num(r.p_hi)]];
+      cur.forEach((p, k) => moves.forEach(([m, q]) => { if (q > 0) next.set(k + m, (next.get(k + m) || 0) + p * q); }));
+      cur = next;
+      return next;
+    });
+    const keys = new Set([0]);
+    dists.forEach((d) => d.forEach((p, k) => { if (p >= 0.005) keys.add(k); }));
+    return { levels: [...keys].sort((a, b) => a - b), dists };
+  }
+  // 今天的目標區間（asof 當天或之前最後一筆 EFFR）
+  function baseRange(asof) {
+    const e = atOrBefore(D.effr, "date", asof) || D.effr[D.effr.length - 1] || {};
+    const lo = num(e.target_low), hi = num(e.target_high);
+    return lo == null || hi == null ? { lo: num(e.effr) - 0.125, hi: num(e.effr) + 0.125 } : { lo, hi };
+  }
+  const rangeLabel = (b, k, short) => { const lo = b.lo + k * 0.25, hi = b.hi + k * 0.25; return short ? lo.toFixed(2) : `${lo.toFixed(2)}–${hi.toFixed(2)}`; };
+  function levelColor(k, levels) {
+    if (k === 0) return css("--muted");
+    const n = Math.max(1, ...levels.filter((x) => Math.sign(x) === Math.sign(k)).map(Math.abs));
+    return rgba(css(k > 0 ? "--up" : "--down"), (0.3 + 0.7 * Math.abs(k) / n).toFixed(2));
+  }
+  // 相對今天：比今天低 / 一樣 / 比今天高
+  function vsToday(d) { let lo = 0, eq = 0, hi = 0; d.forEach((p, k) => { if (k < 0) lo += p; else if (k > 0) hi += p; else eq += p; }); return { lo, eq, hi }; }
+
   function renderTable(rows) {
     if (!rows.length) return;
-    let h = "<table><thead><tr><th>FOMC</th><th>會議前</th><th>會議後隱含</th><th>這次 (bp)</th><th>累積 (bp)</th><th>降息</th><th>不動</th><th>升息</th></tr></thead><tbody>";
-    rows.forEach((r) => {
+    const { dists } = levelDist(rows);
+    let h = "<table><thead><tr><th>FOMC</th><th>會議前</th><th>會議後隱含</th><th>這次 (bp)</th><th>累積 (bp)</th><th>比今天低</th><th>和今天一樣</th><th>比今天高</th></tr></thead><tbody>";
+    rows.forEach((r, i) => {
+      const t = vsToday(dists[i]);
       h += `<tr><td>${r.meeting}</td><td class="n">${num(r.pre).toFixed(3)}</td><td class="n">${num(r.post).toFixed(3)}</td>`
         + `<td class="n">${bp(num(r.move_bp), 1)}</td><td class="n">${bp(num(r.cum_bp), 1)}</td>`
-        + `<td class="n">${pct(num(r.p_cut))}</td><td class="n">${pct(num(r.p_hold))}</td><td class="n">${pct(num(r.p_hike))}</td></tr>`;
+        + `<td class="n">${pct(t.lo)}</td><td class="n">${pct(t.eq)}</td><td class="n">${pct(t.hi)}</td></tr>`;
     });
-    $("#f-table").innerHTML = h + "</tbody></table>";
+    $("#f-table").innerHTML = h + "</tbody></table>"
+      + `<p class="hint">「會議前／會議後隱含」是期貨給的平均預期，不是真的利率檔位；機率欄是和今天的目標區間比。</p>`;
+  }
+  // FedWatch 式矩陣：列 = 會議，欄 = 目標區間，格子 = 機率
+  function renderDistTable(rows, levels, dists, base) {
+    if (!rows.length) return;
+    const cols = [...levels].reverse();
+    let h = "<table class=\"dist\"><thead><tr><th>FOMC</th><th>隱含</th>"
+      + cols.map((k) => `<th class="${k === 0 ? "today" : ""}">${rangeLabel(base, k)}${k === 0 ? "<br><small>今天</small>" : ""}</th>`).join("") + "</tr></thead><tbody>";
+    rows.forEach((r, i) => {
+      const d = dists[i];
+      let best = 0, bk = 0; d.forEach((p, k) => { if (p > best) { best = p; bk = k; } });
+      h += `<tr><td>${r.meeting}</td><td class="n">${num(r.post).toFixed(2)}</td>` + cols.map((k) => {
+        const p = d.get(k) || 0;
+        if (p < 0.005) return `<td class="n zero">–</td>`;
+        const bg = rgba(css(k > 0 ? "--up" : k < 0 ? "--down" : "--muted"), (0.08 + 0.42 * p).toFixed(2));
+        return `<td class="n${k === bk ? " top" : ""}" style="background:${bg}">${(p * 100).toFixed(1)}%</td>`;
+      }).join("") + "</tr>";
+    });
+    $("#f-table").innerHTML = h + "</tbody></table>"
+      + `<p class="hint">每格是「這次會議開完後，目標區間在這一檔」的機率，一列加起來是 100%。粗體是最可能的一檔。期貨只給平均預期，每次會議假設只落在最接近的兩檔，越遠的會議越不準。</p>`;
   }
 
   // ---------- 啟動 ----------
@@ -442,6 +500,12 @@
       const b = e.target.closest("button"); if (!b) return;
       S[key] = b.dataset.v; $(sel).querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); render();
     });
+  }
+  function syncThemeBtn() {
+    const b = $("#theme"), d = isDark();
+    b.textContent = d ? "☀" : "☾";
+    b.title = d ? "切換到亮色模式" : "切換到暗色模式";
+    b.setAttribute("aria-label", b.title);
   }
   function renderAll() { renderTiles(); renderYields(); renderFed(); }
 
@@ -456,7 +520,14 @@
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
     renderAll();
-    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) { syncThemeBtn(); renderAll(); } });
+    $("#theme").addEventListener("click", () => {
+      const t = isDark() ? "light" : "dark";
+      document.documentElement.dataset.theme = t;
+      try { localStorage.setItem("theme", t); } catch {}
+      syncThemeBtn(); renderAll();
+    });
+    syncThemeBtn();
   }
   main();
 })();
