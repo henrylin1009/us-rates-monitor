@@ -13,7 +13,7 @@
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], spagCmp: ["1W", "1M"],
+    pathCmp: ["1W", "1M"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null,
   };
 
   // ---------- 小工具 ----------
@@ -243,9 +243,41 @@
     heat: "日期 × 期限的熱力圖，看整條曲線長期怎麼演變。空白是財政部還沒發行那個期限的時候：2 個月期從 2018/10 開始，4 個月期從 2022/10 開始。",
     vsfed: "2y 殖利率對比 ZQ 隱含的 12 個月後政策利率。2y 大致反映 Fed 預期，兩條線的差距可以想成期限溢酬加雜訊。",
   };
-  let curveTimer = null;
+  // ---------- 拖的日期拉桿 + 播放鍵 ----------
+  // dates：可以拉的日期（最後一個是今天）；i = null 代表今天；onChange(i) 負責重畫圖
+  const timers = {};
+  function scrubber(el, key, dates, i, onChange, note) {
+    clearInterval(timers[key]); timers[key] = null;
+    const n = dates.length;
+    el.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="播放">▶</button>`
+      + `<input type="range" min="0" max="${n - 1}" step="1" aria-label="拖動日期">`
+      + `<span class="scrub-date num"></span><button type="button" class="reset">回到今天</button></div>`
+      + `<p class="hint">${note || "拖動拉桿看一路怎麼變過來，或按 ▶ 自動播放。"}</p>`;
+    const range = el.querySelector("input"), dateEl = el.querySelector(".scrub-date"), play = el.querySelector(".play"), reset = el.querySelector(".reset");
+    let cur = null;
+    const set = (j) => {
+      cur = j == null || j >= n - 1 ? null : j;
+      range.value = cur == null ? n - 1 : cur;
+      dateEl.textContent = cur == null ? dates[n - 1] + "（今天）" : dates[cur];
+      reset.hidden = cur == null;
+      onChange(cur);
+    };
+    const stop = () => { clearInterval(timers[key]); timers[key] = null; play.textContent = "▶"; play.setAttribute("aria-label", "播放"); };
+    range.oninput = () => { stop(); set(+range.value); };
+    reset.onclick = () => { stop(); set(null); };
+    play.onclick = () => {
+      if (timers[key]) return stop();
+      let j = cur == null ? 0 : cur;
+      const step = Math.max(1, Math.round(n / 500)), ms = Math.min(400, Math.max(40, 20000 / (n / step)));  // 整段大約 20 秒播完
+      play.textContent = "❚❚"; play.setAttribute("aria-label", "暫停");
+      set(j);
+      timers[key] = setInterval(() => { j = Math.min(n - 1, j + step); set(j); if (j >= n - 1) stop(); }, ms);
+    };
+    set(i);
+  }
+
   function renderYields() {
-    clearInterval(curveTimer); curveTimer = null;
+    clearInterval(timers.y); $("#y-scrub").innerHTML = "";
     const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
     if (!D.yields.length) return empty(id, "還沒有殖利率資料。第一次請在 GitHub Actions 手動執行，勾選「補齊歷史資料」。");
     clearEmpty(id);
@@ -272,13 +304,6 @@
       inp.onchange = () => { S.curveCustom = inp.value; rr(); }; lab.appendChild(inp); ctl.append(lab);
 
       // 拉桿：拖著看曲線一路怎麼變；拖動時今天的曲線變淡當參考
-      const tb = $("#y-table");
-      tb.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="播放">▶</button>`
-        + `<input type="range" min="0" max="${Y.length - 1}" step="1" aria-label="拖動日期">`
-        + `<span class="scrub-date num"></span><button type="button" class="reset">回到今天</button></div>`
-        + `<p class="hint">拖動拉桿看曲線怎麼一路變過來，或按 ▶ 自動播放。</p>`;
-      const range = tb.querySelector("input"), dateEl = tb.querySelector(".scrub-date"), play = tb.querySelector(".play"), reset = tb.querySelector(".reset");
-      range.value = S.curveScrub == null ? Y.length - 1 : S.curveScrub;
       let lo = Infinity, hi = -Infinity;
       Y.forEach((r) => TENORS.forEach((t) => { const x = num(r[t]); if (x != null) { lo = Math.min(lo, x); hi = Math.max(hi, x); } }));
       const yr = [Math.floor(lo * 2) / 2 - 0.25, Math.ceil(hi * 2) / 2 + 0.25];
@@ -286,38 +311,20 @@
         x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers", opacity: op,
         line: { width: w, color: c, dash }, marker: { size: w > 2 ? 6 : 4 }, hovertemplate: "%{y:.2f}%", connectgaps: true,
       });
-      const draw = () => {
-        const i = S.curveScrub, scrub = i != null && i < Y.length - 1;
+      const draw = (i) => {
+        S.curveScrub = i;
         let tr;
-        if (scrub) {
-          const r = Y[i];
-          tr = [curve("今天 " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(r.date, r, 2.8, P[0], "solid")];
-        } else {
+        if (i != null) tr = [curve("今天 " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")];
+        else {
           const snaps = [["今天 " + last.date, last, 2.6, P[0], "solid"]];
           S.curveCmp.forEach((k, j) => { const r = atOrBefore(Y, "date", shiftDays(last.date, -cmpDays[k])); if (r) snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(j + 1) % P.length], "dot"]); });
           if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) snaps.push([`自選 ${r.date}`, r, 1.6, P[4], "dash"]); }
           tr = snaps.map((x) => curve(...x));
         }
-        dateEl.textContent = scrub ? Y[i].date : last.date + "（今天）";
-        reset.hidden = !scrub;
         plot(id, tr, baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
-          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(scrub ? { range: yr } : {}) } }));
+          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) } }));
       };
-      const stop = () => { clearInterval(curveTimer); curveTimer = null; play.textContent = "▶"; play.setAttribute("aria-label", "播放"); };
-      range.oninput = () => { if (curveTimer) stop(); S.curveScrub = +range.value; draw(); };
-      reset.onclick = () => { stop(); S.curveScrub = null; range.value = Y.length - 1; draw(); };
-      play.onclick = () => {
-        if (curveTimer) return stop();
-        if (S.curveScrub == null || S.curveScrub >= Y.length - 1) S.curveScrub = 0;
-        const step = Math.max(1, Math.round(Y.length / 500));  // 整段大約 20 秒播完
-        play.textContent = "❚❚"; play.setAttribute("aria-label", "暫停");
-        curveTimer = setInterval(() => {
-          S.curveScrub = Math.min(Y.length - 1, S.curveScrub + step);
-          range.value = S.curveScrub; draw();
-          if (S.curveScrub >= Y.length - 1) stop();
-        }, 40);
-      };
-      draw();
+      scrubber($("#y-scrub"), "y", Y.map((r) => r.date), S.curveScrub, draw, "拖動拉桿看曲線怎麼一路變過來，或按 ▶ 自動播放。拖動時今天的曲線會變淡留著當參考。");
     }
 
     if (v === "spread") {
@@ -390,6 +397,7 @@
   function nearestAsof(list, iso) { let ans = null; for (const a of list) { if (a <= iso) ans = a; else break; } return ans; }
 
   function renderFed() {
+    clearInterval(timers.f); $("#f-scrub").innerHTML = "";
     const id = "c-fed", ctl = $("#f-controls"); ctl.innerHTML = ""; $("#f-hint").textContent = F_HINT[S.fView]; $("#f-table").innerHTML = "";
     const A = asofs();
     if (!A.length) return empty(id, "還沒有 Fed 定價資料（ZQ 期貨要先抓到才算得出來）。");
@@ -403,21 +411,39 @@
       if (rows.length) { x.push(shiftDays(rows[rows.length - 1].meeting, 45)); y.push(num(rows[rows.length - 1].post)); }
       return { x, y };
     };
+    // 拉桿用：y 軸固定在所有日期的範圍，拖的時候才不會跳
+    const fedRange = () => {
+      let lo = Infinity, hi = -Infinity;
+      D.path.forEach((r) => { const x = num(r.post); lo = Math.min(lo, x); hi = Math.max(hi, x); });
+      D.effr.filter((r) => r.date >= A[0]).forEach((r) => { const x = num(r.effr); lo = Math.min(lo, x); hi = Math.max(hi, x); });
+      return [lo - 0.1, hi + 0.1];
+    };
+    const fedNote = `拖動拉桿看那一天市場預期的路徑，或按 ▶ 自動播放；今天的路徑會變淡留著當參考。Fed 定價從 ${A[0]} 開始每天累積，所以拉桿目前只能拉回那天，之後會越來越長。`;
 
     if (v === "path") {
       ctl.append(chips("比較", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
-      const snaps = [[last, P[0], 2.6, "solid"]];
-      S.pathCmp.forEach((k, i) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(i + 1) % P.length], 1.6, "dot"]); });
-      const tr = snaps.map(([a, c, w, dash]) => {
+      const pathTrace = (a, c, w, dash, op = 1) => {
         const rows = pathOn(a), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
         return { x: [a, ...rows.map((r) => r.meeting)], y: [e0, ...rows.map((r) => num(r.post))], customdata: [[0, 0], ...rows.map((r) => [num(r.cum_bp), num(r.move_bp)])],
-          name: (a === last ? "今天 " : "") + a, type: "scatter", mode: "lines+markers", line: { color: c, width: w, dash, shape: "hv" },
+          name: (a === last ? "今天 " : "") + a, type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
           marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}%（累積 %{customdata[0]:+.1f}bp，這次 %{customdata[1]:+.1f}bp）" };
-      });
-      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
-        shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }],
-        annotations: [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] });
-      plot(id, tr, L);
+      };
+      const yr = fedRange();
+      const draw = (i) => {
+        S.pathScrub = i;
+        let tr;
+        if (i != null) tr = [pathTrace(last, css("--muted"), 1.6, "solid", 0.45), pathTrace(A[i], P[0], 2.6, "solid")];
+        else {
+          const snaps = [[last, P[0], 2.6, "solid"]];
+          S.pathCmp.forEach((k, j) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(j + 1) % P.length], 1.6, "dot"]); });
+          tr = snaps.map((x) => pathTrace(...x));
+        }
+        const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) },
+          shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }],
+          annotations: [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] });
+        plot(id, tr, L);
+      };
+      scrubber($("#f-scrub"), "f", A, S.pathScrub, draw, fedNote);
       renderTable(pathOn(last));
     }
 
@@ -454,18 +480,27 @@
       const lines = [], missing = [];
       S.spagCmp.forEach((k) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); a && a !== last ? lines.push([k, a]) : missing.push(cmpLabel[k]); });
       const start = shiftDays(last, -Math.max(92, ...S.spagCmp.map((k) => cmpDays[k] + 31)));
-      const tr = [];
-      lines.forEach(([k, a], i) => {
-        const e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
-        tr.push({ x, y, name: `${cmpLabel[k]}（${a}）的預期`, type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][i % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}的預期 %{y:.2f}%<extra></extra>` });
-      });
-      const ef = D.effr.filter((r) => r.date >= start);
-      tr.push({ x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR 實際", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
-      const lp = stepXY(pathOn(last), last, effrNow);
-      tr.push({ x: lp.x, y: lp.y, name: "今天的預期", type: "scatter", mode: "lines", line: { color: css("--up"), width: 2.6, shape: "hv" }, hovertemplate: "今天預期 %{y:.2f}%<extra></extra>" });
-      plot(id, tr, baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
-        shapes: [{ type: "line", x0: last, x1: last, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }],
-        annotations: [{ x: last, yref: "paper", y: 1, text: "今天", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
+      const ef = D.effr.filter((r) => r.date >= start), lp = stepXY(pathOn(last), last, effrNow), yr = fedRange();
+      const draw = (i) => {
+        S.spagScrub = i;
+        const tr = [], scrub = i != null, mark = scrub ? A[i] : last;
+        if (scrub) {
+          const a = A[i], e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
+          tr.push({ x, y, name: `${a} 的預期`, type: "scatter", mode: "lines", line: { color: P[0], width: 2.6, shape: "hv" }, hovertemplate: `${a} 預期 %{y:.2f}%<extra></extra>` });
+        } else lines.forEach(([k, a], j) => {
+          const e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
+          tr.push({ x, y, name: `${cmpLabel[k]}（${a}）的預期`, type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][j % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}的預期 %{y:.2f}%<extra></extra>` });
+        });
+        const efS = scrub ? ef.filter((r) => r.date <= mark) : ef;  // 拉回過去時，EFFR 只畫到那天
+        tr.push({ x: efS.map((r) => r.date), y: efS.map((r) => num(r.effr)), name: "EFFR 實際", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
+        tr.push({ x: lp.x, y: lp.y, name: "今天的預期", type: "scatter", mode: "lines", opacity: scrub ? 0.45 : 1,
+          line: { color: scrub ? css("--muted") : css("--up"), width: scrub ? 1.6 : 2.6, shape: "hv" }, hovertemplate: "今天預期 %{y:.2f}%<extra></extra>" });
+        plot(id, tr, baseLayout({ hovermode: "closest", xaxis: { ...baseLayout().xaxis, range: [start, lp.x[lp.x.length - 1]] },
+          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(scrub ? { range: yr } : {}) },
+          shapes: [{ type: "line", x0: mark, x1: mark, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }],
+          annotations: scrub ? [] : [{ x: mark, yref: "paper", y: 1, text: "今天", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
+      };
+      scrubber($("#f-scrub"), "f", A, S.spagScrub, draw, fedNote);
       if (missing.length) { const n = document.createElement("span"); n.textContent = `（${missing.join("、")}還沒有資料，Fed 定價從 ${A[0]} 開始累積）`; ctl.append(n); }
     }
   }
