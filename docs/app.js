@@ -13,7 +13,7 @@
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], spagRange: "6M", spagEvery: 5,
+    pathCmp: ["1W", "1M"], spagCmp: ["1W", "1M"],
   };
 
   // ---------- 小工具 ----------
@@ -340,7 +340,7 @@
     path: "每次 FOMC 之後的隱含政策利率。和一週前、一個月前比，看市場這段時間把預期改了多少。",
     probs: "每次 FOMC 開完之後，政策利率落在各個區間的機率（FedWatch 畫法）。基準永遠是今天的目標區間：灰色 = 和今天一樣，橘色越深 = 比今天高越多，綠色越深 = 比今天低越多。",
     cum: "相對現在 EFFR，市場累積 price 了幾 bp。每天一個點，看定價越來越鷹還是越來越鴿。",
-    spag: "實線是 EFFR 實際走過的路；每條淡線是某一天市場預期的未來路徑。淡線一直在改方向，就是市場一直在修正預期。",
+    spag: "黑線是 EFFR 實際走過的路，橘線是今天市場預期的未來路徑；虛線是過去某一天的預期。和今天差越多，代表市場這段時間把預期改了越多。",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
   const pathOn = (a) => D.path.filter((r) => r.asof === a);
@@ -407,28 +407,23 @@
     }
 
     if (v === "spag") {
-      ctl.append(rangeChips("spagRange", rr),
-        chips("每隔", [[1, "1 天"], [5, "1 週"], [21, "1 個月"]], S.spagEvery, false, (x) => { S.spagEvery = x; rr(); }));
-      const start = shiftDays(last, -RANGES[S.spagRange]);
-      const sel = A.filter((a) => a >= start);
-      const picked = sel.filter((_, i) => (sel.length - 1 - i) % S.spagEvery === 0);
-      const g = css("--ghost"), tr = [];
-      picked.forEach((a, i) => {
-        if (a === last) return;
-        const rows = pathOn(a), e = num((atOrBefore(D.effr, "date", a) || {}).effr);
-        const { x, y } = stepXY(rows, a, e);
-        const alpha = 0.12 + 0.45 * (i / Math.max(1, picked.length - 1));
-        tr.push({ x, y, type: "scatter", mode: "lines", line: { color: `rgba(${g},${alpha.toFixed(2)})`, width: 1, shape: "hv" }, showlegend: false, hovertemplate: `${a} 的預期：%{y:.2f}%<extra></extra>` });
+      ctl.append(chips("比較", ["1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.spagCmp, true, rr));
+      const lines = [], missing = [];
+      S.spagCmp.forEach((k) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); a && a !== last ? lines.push([k, a]) : missing.push(cmpLabel[k]); });
+      const start = shiftDays(last, -Math.max(92, ...S.spagCmp.map((k) => cmpDays[k] + 31)));
+      const tr = [];
+      lines.forEach(([k, a], i) => {
+        const e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
+        tr.push({ x, y, name: `${cmpLabel[k]}（${a}）的預期`, type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][i % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}的預期 %{y:.2f}%<extra></extra>` });
       });
       const ef = D.effr.filter((r) => r.date >= start);
       tr.push({ x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR 實際", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
       const lp = stepXY(pathOn(last), last, effrNow);
       tr.push({ x: lp.x, y: lp.y, name: "今天的預期", type: "scatter", mode: "lines", line: { color: css("--up"), width: 2.6, shape: "hv" }, hovertemplate: "今天預期 %{y:.2f}%<extra></extra>" });
-      tr.push({ x: [], y: [], name: "過去的預期", type: "scatter", mode: "lines", line: { color: `rgba(${g},0.5)`, width: 1 } });
       plot(id, tr, baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
         shapes: [{ type: "line", x0: last, x1: last, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }],
         annotations: [{ x: last, yref: "paper", y: 1, text: "今天", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
-      if (picked.length < 3) { const n = document.createElement("span"); n.textContent = "（淡線要等資料累積幾週才會變多）"; ctl.append(n); }
+      if (missing.length) { const n = document.createElement("span"); n.textContent = `（${missing.join("、")}還沒有資料，Fed 定價從 ${A[0]} 開始累積）`; ctl.append(n); }
     }
   }
 
