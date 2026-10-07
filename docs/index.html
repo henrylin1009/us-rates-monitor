@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>US Rates Monitor</title>
 <meta name="description" content="每日美國利率市場：殖利率曲線與從 ZQ 期貨自算的 Fed 定價">
+<script>try { const t = localStorage.getItem("theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,7 +19,10 @@
       <h1>US Rates Monitor</h1>
       <p class="sub">美國利率市場每日紀錄 · 殖利率曲線與自算 Fed 定價</p>
     </div>
-    <div class="asof" id="asof">載入中…</div>
+    <div class="top-right">
+      <div class="asof" id="asof">載入中…</div>
+      <button class="theme-btn" id="theme" type="button" title="切換暗色／亮色模式" aria-label="切換暗色／亮色模式">☾</button>
+    </div>
   </div>
 </header>
 
@@ -42,6 +46,7 @@
     </div>
     <div class="controls" id="y-controls"></div>
     <div class="chart" id="c-yields"></div>
+    <div id="y-scrub"></div>
     <div class="table-wrap" id="y-table"></div>
   </section>
 
@@ -60,6 +65,7 @@
     </div>
     <div class="controls" id="f-controls"></div>
     <div class="chart" id="c-fed"></div>
+    <div id="f-scrub"></div>
     <div class="table-wrap" id="f-table"></div>
   </section>
 
@@ -71,7 +77,7 @@
         <li>會議月份：月平均 =（會議前天數 × 舊利率 + 會議後天數 × 新利率）÷ 當月天數，解出會議後利率。</li>
         <li>會議後剩不到 7 天時改用下個月合約，因為整個月都是會議後利率，比較準。</li>
         <li>多次會議用接力：上一次會議後的利率當下一次的起點，第一次從當天 EFFR 開始。</li>
-        <li>機率 = 隱含變動 ÷ 25bp，拆成最接近的兩檔結果。期貨只告訴我們平均預期，分佈形狀是假設；價格也含少量風險溢酬。</li>
+        <li>每次會議的隱含變動 ÷ 25bp，拆成最接近的兩檔結果；再從今天的目標區間一路接下去，算出每次會議後落在各個區間的機率（和 CME FedWatch 同一種做法）。期貨只告訴我們平均預期，分佈形狀是假設；價格也含少量風險溢酬。</li>
         <li>ZQ 報價來自 Yahoo Finance（非官方、有延遲），可以和 CME FedWatch 對照。</li>
       </ul>
     </details>
