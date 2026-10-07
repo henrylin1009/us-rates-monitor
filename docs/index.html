@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -26,9 +26,50 @@
   </div>
 </header>
 
+<nav class="tabs" aria-label="Pages">
+  <div class="wrap">
+    <a href="#overview" data-page="overview">Overview</a>
+    <a href="#rates" data-page="rates">Rates</a>
+    <a href="#events" data-page="events">Events</a>
+  </div>
+</nav>
 <main class="wrap">
-  <section class="tiles" id="tiles" aria-label="Today's summary"></section>
+<div class="page" id="pg-overview" data-page="overview">
+  <section class="panel next" id="p-next">
+    <div class="panel-head">
+      <h2>Next 2 weeks</h2>
+      <a class="more" href="#events">All events →</a>
+    </div>
+    <div class="next-list" id="next"></div>
+  </section>
+  <section class="panel hero" id="p-hero">
+    <div class="panel-head">
+      <div class="hero-title">
+        <h2>Rates</h2>
+        <span class="badge" id="hero-regime"></span>
+        <p class="takeaway" id="hero-take"></p>
+      </div>
+      <a class="more" href="#rates">Details →</a>
+    </div>
+    <div class="hero-grid">
+      <div class="hero-col">
+        <h3>2y and 10y, last 3 months</h3>
+        <div class="mini" id="c-mini"></div>
+      </div>
+      <div class="hero-col">
+        <h3>Key numbers</h3>
+        <div id="k-table"></div>
+      </div>
+      <div class="hero-col">
+        <h3>Fed priced <span class="muted">cumulative bp, next 4 FOMC</span></h3>
+        <div class="mini" id="c-fedbars"></div>
+        <div class="hero-fed" id="hero-fed"></div>
+      </div>
+    </div>
+  </section>
+</div>
 
+<div class="page" id="pg-rates" data-page="rates">
   <section class="panel" id="p-yields">
     <div class="panel-head">
       <div>
@@ -36,8 +77,8 @@
         <p class="hint" id="y-hint"></p>
       </div>
       <div class="seg" role="tablist" id="y-views">
-        <button data-v="tenor" class="on">Trend</button>
-        <button data-v="curve">Curve</button>
+        <button data-v="curve" class="on">Curve</button>
+        <button data-v="tenor">Trend</button>
         <button data-v="spread">Spreads</button>
         <button data-v="change">Change</button>
         <button data-v="heat">Heatmap</button>
@@ -72,17 +113,15 @@
     <div class="table-wrap" id="f-table"></div>
   </section>
 
-  <section class="panel" id="p-cal">
+  <section class="panel" id="p-fomc">
     <div class="panel-head">
       <div>
-        <h2>Calendar</h2>
-        <p class="hint">FOMC meetings, minutes and the data releases that move rates, month by month. FOMC rows show what futures price for that meeting; SEP marks meetings with new projections and the dot plot.</p>
+        <h2>FOMC surprises</h2>
+        <p class="hint">Each meeting's decision against what futures priced the day before. Surprise = decision − priced, in bp; positive = more hawkish than expected. The 2y column is that day's move.</p>
       </div>
-      <div class="seg"><button id="cal-all" type="button" class="on">Show all</button></div>
     </div>
-    <div class="cal" id="cal"></div>
+    <div class="table-wrap" id="fomc-table"></div>
   </section>
-
   <section class="notes">
     <details>
       <summary>How Fed pricing is computed</summary>
@@ -98,8 +137,23 @@
     </details>
     <p class="src">Data: U.S. Treasury Daily Par Yield Curve · New York Fed EFFR · CBOT ZQ via Yahoo Finance. Updated automatically by GitHub Actions after each trading day's close.<span id="updated"></span></p>
   </section>
+</div>
+
+<div class="page" id="pg-events" data-page="events">
+  <section class="panel" id="p-cal">
+    <div class="panel-head">
+      <div>
+        <h2>Calendar</h2>
+        <p class="hint">FOMC meetings, minutes and the data releases that move rates, month by month. FOMC rows show what futures price for that meeting; SEP marks meetings with new projections and the dot plot.</p>
+      </div>
+      <div class="seg"><button id="cal-all" type="button" class="on">Show all</button></div>
+    </div>
+    <div class="cal" id="cal"></div>
+  </section>
+
+</div>
 </main>
 
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
