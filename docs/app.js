@@ -3,7 +3,7 @@
   "use strict";
 
   const TENORS = ["1m", "2m", "3m", "4m", "6m", "1y", "2y", "3y", "5y", "7y", "10y", "20y", "30y"];
-  const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "全部": 1e6 };
+  const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [] };
   const S = {
     yView: "tenor", fView: "path",
@@ -27,7 +27,7 @@
   const fmtD = (s) => s; // ISO
   const shiftDays = (iso, k) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + k); return d.toISOString().slice(0, 10); };
   const cmpDays = { "1D": 1, "1W": 7, "1M": 30, "3M": 91, "1Y": 365 };
-  const cmpLabel = { "1D": "前一天", "1W": "一週前", "1M": "一個月前", "3M": "三個月前", "1Y": "一年前" };
+  const cmpLabel = { "1D": "1 day ago", "1W": "1 week ago", "1M": "1 month ago", "3M": "3 months ago", "1Y": "1 year ago" };
 
   function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/);
@@ -84,16 +84,16 @@
     });
     return wrap;
   }
-  const rangeChips = (key, after) => chips("期間", Object.keys(RANGES).map((r) => [r, r]), S[key], false, (v) => { S[key] = v; after(); });
+  const rangeChips = (key, after) => chips("Range", Object.keys(RANGES).map((r) => [r, r]), S[key], false, (v) => { S[key] = v; after(); });
 
   // ---------- 重要事件 ----------
   const EVT = {
     fomc: { glyph: "◆", name: "FOMC", symbol: "diamond" },
     cpi: { glyph: "●", name: "CPI", symbol: "circle" },
-    nfp: { glyph: "■", name: "非農", symbol: "square" },
+    nfp: { glyph: "■", name: "NFP", symbol: "square" },
     pce: { glyph: "▲", name: "PCE", symbol: "triangle-up" },
     ppi: { glyph: "▼", name: "PPI", symbol: "triangle-down" },
-    minutes: { glyph: "★", name: "會議紀要", symbol: "star" },
+    minutes: { glyph: "★", name: "Minutes", symbol: "star" },
   };
   const EVT_ORDER = ["fomc", "cpi", "nfp", "pce", "ppi", "minutes"];
   const LOOKAHEAD = 14; // 往後標幾天
@@ -106,7 +106,7 @@
     const after = D.effr.find((r) => r.date > date);
     if (!before || !after || before.target_high === "" || after.target_high === "") return null;
     const d = Math.round((num(after.target_high) - num(before.target_high)) * 100);
-    return d > 0 ? `升息 ${d}bp` : d < 0 ? `降息 ${-d}bp` : "不動";
+    return d > 0 ? `hike ${d}bp` : d < 0 ? `cut ${-d}bp` : "hold";
   }
   // 事件當天市場反應：和前一個交易日比
   const yIdx = {};
@@ -122,17 +122,17 @@
     return r;
   }
   function evtHover(e) {
-    let h = `<b>${e.label}</b>　${e.date}`;
-    if (e.type === "fomc") { const dec = fomcDecision(e.date); if (dec) h += `　${dec}`; }
+    let h = `<b>${e.label}</b>  ${e.date}`;
+    if (e.type === "fomc") { const dec = fomcDecision(e.date); if (dec) h += ` · ${dec}`; }
     const r = reaction(e.date);
     if (r) {
       h += `<br>2y ${bp(r.d2, 1)}bp · 10y ${bp(r.d10, 1)}bp · 2s10s ${bp(r.curve, 1)}bp`;
       if (r.regime) h += `<br>${r.regime}`;
-      if (r.fed != null) h += ` · 到年底定價 ${bp(r.fed, 1)}bp`;
-    } else if (e.date > lastYieldDate()) h += "<br>即將公布";
+      if (r.fed != null) h += ` · year-end pricing ${bp(r.fed, 1)}bp`;
+    } else if (e.date > lastYieldDate()) h += "<br>upcoming";
     return h;
   }
-  const eventsOn = () => !["5Y", "全部"].includes(S.range);
+  const eventsOn = () => !["5Y", "All"].includes(S.range);
   // 把事件加進時間序列圖：底部一排記號 + 未來事件虛線
   function addEvents(traces, layout, start) {
     if (!eventsOn() || !D.events.length) return;
@@ -147,7 +147,7 @@
       const colors = evs.map((e) => {
         if (t !== "fomc") return c;
         const dec = fomcDecision(e.date) || "";
-        return dec.startsWith("升") ? css("--up") : dec.startsWith("降") ? css("--down") : c;
+        return dec.startsWith("hike") ? css("--up") : dec.startsWith("cut") ? css("--down") : c;
       });
       traces.push({
         x: evs.map((e) => e.date), y: evs.map(() => y), yaxis: "y2", type: "scatter", mode: "markers", name: EVT[t].name,
@@ -168,8 +168,8 @@
     }
   }
   function eventChips(after) {
-    const w = chips("事件", EVT_ORDER.map((t) => [t, EVT[t].glyph + " " + EVT[t].name]), S.events, true, after);
-    if (!eventsOn()) { const n = document.createElement("span"); n.textContent = "（5Y／全部不顯示）"; n.style.alignSelf = "center"; w.appendChild(n); }
+    const w = chips("Events", EVT_ORDER.map((t) => [t, EVT[t].glyph + " " + EVT[t].name]), S.events, true, after);
+    if (!eventsOn()) { const n = document.createElement("span"); n.textContent = "(hidden for 5Y / All)"; n.style.alignSelf = "center"; w.appendChild(n); }
     return w;
   }
   // 最近事件反應表
@@ -182,15 +182,15 @@
     rows = rows.slice(0, 12);
     const next = D.events.filter((e) => S.events.includes(e.type) && e.date > last).slice(0, 3);
     const c = (x) => (x == null ? "" : x > 0.05 ? "up" : x < -0.05 ? "down" : "");
-    let h = `<div class="react-head"><h3>最近事件反應</h3><div class="chips">`
-      + `<button data-s="recent" class="${S.reactSort === "recent" ? "on" : ""}">最近</button>`
-      + `<button data-s="size" class="${S.reactSort === "size" ? "on" : ""}">2y 反應最大</button></div></div>`;
-    if (next.length) h += `<p class="hint">接下來：${next.map((e) => `<span class="badge">${e.date.slice(5).replace("-", "/")} ${e.label}</span>`).join(" ")}</p>`;
-    if (!rows.length) { el.innerHTML = h + `<p class="hint">選取的事件在這段資料裡還沒有。</p>`; }
+    let h = `<div class="react-head"><h3>Recent event reactions</h3><div class="chips">`
+      + `<button data-s="recent" class="${S.reactSort === "recent" ? "on" : ""}">Latest</button>`
+      + `<button data-s="size" class="${S.reactSort === "size" ? "on" : ""}">Largest 2y move</button></div></div>`;
+    if (next.length) h += `<p class="hint">Next: ${next.map((e) => `<span class="badge">${e.date.slice(5).replace("-", "/")} ${e.label}</span>`).join(" ")}</p>`;
+    if (!rows.length) { el.innerHTML = h + `<p class="hint">None of the selected events fall in this period yet.</p>`; }
     else {
-      h += "<table><thead><tr><th>日期</th><th>事件</th><th>2y</th><th>10y</th><th>30y</th><th>2s10s</th><th>型態</th><th>到年底定價</th></tr></thead><tbody>";
+      h += "<table><thead><tr><th>Date</th><th>Event</th><th>2y</th><th>10y</th><th>30y</th><th>2s10s</th><th>Regime</th><th>Year-end pricing</th></tr></thead><tbody>";
       rows.forEach(({ e, r }) => {
-        const lab = e.type === "fomc" ? `${e.label}${fomcDecision(e.date) ? "：" + fomcDecision(e.date) : ""}` : e.label;
+        const lab = e.type === "fomc" ? `${e.label}${fomcDecision(e.date) ? ": " + fomcDecision(e.date) : ""}` : e.label;
         h += `<tr><td class="n">${e.date}</td><td>${lab}</td>`
           + [r.d2, r.d10, r.d30, r.curve].map((x) => `<td class="n ${c(x)}">${bp(x, 1)}</td>`).join("")
           + `<td>${r.regime}</td><td class="n ${c(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
@@ -203,7 +203,7 @@
   // ---------- 摘要 ----------
   function regime(d2, d10) {
     const slope = d10 - d2, level = (d2 + d10) / 2;
-    if (Math.abs(slope) < 0.5) return level > 0 ? "平行上移" : level < 0 ? "平行下移" : "持平";
+    if (Math.abs(slope) < 0.5) return level > 0 ? "Parallel up" : level < 0 ? "Parallel down" : "Unchanged";
     if (slope > 0) return level >= 0 ? "Bear steepening" : "Bull steepening";
     return level >= 0 ? "Bear flattening" : "Bull flattening";
   }
@@ -216,32 +216,32 @@
     let h = "";
     for (const t of ["2y", "10y", "30y"]) { const c = ch(t); h += tile(t.toUpperCase(), num(a[t]).toFixed(2) + "%", `<span class="${cls(c)}">${bp(c)}bp</span>`); }
     const s = (num(a["10y"]) - num(a["2y"])) * 100, sp = (num(b["10y"]) - num(b["2y"])) * 100;
-    h += tile("2s10s", bp(s) + "bp", `<span class="${cls(s - sp)}">${bp(s - sp)}bp</span>　<span class="badge">${regime(ch("2y"), ch("10y"))}</span>`, "wide");
+    h += tile("2s10s", bp(s) + "bp", `<span class="${cls(s - sp)}">${bp(s - sp)}bp</span>  <span class="badge">${regime(ch("2y"), ch("10y"))}</span>`, "wide");
     const e = D.effr[D.effr.length - 1];
-    if (e) h += tile("EFFR", num(e.effr).toFixed(2) + "%", `目標區間 ${num(e.target_low).toFixed(2)}–${num(e.target_high).toFixed(2)}`);
+    if (e) h += tile("EFFR", num(e.effr).toFixed(2) + "%", `Target ${num(e.target_low).toFixed(2)}–${num(e.target_high).toFixed(2)}`);
     const f = D.summ[D.summ.length - 1];
     if (f) {
       const ph = num(f.next_p_hike), pc = num(f.next_p_cut);
-      const lead = ph >= pc ? `升息 ${pct(ph)}` : `降息 ${pct(pc)}`;
-      h += tile(`下次 FOMC ${f.next_meeting.slice(5).replace("-", "/")}`, bp(num(f.next_move_bp), 1) + "bp", lead);
-      h += tile("到年底累積", bp(num(f.cum_yearend_bp), 0) + "bp", `12 個月後 ${bp(num(f.cum_12m_bp), 0)}bp`);
+      const lead = ph >= pc ? `Hike ${pct(ph)}` : `Cut ${pct(pc)}`;
+      h += tile(`Next FOMC ${f.next_meeting.slice(5).replace("-", "/")}`, bp(num(f.next_move_bp), 1) + "bp", lead);
+      h += tile("Priced by year-end", bp(num(f.cum_yearend_bp), 0) + "bp", `12 months out ${bp(num(f.cum_12m_bp), 0)}bp`);
     }
     const nx = D.events.filter((e) => ["fomc", "cpi", "nfp", "pce"].includes(e.type) && e.date > a.date).slice(0, 2);
     if (nx.length) {
       const days = (iso) => Math.round((new Date(iso) - new Date(a.date)) / 864e5);
-      h += tile("接下來", `${nx[0].date.slice(5).replace("-", "/")} ${EVT[nx[0].type].name}`, nx.map((e, i) => (i ? `${e.date.slice(5).replace("-", "/")} ${EVT[e.type].name}` : `${days(e.date)} 天後`)).join(" · "));
+      h += tile("Coming up", `${nx[0].date.slice(5).replace("-", "/")} ${EVT[nx[0].type].name}`, nx.map((e, i) => (i ? `${e.date.slice(5).replace("-", "/")} ${EVT[e.type].name}` : `in ${days(e.date)} days`)).join(" · "));
     }
     $("#tiles").innerHTML = h;
   }
 
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
-    tenor: "各期限殖利率的時間序列。底部記號是重要事件，滑鼠移上去看當天市場反應；右邊灰色區塊是接下來兩週的事件。",
-    curve: "整條曲線的形狀，和過去比較。x 軸照期限排，間距相等。下面的拉桿可以拖著看曲線一路怎麼變。",
-    spread: "期限利差。往上 = 變陡，往下 = 變平；低於 0 是倒掛。",
-    change: "各期限在這段期間漲跌幾 bp。看是短端還是長端帶動，判斷 bull/bear steepening 或 flattening。",
-    heat: "日期 × 期限的熱力圖，看整條曲線長期怎麼演變。空白是財政部還沒發行那個期限的時候：2 個月期從 2018/10 開始，4 個月期從 2022/10 開始。",
-    vsfed: "2y 殖利率對比 ZQ 隱含的 12 個月後政策利率。2y 大致反映 Fed 預期，兩條線的差距可以想成期限溢酬加雜訊。",
+    tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks.",
+    curve: "The shape of the whole curve compared with the past. Tenors are evenly spaced on the x-axis. Drag the slider below to watch the curve change over time.",
+    spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
+    change: "How many bp each tenor moved over the period. See whether the front or long end led, to tell bull/bear steepening from flattening.",
+    heat: "Date × tenor heatmap showing how the whole curve evolved. Blank cells are before Treasury issued that tenor: the 2-month bill started in Oct 2018 and the 4-month bill in Oct 2022.",
+    vsfed: "The 2y yield vs the policy rate ZQ implies 12 months out. The 2y mostly reflects Fed expectations, so the gap is roughly term premium plus noise.",
   };
   // ---------- 拖的日期拉桿 + 播放鍵 ----------
   // dates：可以拉的日期（最後一個是今天）；i = null 代表今天；onChange(i) 負責重畫圖
@@ -249,27 +249,27 @@
   function scrubber(el, key, dates, i, onChange, note) {
     clearInterval(timers[key]); timers[key] = null;
     const n = dates.length;
-    el.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="播放">▶</button>`
-      + `<input type="range" min="0" max="${n - 1}" step="1" aria-label="拖動日期">`
-      + `<span class="scrub-date num"></span><button type="button" class="reset">回到今天</button></div>`
-      + `<p class="hint">${note || "拖動拉桿看一路怎麼變過來，或按 ▶ 自動播放。"}</p>`;
+    el.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="Play">▶</button>`
+      + `<input type="range" min="0" max="${n - 1}" step="1" aria-label="Drag date">`
+      + `<span class="scrub-date num"></span><button type="button" class="reset">Back to today</button></div>`
+      + `<p class="hint">${note || "Drag the slider to see how things changed, or press ▶ to play."}</p>`;
     const range = el.querySelector("input"), dateEl = el.querySelector(".scrub-date"), play = el.querySelector(".play"), reset = el.querySelector(".reset");
     let cur = null;
     const set = (j) => {
       cur = j == null || j >= n - 1 ? null : j;
       range.value = cur == null ? n - 1 : cur;
-      dateEl.textContent = cur == null ? dates[n - 1] + "（今天）" : dates[cur];
+      dateEl.textContent = cur == null ? dates[n - 1] + " (today)" : dates[cur];
       reset.hidden = cur == null;
       onChange(cur);
     };
-    const stop = () => { clearInterval(timers[key]); timers[key] = null; play.textContent = "▶"; play.setAttribute("aria-label", "播放"); };
+    const stop = () => { clearInterval(timers[key]); timers[key] = null; play.textContent = "▶"; play.setAttribute("aria-label", "Play"); };
     range.oninput = () => { stop(); set(+range.value); };
     reset.onclick = () => { stop(); set(null); };
     play.onclick = () => {
       if (timers[key]) return stop();
       let j = cur == null ? 0 : cur;
       const step = Math.max(1, Math.round(n / 500)), ms = Math.min(400, Math.max(40, 20000 / (n / step)));  // 整段大約 20 秒播完
-      play.textContent = "❚❚"; play.setAttribute("aria-label", "暫停");
+      play.textContent = "❚❚"; play.setAttribute("aria-label", "Pause");
       set(j);
       timers[key] = setInterval(() => { j = Math.min(n - 1, j + step); set(j); if (j >= n - 1) stop(); }, ms);
     };
@@ -279,12 +279,12 @@
   function renderYields() {
     clearInterval(timers.y); $("#y-scrub").innerHTML = "";
     const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
-    if (!D.yields.length) return empty(id, "還沒有殖利率資料。第一次請在 GitHub Actions 手動執行，勾選「補齊歷史資料」。");
+    if (!D.yields.length) return empty(id, "No yield data yet. For the first run, trigger the GitHub Action manually with backfill checked.");
     clearEmpty(id);
     const P = palette(), v = S.yView, rr = () => renderYields();
 
     if (v === "tenor") {
-      ctl.append(chips("期限", TENORS.map((t) => [t, t]), S.tenors, true, rr), rangeChips("range", rr), eventChips(rr));
+      ctl.append(chips("Tenors", TENORS.map((t) => [t, t]), S.tenors, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = TENORS.filter((t) => S.tenors.includes(t)).map((t, i) => ({
         x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
@@ -298,8 +298,8 @@
 
     if (v === "curve") {
       const Y = D.yields, last = Y[Y.length - 1];
-      ctl.append(chips("比較", Object.keys(cmpDays).map((k) => [k, cmpLabel[k]]), S.curveCmp, true, rr));
-      const lab = document.createElement("label"); lab.textContent = "自選日期 ";
+      ctl.append(chips("Compare", Object.keys(cmpDays).map((k) => [k, cmpLabel[k]]), S.curveCmp, true, rr));
+      const lab = document.createElement("label"); lab.textContent = "Custom date ";
       const inp = document.createElement("input"); inp.type = "date"; inp.value = S.curveCustom; inp.max = last.date; inp.min = Y[0].date;
       inp.onchange = () => { S.curveCustom = inp.value; rr(); }; lab.appendChild(inp); ctl.append(lab);
 
@@ -314,22 +314,22 @@
       const draw = (i) => {
         S.curveScrub = i;
         let tr;
-        if (i != null) tr = [curve("今天 " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")];
+        if (i != null) tr = [curve("Today " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")];
         else {
-          const snaps = [["今天 " + last.date, last, 2.6, P[0], "solid"]];
+          const snaps = [["Today " + last.date, last, 2.6, P[0], "solid"]];
           S.curveCmp.forEach((k, j) => { const r = atOrBefore(Y, "date", shiftDays(last.date, -cmpDays[k])); if (r) snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(j + 1) % P.length], "dot"]); });
-          if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) snaps.push([`自選 ${r.date}`, r, 1.6, P[4], "dash"]); }
+          if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) snaps.push([`Custom ${r.date}`, r, 1.6, P[4], "dash"]); }
           tr = snaps.map((x) => curve(...x));
         }
         plot(id, tr, baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
           yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) } }));
       };
-      scrubber($("#y-scrub"), "y", Y.map((r) => r.date), S.curveScrub, draw, "拖動拉桿看曲線怎麼一路變過來，或按 ▶ 自動播放。拖動時今天的曲線會變淡留著當參考。");
+      scrubber($("#y-scrub"), "y", Y.map((r) => r.date), S.curveScrub, draw, "Drag the slider to watch the curve change over time, or press ▶ to play. Today's curve stays faint as a reference.");
     }
 
     if (v === "spread") {
       const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"] };
-      ctl.append(chips("利差", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr), eventChips(rr));
+      ctl.append(chips("Spreads", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = Object.keys(defs).filter((k) => S.spreads.includes(k)).map((k, i) => ({
         x: rows.map((r) => r.date), y: rows.map((r) => { const a = num(r[defs[k][0]]), b = num(r[defs[k][1]]); return a == null || b == null ? null : (b - a) * 100; }),
@@ -342,13 +342,13 @@
     }
 
     if (v === "change") {
-      ctl.append(chips("期間", ["1D", "1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.changeWin, false, (x) => { S.changeWin = x; rr(); }));
+      ctl.append(chips("Period", ["1D", "1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.changeWin, false, (x) => { S.changeWin = x; rr(); }));
       const a = D.yields[D.yields.length - 1];
       const b = S.changeWin === "1D" ? D.yields[D.yields.length - 2] : atOrBefore(D.yields, "date", shiftDays(a.date, -cmpDays[S.changeWin]));
       const ys = TENORS.map((t) => (num(a[t]) == null || num(b[t]) == null ? null : +((num(a[t]) - num(b[t])) * 100).toFixed(1)));
       const up = css("--up"), dn = css("--down");
       const d2 = (num(a["2y"]) - num(b["2y"])) * 100, d10 = (num(a["10y"]) - num(b["10y"])) * 100;
-      const note = document.createElement("span"); note.innerHTML = `${b.date} → ${a.date}　<span class="badge">${regime(d2, d10)}</span>　2s10s ${bp(d10 - d2, 1)}bp`;
+      const note = document.createElement("span"); note.innerHTML = `${b.date} → ${a.date}  <span class="badge">${regime(d2, d10)}</span>  2s10s ${bp(d10 - d2, 1)}bp`;
       ctl.append(note);
       plot(id, [{
         x: TENORS, y: ys, type: "bar", marker: { color: ys.map((x) => (x >= 0 ? up : dn)) },
@@ -376,21 +376,21 @@
       const rows = inRange(D.yields, "date", S.range), start = rows.length ? rows[0].date : "";
       const ef = D.effr.filter((r) => r.date >= start), fs = D.summ.filter((r) => r.asof >= start && r.implied_12m !== "");
       const tr = [
-        { x: rows.map((r) => r.date), y: rows.map((r) => num(r["2y"])), name: "2y 殖利率", line: { color: P[0], width: 2 } },
-        { x: fs.map((r) => r.asof), y: fs.map((r) => num(r.implied_12m)), name: "ZQ 隱含 12 個月後", line: { color: P[1], width: 2 } },
+        { x: rows.map((r) => r.date), y: rows.map((r) => num(r["2y"])), name: "2y yield", line: { color: P[0], width: 2 } },
+        { x: fs.map((r) => r.asof), y: fs.map((r) => num(r.implied_12m)), name: "ZQ-implied 12m ahead", line: { color: P[1], width: 2 } },
         { x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR", line: { color: css("--muted"), width: 1.4, shape: "hv" } },
       ].map((t) => ({ ...t, type: "scatter", mode: "lines", hovertemplate: "%{y:.2f}%" }));
       plot(id, tr, baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
-      if (!fs.length) { const n = document.createElement("span"); n.textContent = "（Fed 定價的歷史從開始跑的那天累積起來）"; ctl.append(n); }
+      if (!fs.length) { const n = document.createElement("span"); n.textContent = "(Fed pricing history builds up from the day the pipeline started)"; ctl.append(n); }
     }
   }
 
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
-    path: "每次 FOMC 之後的隱含政策利率。和一週前、一個月前比，看市場這段時間把預期改了多少。",
-    probs: "每次 FOMC 開完之後，政策利率落在各個區間的機率（FedWatch 畫法）。基準永遠是今天的目標區間：灰色 = 和今天一樣，橘色越深 = 比今天高越多，綠色越深 = 比今天低越多。",
-    cum: "相對現在 EFFR，市場累積 price 了幾 bp。每天一個點，看定價越來越鷹還是越來越鴿。",
-    spag: "黑線是 EFFR 實際走過的路，橘線是今天市場預期的未來路徑；虛線是過去某一天的預期。和今天差越多，代表市場這段時間把預期改了越多。",
+    path: "The implied policy rate after each FOMC meeting. Compare with a week or a month ago to see how much the market has repriced.",
+    probs: "Probability of each target range after each FOMC meeting (FedWatch style). Always relative to today's range: grey = same as today, deeper orange = higher, deeper green = lower.",
+    cum: "Cumulative bp priced relative to today's EFFR, one point per day, to see whether pricing is getting more hawkish or dovish.",
+    spag: "The black line is the actual EFFR; the orange line is today's expected path; dotted lines are expectations from earlier dates. The bigger the gap, the more the market has repriced.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
   const pathOn = (a) => D.path.filter((r) => r.asof === a);
@@ -400,15 +400,15 @@
     clearInterval(timers.f); $("#f-scrub").innerHTML = "";
     const id = "c-fed", ctl = $("#f-controls"); ctl.innerHTML = ""; $("#f-hint").textContent = F_HINT[S.fView]; $("#f-table").innerHTML = "";
     const A = asofs();
-    if (!A.length) return empty(id, "還沒有 Fed 定價資料（ZQ 期貨要先抓到才算得出來）。");
+    if (!A.length) return empty(id, "No Fed pricing data yet (it needs ZQ futures prices first).");
     clearEmpty(id);
     const P = palette(), v = S.fView, rr = () => renderFed(), last = A[A.length - 1];
     // ZQ 報價來自 Yahoo，偶爾抓不到：標出 Fed 定價是哪一天的，落後殖利率 2 個交易日以上就提醒
     const behind = D.yields.filter((r) => r.date > last).length;
-    $("#f-asof").textContent = `資料日期 ${last}`;
+    $("#f-asof").textContent = `As of ${last}`;
     $("#f-asof").classList.toggle("warn", behind >= 2);
     $("#f-stale").hidden = behind < 2;
-    $("#f-stale").textContent = behind >= 2 ? `⚠ ZQ 期貨報價已經 ${behind} 個交易日沒更新（Yahoo 抓不到），這裡顯示的是 ${last} 的定價。` : "";
+    $("#f-stale").textContent = behind >= 2 ? `⚠ ZQ futures prices haven't updated for ${behind} trading days (Yahoo unavailable); showing pricing as of ${last}.` : "";
     const effrNow = num(D.summ[D.summ.length - 1].effr);
     const stepXY = (rows, startDate, startRate) => {
       // 階梯：從 asof 起，每次會議後換成新利率
@@ -424,15 +424,15 @@
       D.effr.filter((r) => r.date >= A[0]).forEach((r) => { const x = num(r.effr); lo = Math.min(lo, x); hi = Math.max(hi, x); });
       return [lo - 0.1, hi + 0.1];
     };
-    const fedNote = `拖動拉桿看那一天市場預期的路徑，或按 ▶ 自動播放；今天的路徑會變淡留著當參考。Fed 定價從 ${A[0]} 開始每天累積，所以拉桿目前只能拉回那天，之後會越來越長。`;
+    const fedNote = `Drag the slider to see the expected path as of that day, or press ▶ to play; today's path stays faint as a reference. Fed pricing history starts on ${A[0]}, so the slider only reaches back that far for now and will grow over time.`;
 
     if (v === "path") {
-      ctl.append(chips("比較", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
+      ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
       const pathTrace = (a, c, w, dash, op = 1) => {
         const rows = pathOn(a), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
         return { x: [a, ...rows.map((r) => r.meeting)], y: [e0, ...rows.map((r) => num(r.post))], customdata: [[0, 0], ...rows.map((r) => [num(r.cum_bp), num(r.move_bp)])],
-          name: (a === last ? "今天 " : "") + a, type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
-          marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}%（累積 %{customdata[0]:+.1f}bp，這次 %{customdata[1]:+.1f}bp）" };
+          name: (a === last ? "Today " : "") + a, type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
+          marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp, this meeting %{customdata[1]:+.1f}bp)" };
       };
       const yr = fedRange();
       const draw = (i) => {
@@ -457,11 +457,11 @@
       const rows = pathOn(last), { levels, dists } = levelDist(rows), base = baseRange(last);
       const tr = levels.map((k) => {
         const c = levelColor(k, levels);
-        return { x: rows.map((r) => r.meeting), y: dists.map((d) => (d.get(k) || 0) * 100), name: rangeLabel(base, k) + (k === 0 ? "（今天）" : ""),
+        return { x: rows.map((r) => r.meeting), y: dists.map((d) => (d.get(k) || 0) * 100), name: rangeLabel(base, k) + (k === 0 ? " (today)" : ""),
           type: "bar", marker: { color: c, line: { color: css("--surface"), width: 1 } },
           text: dists.map((d) => ((d.get(k) || 0) >= 0.1 ? rangeLabel(base, k, true) + "<br>" + Math.round(d.get(k) * 100) + "%" : "")),
           textposition: "inside", insidetextanchor: "middle", textangle: 0, textfont: { color: Math.abs(k) >= 2 || k === 0 ? "#fff" : css("--ink"), size: 10.5 },
-          hovertemplate: `${rangeLabel(base, k)}%：%{y:.1f}%<extra></extra>` };
+          hovertemplate: `${rangeLabel(base, k)}%: %{y:.1f}%<extra></extra>` };
       });
       plot(id, tr, baseLayout({ barmode: "stack", hovermode: "x unified", legend: { ...baseLayout().legend, traceorder: "reversed" },
         xaxis: { ...baseLayout().xaxis, type: "category" }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
@@ -469,8 +469,8 @@
     }
 
     if (v === "cum") {
-      const opts = [["next_move_bp", "下次會議"], ["cum_yearend_bp", "到年底"], ["cum_6m_bp", "6 個月後"], ["cum_12m_bp", "12 個月後"]];
-      ctl.append(chips("期限", opts, S.cum, true, rr), rangeChips("range", rr), eventChips(rr));
+      const opts = [["next_move_bp", "Next meeting"], ["cum_yearend_bp", "Year-end"], ["cum_6m_bp", "6 months"], ["cum_12m_bp", "12 months"]];
+      ctl.append(chips("Horizon", opts, S.cum, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.summ, "asof", S.range);
       const tr = opts.filter(([k]) => S.cum.includes(k)).map(([k, n], i) => ({
         x: rows.map((r) => r.asof), y: rows.map((r) => num(r[k])), name: n, type: "scatter", mode: "lines",
@@ -482,7 +482,7 @@
     }
 
     if (v === "spag") {
-      ctl.append(chips("比較", ["1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.spagCmp, true, rr));
+      ctl.append(chips("Compare", ["1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.spagCmp, true, rr));
       const lines = [], missing = [];
       S.spagCmp.forEach((k) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); a && a !== last ? lines.push([k, a]) : missing.push(cmpLabel[k]); });
       const start = shiftDays(last, -Math.max(92, ...S.spagCmp.map((k) => cmpDays[k] + 31)));
@@ -492,22 +492,22 @@
         const tr = [], scrub = i != null, mark = scrub ? A[i] : last;
         if (scrub) {
           const a = A[i], e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
-          tr.push({ x, y, name: `${a} 的預期`, type: "scatter", mode: "lines", line: { color: P[0], width: 2.6, shape: "hv" }, hovertemplate: `${a} 預期 %{y:.2f}%<extra></extra>` });
+          tr.push({ x, y, name: `Expected as of ${a}`, type: "scatter", mode: "lines", line: { color: P[0], width: 2.6, shape: "hv" }, hovertemplate: `As of ${a}: %{y:.2f}%<extra></extra>` });
         } else lines.forEach(([k, a], j) => {
           const e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
-          tr.push({ x, y, name: `${cmpLabel[k]}（${a}）的預期`, type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][j % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}的預期 %{y:.2f}%<extra></extra>` });
+          tr.push({ x, y, name: `Expected ${cmpLabel[k]} (${a})`, type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][j % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}: %{y:.2f}%<extra></extra>` });
         });
         const efS = scrub ? ef.filter((r) => r.date <= mark) : ef;  // 拉回過去時，EFFR 只畫到那天
-        tr.push({ x: efS.map((r) => r.date), y: efS.map((r) => num(r.effr)), name: "EFFR 實際", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
-        tr.push({ x: lp.x, y: lp.y, name: "今天的預期", type: "scatter", mode: "lines", opacity: scrub ? 0.45 : 1,
-          line: { color: scrub ? css("--muted") : css("--up"), width: scrub ? 1.6 : 2.6, shape: "hv" }, hovertemplate: "今天預期 %{y:.2f}%<extra></extra>" });
+        tr.push({ x: efS.map((r) => r.date), y: efS.map((r) => num(r.effr)), name: "EFFR actual", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
+        tr.push({ x: lp.x, y: lp.y, name: "Expected today", type: "scatter", mode: "lines", opacity: scrub ? 0.45 : 1,
+          line: { color: scrub ? css("--muted") : css("--up"), width: scrub ? 1.6 : 2.6, shape: "hv" }, hovertemplate: "Today: %{y:.2f}%<extra></extra>" });
         plot(id, tr, baseLayout({ hovermode: "closest", xaxis: { ...baseLayout().xaxis, range: [start, lp.x[lp.x.length - 1]] },
           yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(scrub ? { range: yr } : {}) },
           shapes: [{ type: "line", x0: mark, x1: mark, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }],
-          annotations: scrub ? [] : [{ x: mark, yref: "paper", y: 1, text: "今天", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
+          annotations: scrub ? [] : [{ x: mark, yref: "paper", y: 1, text: "Today", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
       };
       scrubber($("#f-scrub"), "f", A, S.spagScrub, draw, fedNote);
-      if (missing.length) { const n = document.createElement("span"); n.textContent = `（${missing.join("、")}還沒有資料，Fed 定價從 ${A[0]} 開始累積）`; ctl.append(n); }
+      if (missing.length) { const n = document.createElement("span"); n.textContent = `(No data yet for ${missing.join(", ")}; Fed pricing starts on ${A[0]})`; ctl.append(n); }
     }
   }
 
@@ -543,7 +543,7 @@
   function renderTable(rows) {
     if (!rows.length) return;
     const { dists } = levelDist(rows);
-    let h = "<table><thead><tr><th>FOMC</th><th>會議前</th><th>會議後隱含</th><th>這次 (bp)</th><th>累積 (bp)</th><th>比今天低</th><th>和今天一樣</th><th>比今天高</th></tr></thead><tbody>";
+    let h = "<table><thead><tr><th>FOMC</th><th>Pre-meeting</th><th>Post-meeting implied</th><th>This meeting (bp)</th><th>Cumulative (bp)</th><th>Below today</th><th>Same as today</th><th>Above today</th></tr></thead><tbody>";
     rows.forEach((r, i) => {
       const t = vsToday(dists[i]);
       h += `<tr><td>${r.meeting}</td><td class="n">${num(r.pre).toFixed(3)}</td><td class="n">${num(r.post).toFixed(3)}</td>`
@@ -551,14 +551,14 @@
         + `<td class="n">${pct(t.lo)}</td><td class="n">${pct(t.eq)}</td><td class="n">${pct(t.hi)}</td></tr>`;
     });
     $("#f-table").innerHTML = h + "</tbody></table>"
-      + `<p class="hint">「會議前／會議後隱含」是期貨給的平均預期，不是真的利率檔位；機率欄是和今天的目標區間比。</p>`;
+      + `<p class="hint">"Pre-meeting" and "post-meeting implied" are the average expectations from futures, not actual rate levels; the probability columns compare with today's target range.</p>`;
   }
   // FedWatch 式矩陣：列 = 會議，欄 = 目標區間，格子 = 機率
   function renderDistTable(rows, levels, dists, base) {
     if (!rows.length) return;
     const cols = [...levels].reverse();
-    let h = "<table class=\"dist\"><thead><tr><th>FOMC</th><th>隱含</th>"
-      + cols.map((k) => `<th class="${k === 0 ? "today" : ""}">${rangeLabel(base, k)}${k === 0 ? "<br><small>今天</small>" : ""}</th>`).join("") + "</tr></thead><tbody>";
+    let h = "<table class=\"dist\"><thead><tr><th>FOMC</th><th>Implied</th>"
+      + cols.map((k) => `<th class="${k === 0 ? "today" : ""}">${rangeLabel(base, k)}${k === 0 ? "<br><small>today</small>" : ""}</th>`).join("") + "</tr></thead><tbody>";
     rows.forEach((r, i) => {
       const d = dists[i];
       let best = 0, bk = 0; d.forEach((p, k) => { if (p > best) { best = p; bk = k; } });
@@ -570,7 +570,7 @@
       }).join("") + "</tr>";
     });
     $("#f-table").innerHTML = h + "</tbody></table>"
-      + `<p class="hint">每格是「這次會議開完後，目標區間在這一檔」的機率，一列加起來是 100%。粗體是最可能的一檔。期貨只給平均預期，每次會議假設只落在最接近的兩檔，越遠的會議越不準。</p>`;
+      + `<p class="hint">Each cell is the probability that the target range sits at that level after the meeting; each row sums to 100%. Bold is the most likely level. Futures only give the average expectation, so each meeting is assumed to land on the two nearest levels; the further out, the less precise.</p>`;
   }
 
   // ---------- 啟動 ----------
@@ -583,7 +583,7 @@
   function syncThemeBtn() {
     const b = $("#theme"), d = isDark();
     b.textContent = d ? "☀" : "☾";
-    b.title = d ? "切換到亮色模式" : "切換到暗色模式";
+    b.title = d ? "Switch to light mode" : "Switch to dark mode";
     b.setAttribute("aria-label", b.title);
   }
   function renderAll() { renderTiles(); renderYields(); renderFed(); }
@@ -594,8 +594,8 @@
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     D.yields.forEach((r, i) => (yIdx[r.date] = i));
     const ly = D.yields[D.yields.length - 1];
-    $("#asof").textContent = ly ? `資料日期 ${ly.date}` : "尚無資料";
-    if (D.meta.updated) $("#updated").textContent = ` 最後更新：${D.meta.updated}。`;
+    $("#asof").textContent = ly ? `Data as of ${ly.date}` : "No data yet";
+    if (D.meta.updated) $("#updated").textContent = ` Last updated: ${D.meta.updated}.`;
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
     renderAll();

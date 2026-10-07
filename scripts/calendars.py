@@ -17,11 +17,12 @@ from pathlib import Path
 DATA = Path(__file__).resolve().parent.parent / "docs" / "data"
 FOMC_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 FRED_URL = "https://api.stlouisfed.org/fred/release/dates"
-FRED_RELEASES = {"cpi": (10, "CPI"), "nfp": (50, "非農"), "ppi": (46, "PPI"), "pce": (54, "PCE")}
+FRED_RELEASES = {"cpi": (10, "CPI"), "nfp": (50, "NFP"), "ppi": (46, "PPI"), "pce": (54, "PCE")}
 MONTHS = {m: i + 1 for i, m in enumerate(
     ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])}
 MONTHS.update({m[:3]: i for m, i in list(MONTHS.items())})
 SINCE = date(2025, 1, 1)
+MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 # ---------- FOMC ----------
@@ -79,7 +80,7 @@ def fred_dates(get, key: str, release_id: int) -> list[date]:
 def ref_month(d: date) -> str:
     """公布日 → 資料月份（CPI、非農、PPI、PCE 都是公布前一個月的資料）。"""
     y, m = (d.year - 1, 12) if d.month == 1 else (d.year, d.month - 1)
-    return f"{y}/{m:02d}"
+    return f"{MON[m - 1]} {y}"
 
 
 # ---------- 合併寫檔 ----------
@@ -104,9 +105,9 @@ def update_calendars(get) -> None:
     try:
         meetings, minutes = parse_fomc(get(FOMC_URL).text)
         (DATA / "fomc.json").write_text(json.dumps({"updated": today.isoformat(), "meetings": [d.isoformat() for d in meetings]}) + "\n")
-        fresh["fomc"] = [{"date": d.isoformat(), "type": "fomc", "label": "FOMC 決議"} for d in meetings if d >= SINCE]
+        fresh["fomc"] = [{"date": d.isoformat(), "type": "fomc", "label": "FOMC decision"} for d in meetings if d >= SINCE]
         fresh["minutes"] = [{"date": minutes.get(d, d + timedelta(days=21)).isoformat(), "type": "minutes",
-                             "label": f"FOMC 會議紀要（{d.month}月會議）"} for d in meetings if d >= SINCE]
+                             "label": f"FOMC minutes ({MON[d.month - 1]} meeting)"} for d in meetings if d >= SINCE]
         print(f"FOMC 行事曆：{len(meetings)} 次會議，最後一次 {meetings[-1]}")
     except Exception as e:  # noqa: BLE001
         print(f"⚠ FOMC 行事曆抓不到，保留原本的日期：{e}")
@@ -117,7 +118,7 @@ def update_calendars(get) -> None:
     for t, (rid, name) in FRED_RELEASES.items() if key else []:
         try:
             ds = fred_dates(get, key, rid)
-            fresh[t] = [{"date": d.isoformat(), "type": t, "label": f"{name}（{ref_month(d)}）"} for d in ds if d >= SINCE]
+            fresh[t] = [{"date": d.isoformat(), "type": t, "label": f"{name} ({ref_month(d)})"} for d in ds if d >= SINCE]
             print(f"FRED {name}：{len(ds)} 個日期，最後 {ds[-1] if ds else '–'}")
         except Exception as e:  # noqa: BLE001
             print(f"⚠ FRED {name} 抓不到，保留原本的日期：{e}")
@@ -128,7 +129,7 @@ def update_calendars(get) -> None:
     for t, new in fresh.items():
         events += merge_type([e for e in old if e["type"] == t], new, today)
     events.sort(key=lambda e: (e["date"], e["type"]))
-    doc = {"_note": "自動更新：FOMC 和會議紀要來自 Fed 官網行事曆，CPI／非農／PPI／PCE 來自 FRED。今天以前的事件保留原本的標籤。",
+    doc = {"_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar, CPI/NFP/PPI/PCE from FRED. Past events keep their existing labels.",
            "updated": today.isoformat(), "events": events}
     path.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n")
     print(f"events.json：{len(events)} 個事件，最後 {events[-1]['date']}")

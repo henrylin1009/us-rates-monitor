@@ -30,7 +30,7 @@ try:
 except ValueError:
     pass
 
-assert ref_month(date(2026, 1, 9)) == "2025/12"
+assert ref_month(date(2026, 1, 9)) == "Dec 2025"
 old = [{"date": "2026-01-01", "type": "cpi", "label": "手動標籤"}, {"date": "2026-12-01", "type": "cpi", "label": "舊的未來"}]
 new = [{"date": "2026-01-01", "type": "cpi", "label": "新"}, {"date": "2026-12-10", "type": "cpi", "label": "新的未來"}]
 got = {e["date"]: e["label"] for e in merge_type(old, new, date(2026, 6, 1))}
