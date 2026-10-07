@@ -132,3 +132,6 @@ table.dist td.top { font-weight: 600; }
 .scrub .play { width: 42px; padding: 5px 0; }
 .scrub-date { font-size: 13px; min-width: 9.5em; color: var(--ink); }
 @media (max-width: 640px) { .scrub { flex-wrap: wrap; } .scrub input[type="range"] { flex-basis: 100%; order: 3; } }
+
+.tag.warn { color: var(--up); border-color: var(--up); }
+.hint.stale { color: var(--up); }

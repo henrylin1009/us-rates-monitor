@@ -403,6 +403,12 @@
     if (!A.length) return empty(id, "還沒有 Fed 定價資料（ZQ 期貨要先抓到才算得出來）。");
     clearEmpty(id);
     const P = palette(), v = S.fView, rr = () => renderFed(), last = A[A.length - 1];
+    // ZQ 報價來自 Yahoo，偶爾抓不到：標出 Fed 定價是哪一天的，落後殖利率 2 個交易日以上就提醒
+    const behind = D.yields.filter((r) => r.date > last).length;
+    $("#f-asof").textContent = `資料日期 ${last}`;
+    $("#f-asof").classList.toggle("warn", behind >= 2);
+    $("#f-stale").hidden = behind < 2;
+    $("#f-stale").textContent = behind >= 2 ? `⚠ ZQ 期貨報價已經 ${behind} 個交易日沒更新（Yahoo 抓不到），這裡顯示的是 ${last} 的定價。` : "";
     const effrNow = num(D.summ[D.summ.length - 1].effr);
     const stepXY = (rows, startDate, startRate) => {
       // 階梯：從 asof 起，每次會議後換成新利率

@@ -54,12 +54,15 @@ cd docs && python3 -m http.server    # 打開 http://localhost:8000
 
 會先拉下機器人每天 commit 的資料，再推上你的修改。
 
-## 要定期維護的地方
+## 自動更新的日期
 
-- **重要事件日期**：`docs/data/events.json`（FOMC、CPI、非農、PCE、PPI、會議紀要）。BLS 和 BEA 公布隔年時程後補上，目前填到 2026 年底。
+- **重要事件日期**：`docs/data/events.json` 每天自動更新。FOMC 和會議紀要抓 [Fed 官網行事曆](https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm)；CPI、非農、PPI、PCE 抓 FRED 的公布日期（要在 repo 的 **Settings → Secrets and variables → Actions** 加一個 `FRED_API_KEY`，到 https://fred.stlouisfed.org/docs/api/api_key.html 免費申請）。今天以前的事件保留原本的標籤。
+- **FOMC 日期**：同樣從 Fed 官網抓，存在 `docs/data/fomc.json`。`scripts/fomc.py` 裡的清單只是官網抓不到時的備用。
+- 任何一個來源抓失敗，那一類日期就維持原樣，不會把網站弄壞。
 
-- **FOMC 日期**：`scripts/fomc.py`。Fed 每年夏天公布下一年的日期（2028 年的大約 2027 年 8 月），補上就好。
-- **Yahoo 被擋**：yfinance 是非官方的，從 GitHub 的伺服器抓偶爾會失敗。這時殖利率和 EFFR 照常更新，只有 Fed 定價那天會缺。持續失敗的話，可以改成在自己電腦上跑 `fetch.py` 再 push。
+## Yahoo 被擋
+
+yfinance 是非官方的，從 GitHub 的伺服器抓偶爾會失敗。這時殖利率和 EFFR 照常更新，只有 Fed 定價會停在最後抓到的那天；網站的 Fed 定價區塊會標出資料日期，落後 2 個交易日以上會用橘色提醒。
 
 ## 方法
 
