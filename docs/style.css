@@ -122,3 +122,13 @@ table.dist th small { font-weight: 400; }
 table.dist th.today { color: var(--ink); }
 table.dist td.zero { color: var(--line); }
 table.dist td.top { font-weight: 600; }
+
+.scrub { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.scrub input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.scrub .play, .scrub .reset {
+  font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
+  border-radius: 8px; padding: 5px 12px; cursor: pointer; white-space: nowrap;
+}
+.scrub .play { width: 42px; padding: 5px 0; }
+.scrub-date { font-size: 13px; min-width: 9.5em; color: var(--ink); }
+@media (max-width: 640px) { .scrub { flex-wrap: wrap; } .scrub input[type="range"] { flex-basis: 100%; order: 3; } }

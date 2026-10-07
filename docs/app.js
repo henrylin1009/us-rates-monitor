@@ -8,7 +8,7 @@
   const S = {
     yView: "tenor", fView: "path",
     tenors: ["2y", "10y", "30y"], range: "1Y",
-    curveCmp: ["1W", "1M"], curveCustom: "",
+    curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
@@ -237,13 +237,15 @@
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
     tenor: "各期限殖利率的時間序列。底部記號是重要事件，滑鼠移上去看當天市場反應；右邊灰色區塊是接下來兩週的事件。",
-    curve: "整條曲線的形狀，和過去比較。x 軸照期限排，間距相等。",
+    curve: "整條曲線的形狀，和過去比較。x 軸照期限排，間距相等。下面的拉桿可以拖著看曲線一路怎麼變。",
     spread: "期限利差。往上 = 變陡，往下 = 變平；低於 0 是倒掛。",
     change: "各期限在這段期間漲跌幾 bp。看是短端還是長端帶動，判斷 bull/bear steepening 或 flattening。",
     heat: "日期 × 期限的熱力圖，看整條曲線長期怎麼演變。空白是財政部還沒發行那個期限的時候：2 個月期從 2018/10 開始，4 個月期從 2022/10 開始。",
     vsfed: "2y 殖利率對比 ZQ 隱含的 12 個月後政策利率。2y 大致反映 Fed 預期，兩條線的差距可以想成期限溢酬加雜訊。",
   };
+  let curveTimer = null;
   function renderYields() {
+    clearInterval(curveTimer); curveTimer = null;
     const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
     if (!D.yields.length) return empty(id, "還沒有殖利率資料。第一次請在 GitHub Actions 手動執行，勾選「補齊歷史資料」。");
     clearEmpty(id);
@@ -263,19 +265,59 @@
     }
 
     if (v === "curve") {
-      const last = D.yields[D.yields.length - 1];
+      const Y = D.yields, last = Y[Y.length - 1];
       ctl.append(chips("比較", Object.keys(cmpDays).map((k) => [k, cmpLabel[k]]), S.curveCmp, true, rr));
       const lab = document.createElement("label"); lab.textContent = "自選日期 ";
-      const inp = document.createElement("input"); inp.type = "date"; inp.value = S.curveCustom; inp.max = last.date; inp.min = D.yields[0].date;
+      const inp = document.createElement("input"); inp.type = "date"; inp.value = S.curveCustom; inp.max = last.date; inp.min = Y[0].date;
       inp.onchange = () => { S.curveCustom = inp.value; rr(); }; lab.appendChild(inp); ctl.append(lab);
-      const snaps = [["今天 " + last.date, last, 2.6, P[0], "solid"]];
-      S.curveCmp.forEach((k, i) => { const r = atOrBefore(D.yields, "date", shiftDays(last.date, -cmpDays[k])); if (r) snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(i + 1) % P.length], "dot"]); });
-      if (S.curveCustom) { const r = atOrBefore(D.yields, "date", S.curveCustom); if (r) snaps.push([`自選 ${r.date}`, r, 1.6, P[4], "dash"]); }
-      const tr = snaps.map(([n, r, w, c, dash]) => ({
-        x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers",
+
+      // 拉桿：拖著看曲線一路怎麼變；拖動時今天的曲線變淡當參考
+      const tb = $("#y-table");
+      tb.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="播放">▶</button>`
+        + `<input type="range" min="0" max="${Y.length - 1}" step="1" aria-label="拖動日期">`
+        + `<span class="scrub-date num"></span><button type="button" class="reset">回到今天</button></div>`
+        + `<p class="hint">拖動拉桿看曲線怎麼一路變過來，或按 ▶ 自動播放。</p>`;
+      const range = tb.querySelector("input"), dateEl = tb.querySelector(".scrub-date"), play = tb.querySelector(".play"), reset = tb.querySelector(".reset");
+      range.value = S.curveScrub == null ? Y.length - 1 : S.curveScrub;
+      let lo = Infinity, hi = -Infinity;
+      Y.forEach((r) => TENORS.forEach((t) => { const x = num(r[t]); if (x != null) { lo = Math.min(lo, x); hi = Math.max(hi, x); } }));
+      const yr = [Math.floor(lo * 2) / 2 - 0.25, Math.ceil(hi * 2) / 2 + 0.25];
+      const curve = (n, r, w, c, dash, op = 1) => ({
+        x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers", opacity: op,
         line: { width: w, color: c, dash }, marker: { size: w > 2 ? 6 : 4 }, hovertemplate: "%{y:.2f}%", connectgaps: true,
-      }));
-      plot(id, tr, baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
+      });
+      const draw = () => {
+        const i = S.curveScrub, scrub = i != null && i < Y.length - 1;
+        let tr;
+        if (scrub) {
+          const r = Y[i];
+          tr = [curve("今天 " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(r.date, r, 2.8, P[0], "solid")];
+        } else {
+          const snaps = [["今天 " + last.date, last, 2.6, P[0], "solid"]];
+          S.curveCmp.forEach((k, j) => { const r = atOrBefore(Y, "date", shiftDays(last.date, -cmpDays[k])); if (r) snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(j + 1) % P.length], "dot"]); });
+          if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) snaps.push([`自選 ${r.date}`, r, 1.6, P[4], "dash"]); }
+          tr = snaps.map((x) => curve(...x));
+        }
+        dateEl.textContent = scrub ? Y[i].date : last.date + "（今天）";
+        reset.hidden = !scrub;
+        plot(id, tr, baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
+          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(scrub ? { range: yr } : {}) } }));
+      };
+      const stop = () => { clearInterval(curveTimer); curveTimer = null; play.textContent = "▶"; play.setAttribute("aria-label", "播放"); };
+      range.oninput = () => { if (curveTimer) stop(); S.curveScrub = +range.value; draw(); };
+      reset.onclick = () => { stop(); S.curveScrub = null; range.value = Y.length - 1; draw(); };
+      play.onclick = () => {
+        if (curveTimer) return stop();
+        if (S.curveScrub == null || S.curveScrub >= Y.length - 1) S.curveScrub = 0;
+        const step = Math.max(1, Math.round(Y.length / 500));  // 整段大約 20 秒播完
+        play.textContent = "❚❚"; play.setAttribute("aria-label", "暫停");
+        curveTimer = setInterval(() => {
+          S.curveScrub = Math.min(Y.length - 1, S.curveScrub + step);
+          range.value = S.curveScrub; draw();
+          if (S.curveScrub >= Y.length - 1) stop();
+        }, 40);
+      };
+      draw();
     }
 
     if (v === "spread") {
