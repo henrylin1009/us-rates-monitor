@@ -74,7 +74,7 @@ def compute(kind: str, obs: list[tuple[str, float]], i: int) -> float | None:
     if i - k < 0:
         return None
     a, b = obs[i][1], obs[i - k][1]
-    return round(a - b) if kind == "diff" else round((a / b - 1) * 100, 1)
+    return round(a - b) if kind == "diff" else round((a / b - 1) * 100, 1) + 0.0  # + 0.0 去掉 -0.0
 
 
 def vintage_rows(measure: str, kind: str, vintages: list[tuple[str, list[tuple[str, float]]]]) -> list[dict]:

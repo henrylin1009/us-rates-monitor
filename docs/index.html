@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=11">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -154,6 +154,16 @@
     <div class="chart" id="c-decomp"></div>
     <div id="decomp-table"></div>
   </section>
+  <section class="panel" id="p-surix">
+    <div class="panel-head">
+      <div>
+        <h2>Data surprises and the 2y</h2>
+        <p class="hint" id="surix-note"></p>
+      </div>
+      <div class="seg" id="six-views"><button data-v="index" class="on">Surprise index</button><button data-v="scatter">Surprise vs 2y</button></div>
+    </div>
+    <div class="chart short" id="c-surix"></div>
+  </section>
   <section class="panel" id="p-fomc">
     <div class="panel-head">
       <div>
@@ -203,6 +213,10 @@
     <div id="cpi-table"></div>
   </section>
   <section class="panel">
+    <div class="panel-head"><div><h2>Inflation surprises</h2><p class="hint">Each release against what the market expected, Bloomberg ECO style: latest prints on top, then the history of one indicator as bars (actual) and ticks (forecast).</p></div></div>
+    <div id="sur-inflation"></div>
+  </section>
+  <section class="panel">
     <div class="panel-head"><div><h2>PPI</h2><p class="hint">Producer prices. Secondary, but several PPI parts feed straight into PCE, so desks use it to firm up the PCE forecast. <span id="ppi-date"></span></p></div></div>
     <div class="chart short" id="c-ppi"></div>
   </section>
@@ -239,6 +253,10 @@
     </section>
   </div>
   <section class="panel">
+    <div class="panel-head"><div><h2>Jobs surprises</h2><p class="hint">Each release against what the market expected: latest prints on top, then one indicator's history as bars (actual) and ticks (forecast). For unemployment and claims, a higher number is a dovish surprise.</p></div></div>
+    <div id="sur-jobs"></div>
+  </section>
+  <section class="panel">
     <div class="panel-head"><div><h2>JOLTS job openings</h2><p class="hint">Secondary: noisy and lagging. <span id="jolts-date"></span></p></div></div>
     <div class="chart short" id="c-jolts"></div>
   </section>
@@ -259,6 +277,6 @@
 </div>
 </main>
 
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

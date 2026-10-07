@@ -217,3 +217,10 @@ a.more:hover { text-decoration: underline; }
 .light.on { background: var(--up); }
 @media (max-width: 860px) { .duo { grid-template-columns: 1fr; } .seg-col { align-items: flex-start; } }
 @media (max-width: 860px) { .panel-head .hero-title { flex-basis: 100%; } }
+
+/* surprise */
+.kline .sur { flex-basis: 100%; margin-top: 2px; color: var(--ink); }
+.eco table td, .eco table th { white-space: nowrap; }
+.eco tr.upcoming td { background: var(--chip); }
+.sur-ctl { margin: 6px 0 2px; }
+.eco td:nth-child(2), .eco th:nth-child(2), .eco td:nth-child(3), .eco th:nth-child(3) { text-align: left; }

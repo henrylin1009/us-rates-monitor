@@ -15,7 +15,8 @@ GitHub Actions（週一到週五 23:40 UTC）
       ├ 紐約 Fed EFFR                    → docs/data/effr.csv
       ├ ZQ 期貨（Yahoo Finance）          → docs/data/zq.csv
       ├ scripts/fedpricing.py 算定價      → docs/data/fed_path.csv、fed_summary.csv
-      └ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
+      ├ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
+      └ scripts/surprise.py 預期值（FF）＋首次公布值（ALFRED） → docs/data/consensus.csv、releases.csv
 GitHub Pages（main 分支 /docs）
   └ docs/index.html + app.js（Plotly）讀上面的 CSV
 ```
@@ -76,3 +77,4 @@ yfinance 是非官方的，從 GitHub 的伺服器抓偶爾會失敗。這時殖
 - 期貨只給平均預期，分佈形狀是假設，價格也含少量風險溢酬。可以和 CME FedWatch 對照。
 
 Fed 定價的歷史從開始跑的那天累積；回補時只抓得到 Yahoo 上還有的合約。
+- **手動補預期值**：`docs/data/consensus_manual.csv`，欄位 `date,measure,forecast,previous,source`（例如 `2026-09-11,core_cpi_mm,0.3,,bloomberg`），網站上優先用手動值。measure 的代碼見 `scripts/surprise.py` 的 `MEASURES`。
