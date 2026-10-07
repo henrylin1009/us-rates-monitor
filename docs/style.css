@@ -165,3 +165,38 @@ details.fold > summary::-webkit-details-marker { display: none; }
 details.fold > summary::before { content: "▸"; display: inline-block; width: 1em; transition: transform .15s; }
 details.fold[open] > summary::before { transform: rotate(90deg); }
 details.fold > summary:hover { color: var(--ink); }
+
+/* 上方分頁 */
+.tabs { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; }
+.tabs a { padding: 11px 14px; font-size: 14px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabs a:hover { color: var(--ink); }
+.tabs a.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+.page { padding-top: 20px; }
+.page[hidden] { display: none; }
+a.more { font-size: 13px; color: var(--accent); text-decoration: none; white-space: nowrap; }
+a.more:hover { text-decoration: underline; }
+.muted { color: var(--muted); font-weight: 400; }
+
+/* 接下來 2 週 */
+.panel.next { padding-bottom: 14px; }
+.next-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-top: 12px; }
+.nx { border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; font-size: 13px; min-width: 0; }
+.nx.fomc { border-color: var(--ink); }
+.nx-d { font-size: 12px; color: var(--ink); }
+.nx-l { margin-top: 2px; font-weight: 500; }
+.nx-x { margin-top: 2px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; }
+
+/* 利率大卡片 */
+.panel.hero { padding-bottom: 16px; }
+.hero-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; min-width: 0; flex: 1; }
+.takeaway { flex-basis: 100%; margin: 2px 0 0; font-size: 14px; color: var(--ink); }
+.hero-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; margin-top: 14px; }
+.hero-col { background: var(--chip); border-radius: 10px; padding: 12px 12px 8px; min-width: 0; }
+.hero-col h3 { font-size: 13.5px; margin-bottom: 6px; }
+.hero-col h3 .muted { font-size: 12px; }
+.mini { width: 100%; height: 200px; }
+.ktab th, .ktab td { padding: 5px 6px; border-bottom-color: var(--grid); }
+.hero-fed { font-size: 13px; margin-top: 4px; }
+.hero-fed .sur { margin-top: 4px; }
+@media (max-width: 860px) { .hero-grid { grid-template-columns: 1fr; } }

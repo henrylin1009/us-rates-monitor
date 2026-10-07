@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [] };
   const S = {
-    yView: "tenor", fView: "priced",
+    page: "overview", yView: "curve", fView: "priced",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
@@ -211,31 +211,115 @@
     if (slope > 0) return level >= 0 ? "Bear steepening" : "Bull steepening";
     return level >= 0 ? "Bear flattening" : "Bull flattening";
   }
-  function renderTiles() {
-    const y = D.yields; if (y.length < 2) { $("#tiles").innerHTML = ""; return; }
-    const a = y[y.length - 1], b = y[y.length - 2];
-    const ch = (t) => (num(a[t]) - num(b[t])) * 100;
-    const cls = (x) => (x > 0.05 ? "up" : x < -0.05 ? "down" : "");
-    const tile = (k, v, d, extra = "") => `<div class="tile ${extra}"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
-    let h = "";
-    for (const t of ["2y", "10y", "30y"]) { const c = ch(t); h += tile(t.toUpperCase(), num(a[t]).toFixed(2) + "%", `<span class="${cls(c)}">${bp(c)}bp</span>`); }
-    const s = (num(a["10y"]) - num(a["2y"])) * 100, sp = (num(b["10y"]) - num(b["2y"])) * 100;
-    h += tile("2s10s", bp(s) + "bp", `<span class="${cls(s - sp)}">${bp(s - sp)}bp</span>  <span class="badge">${regime(ch("2y"), ch("10y"))}</span>`, "wide");
-    const e = D.effr[D.effr.length - 1];
-    if (e) h += tile("EFFR", num(e.effr).toFixed(2) + "%", `Target ${num(e.target_low).toFixed(2)}–${num(e.target_high).toFixed(2)}`);
-    const f = D.summ[D.summ.length - 1];
-    if (f) {
-      const ph = num(f.next_p_hike), pc = num(f.next_p_cut);
-      const odds = ph >= pc ? `hike odds ${pct(ph)}` : `cut odds ${pct(pc)}`;
-      h += tile(`Priced for FOMC ${f.next_meeting.slice(5).replace("-", "/")}`, bp(num(f.next_move_bp), 1) + "bp", `${moves(num(f.next_move_bp))} · <span class="muted">${odds}</span>`);
-      h += tile("Priced by year-end", bp(num(f.cum_yearend_bp), 0) + "bp", `${moves(num(f.cum_yearend_bp))} · <span class="muted">12m ${bp(num(f.cum_12m_bp), 0)}bp</span>`);
+  // ---------- 首頁 Overview ----------
+  const md = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const dow = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  const cls = (x) => (x == null ? "" : x > 0.05 ? "up" : x < -0.05 ? "down" : "");
+  const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+  // 某天往前 k 天（≤ 那天的最後一筆）
+  const ago = (k) => { const y = D.yields; return y.length ? atOrBefore(y, "date", shiftDays(y[y.length - 1].date, -k)) : null; };
+  const chg = (a, b, t) => (a && b && num(a[t]) != null && num(b[t]) != null ? (num(a[t]) - num(b[t])) * 100 : null);
+  const sprd = (r, x, y) => (r && num(r[x]) != null && num(r[y]) != null ? (num(r[y]) - num(r[x])) * 100 : null);
+
+  // 接下來 2 週：每個事件一格，FOMC 那格放 priced bp
+  function renderNext() {
+    const el = $("#next"); if (!el) return;
+    // 用瀏覽器的今天（資料是前一個交易日收盤，但「還有幾天」要從真正的今天算）
+    const now = new Date(), today = new Date(now.getTime() - now.getTimezoneOffset() * 6e4).toISOString().slice(0, 10), horizon = shiftDays(today, LOOKAHEAD);
+    let evs = D.events.filter((e) => e.date >= today && e.date <= horizon);
+    if (!evs.length) evs = D.events.filter((e) => e.date >= today).slice(0, 3);
+    const A = asofs(), priced = new Map(A.length ? pathOn(A[A.length - 1]).map((r) => [r.meeting, r]) : []);
+    el.innerHTML = evs.length ? evs.map((e) => {
+      const n = daysBetween(today, e.date), r = e.type === "fomc" ? priced.get(e.date) : null;
+      const extra = r ? `<div class="nx-x ${cls(num(r.move_bp))}">priced ${bp(num(r.move_bp), 1)}bp · ${moves(num(r.move_bp))}</div>` : "";
+      return `<div class="nx ${e.type}"><div class="nx-d">${dow(e.date)} ${md(e.date)} <span class="muted">· ${n === 0 ? "today" : `in ${n} day${n === 1 ? "" : "s"}`}</span></div>`
+        + `<div class="nx-l"><span style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span> ${e.label}</div>${extra}</div>`;
+    }).join("") : `<p class="hint">No scheduled events.</p>`;
+  }
+
+  // 一句結論：最近一週 2y / 10y 怎麼動、曲線型態、年底前定價變了多少
+  function ratesTakeaway() {
+    const a = D.yields[D.yields.length - 1], w = ago(7);
+    const d2 = chg(a, w, "2y"), d10 = chg(a, w, "10y");
+    if (d2 == null || d10 == null) return { text: "", regime: "" };
+    const dir = (x) => (Math.abs(x) < 0.5 ? "flat" : x > 0 ? `up ${Math.abs(x).toFixed(0)}bp` : `down ${Math.abs(x).toFixed(0)}bp`);
+    const rg = regime(d2, d10);
+    let t = `Over the past week the 2y is ${dir(d2)} and the 10y ${dir(d10)}: ${rg.toLowerCase()}.`;
+    const f = D.summ[D.summ.length - 1], fA = f ? atOrBefore(D.summ, "asof", shiftDays(f.asof, -7)) : null;
+    if (f && fA && fA !== f) {
+      const df = num(f.cum_yearend_bp) - num(fA.cum_yearend_bp);
+      if (Math.abs(df) >= 1) t += ` Year-end Fed pricing is ${df > 0 ? "more hawkish" : "more dovish"} by ${Math.abs(df).toFixed(0)}bp.`;
     }
-    const nx = D.events.filter((e) => ["fomc", "cpi", "nfp", "pce"].includes(e.type) && e.date > a.date).slice(0, 2);
-    if (nx.length) {
-      const days = (iso) => Math.round((new Date(iso) - new Date(a.date)) / 864e5);
-      h += tile("Coming up", `${nx[0].date.slice(5).replace("-", "/")} ${EVT[nx[0].type].name}`, nx.map((e, i) => (i ? `${e.date.slice(5).replace("-", "/")} ${EVT[e.type].name}` : `in ${days(e.date)} days`)).join(" · "));
-    }
-    $("#tiles").innerHTML = h;
+    return { text: t, regime: rg };
+  }
+
+  function renderHero() {
+    const y = D.yields; if (y.length < 2) return;
+    const a = y[y.length - 1], b = y[y.length - 2], w = ago(7), P = palette();
+    const tk = ratesTakeaway();
+    $("#hero-take").textContent = tk.text;
+    $("#hero-regime").textContent = tk.regime ? `1W: ${tk.regime}` : "";
+    $("#hero-regime").hidden = !tk.regime;
+
+    // 2y、10y 三個月
+    const rows = inRange(y, "date", "3M");
+    plot("c-mini", ["2y", "10y"].map((t, i) => ({ x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
+      line: { width: 2, color: P[i] }, hovertemplate: "%{y:.2f}%" })),
+      baseLayout({ margin: { l: 40, r: 8, t: 6, b: 28 }, legend: { ...baseLayout().legend, y: 1.12 }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
+
+    // 關鍵數字
+    const row = (k, lv, d1, d7, unit) => `<tr><td>${k}</td><td class="n">${lv}</td><td class="n ${cls(d1)}">${bp(d1, 1)}</td><td class="n ${cls(d7)}">${bp(d7, 1)}</td></tr>`;
+    let h = `<table class="ktab"><thead><tr><th></th><th>Level</th><th>1D bp</th><th>1W bp</th></tr></thead><tbody>`;
+    ["2y", "5y", "10y", "30y"].forEach((t) => { h += row(t, num(a[t]) == null ? "–" : num(a[t]).toFixed(2) + "%", chg(a, b, t), chg(a, w, t)); });
+    [["2s10s", "2y", "10y"], ["5s30s", "5y", "30y"]].forEach(([k, x, z]) => {
+      const s0 = sprd(a, x, z), s1 = sprd(b, x, z), s7 = sprd(w, x, z);
+      h += row(k, s0 == null ? "–" : bp(s0, 0) + "bp", s0 == null || s1 == null ? null : s0 - s1, s0 == null || s7 == null ? null : s0 - s7);
+    });
+    $("#k-table").innerHTML = h + "</tbody></table>";
+
+    // Fed：下 4 次會議累計 bp
+    const A = asofs(); if (!A.length) { $("#hero-fed").innerHTML = `<p class="hint">No Fed pricing yet.</p>`; return; }
+    const last = A[A.length - 1], pr = pathOn(last).slice(0, 4), cum = pr.map((r) => num(r.cum_bp));
+    plot("c-fedbars", [{ x: pr.map((r) => md(r.meeting)), y: cum, type: "bar", marker: { color: cum.map((v) => rgba(css(v >= 0 ? "--up" : "--down"), 0.55)) },
+      text: cum.map((v) => bp(v, 0)), textposition: "outside", cliponaxis: false, textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--ink") },
+      hovertemplate: "%{x}: %{y:+.1f}bp<extra></extra>" }],
+      baseLayout({ margin: { l: 40, r: 8, t: 18, b: 28 }, showlegend: false, hovermode: "closest", xaxis: { ...baseLayout().xaxis, type: "category" },
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } }));
+    const f = D.summ[D.summ.length - 1], fA = atOrBefore(D.summ, "asof", shiftDays(f.asof, -7));
+    const dYe = fA && fA !== f ? num(f.cum_yearend_bp) - num(fA.cum_yearend_bp) : null;
+    let fh = `<div>By year-end: <b class="num">${bp(num(f.cum_yearend_bp), 0)}bp</b> · ${moves(num(f.cum_yearend_bp))}`
+      + (dYe == null ? "" : ` · <span class="${cls(dYe)}">${bp(dYe, 0)}bp vs 1W</span>`) + "</div>";
+    const s = fomcSurprises().filter((x) => x.surprise != null).pop();
+    fh += s ? `<div class="sur">● Last FOMC surprise (${md(s.date)}): <b class="num ${cls(s.surprise)}">${bp(s.surprise, 1)}bp</b> · 2y ${bp(s.d2, 1)}bp</div>`
+      : `<div class="sur muted">● Last FOMC surprise: not enough pricing history yet</div>`;
+    $("#hero-fed").innerHTML = fh;
+  }
+
+  // FOMC surprise：決議（EFFR 目標上緣變化）減會前一天期貨 price 的 bp
+  function fomcSurprises() {
+    const last = lastYieldDate();
+    return D.events.filter((e) => e.type === "fomc" && e.date <= last).map((e) => {
+      const before = atOrBefore(D.effr, "date", shiftDays(e.date, -1)), after = D.effr.find((r) => r.date > e.date);
+      const dec = before && after && before.target_high !== "" && after.target_high !== "" ? Math.round((num(after.target_high) - num(before.target_high)) * 100) : null;
+      const pre = atOrBefore(D.summ, "asof", shiftDays(e.date, -1));
+      const priced = pre && pre.next_meeting === e.date && pre.next_move_bp !== "" ? num(pre.next_move_bp) : null;
+      const r = reaction(e.date);
+      return { date: e.date, dec, priced, surprise: dec == null || priced == null ? null : dec - priced, d2: r ? r.d2 : null, fed: r ? r.fed : null };
+    });
+  }
+  function renderFomcTable() {
+    const el = $("#fomc-table"); if (!el) return;
+    const rows = fomcSurprises().slice(-12).reverse();
+    if (!rows.length) { el.innerHTML = `<p class="hint">No meetings yet.</p>`; return; }
+    const decTxt = (d) => (d == null ? "–" : d > 0 ? `Hike ${d}bp` : d < 0 ? `Cut ${-d}bp` : "Hold");
+    let h = "<table><thead><tr><th>Meeting</th><th>Decision</th><th>Priced day before (bp)</th><th>Surprise (bp)</th><th>2y (bp)</th><th>Year-end pricing (bp)</th></tr></thead><tbody>";
+    rows.forEach((r) => {
+      h += `<tr><td class="n">${r.date}</td><td>${decTxt(r.dec)}</td><td class="n">${r.priced == null ? "–" : bp(r.priced, 1)}</td>`
+        + `<td class="n ${cls(r.surprise)}"><b>${r.surprise == null ? "–" : bp(r.surprise, 1)}</b></td>`
+        + `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td><td class="n ${cls(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
+    });
+    const first = D.summ.length ? D.summ[0].asof : null;
+    el.innerHTML = h + "</tbody></table>" + `<p class="hint">Pricing history starts on ${first || "–"}, so meetings before that show the decision and the 2y move but no surprise yet. The table fills in from each new meeting.</p>`;
   }
 
   // ---------- 圖一：殖利率 ----------
@@ -707,7 +791,22 @@
     b.title = d ? "Switch to light mode" : "Switch to dark mode";
     b.setAttribute("aria-label", b.title);
   }
-  function renderAll() { renderTiles(); renderYields(); renderFed(); renderCalendar(); }
+  // ---------- 分頁：#overview / #rates / #events ----------
+  const PAGES = ["overview", "rates", "events"];
+  const RENDER = {
+    overview: () => { renderNext(); renderHero(); },
+    rates: () => { renderYields(); renderFed(); renderFomcTable(); },
+    events: () => renderCalendar(),
+  };
+  function route() {
+    const h = location.hash.slice(1);
+    S.page = PAGES.includes(h) ? h : "overview";
+    document.querySelectorAll(".page").forEach((el) => (el.hidden = el.dataset.page !== S.page));
+    document.querySelectorAll(".tabs a").forEach((a) => { const on = a.dataset.page === S.page; a.classList.toggle("on", on); on ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"); });
+    renderAll();
+  }
+  // 只畫目前這頁：隱藏的頁面寬度是 0，Plotly 會畫錯
+  function renderAll() { RENDER[S.page](); }
 
   async function main() {
     [D.yields, D.effr, D.path, D.summ] = await Promise.all(["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv"].map(load));
@@ -721,7 +820,8 @@
     bindSeg("#f-views", "fView", renderFed);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
-    renderAll();
+    window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
+    route();
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) { syncThemeBtn(); renderAll(); } });
     $("#theme").addEventListener("click", () => {
       const t = isDark() ? "light" : "dark";
