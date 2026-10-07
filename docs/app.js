@@ -4,9 +4,9 @@
 
   const TENORS = ["1m", "2m", "3m", "4m", "6m", "1y", "2y", "3y", "5y", "7y", "10y", "20y", "30y"];
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
-  const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [] };
+  const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", iYears: "5", dRange: "1Y",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", iYears: "5", dRange: "1Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
@@ -894,7 +894,7 @@
     $("#infl-date").innerHTML = dataLine("core_pce", "pce", "PCE");
     const be = D.be.filter((r) => r.be10 !== "").pop();
     $("#infl-k").innerHTML = `<span>Core PCE <b class="num">${f1(lastV(pce).v)}%</b></span><span>Core CPI <b class="num">${f1(lastV(cpi).v)}%</b></span>`
-      + (be ? `<span>10y breakeven <b class="num">${(+be.be10).toFixed(2)}%</b></span>` : "");
+      + (be ? `<span>10y breakeven <b class="num">${(+be.be10).toFixed(2)}%</b></span>` : "") + lastSurpriseLine("inflation");
     const ti = [{ ...xy(pce.filter((p) => p.date >= start)), name: "Core PCE YoY", line: { color: P[0], width: 2 } },
       { ...xy(cpi.filter((p) => p.date >= start)), name: "Core CPI YoY", line: { color: P[3], width: 1.6 } }];
     const sp = sepTrace("core_pce", "Fed projection", P[0], lastV(pce).date); if (sp) ti.push(sp);
@@ -904,7 +904,7 @@
     $("#jobs-take").textContent = jobsTakeaway();
     $("#jobs-date").innerHTML = dataLine("unrate", "nfp", "NFP");
     $("#jobs-k").innerHTML = `<span>Unemployment <b class="num">${f1(lastV(u).v)}%</b></span><span>Payrolls <b class="num">${bp(lastV(pay).v, 0)}k</b></span>`
-      + (sahm ? `<span>Sahm <b class="num ${sahm.v >= 0.5 ? "up" : ""}">${sahm.v.toFixed(2)}</b></span>` : "");
+      + (sahm ? `<span>Sahm <b class="num ${sahm.v >= 0.5 ? "up" : ""}">${sahm.v.toFixed(2)}</b></span>` : "") + lastSurpriseLine("jobs");
     const tj = [{ ...xy(uS), name: "Unemployment rate", line: { color: P[2], width: 2 } }];
     const su = sepTrace("unrate", "Fed projection", P[2], lastV(u).date); if (su) tj.push(su);
     plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis() }));
@@ -975,7 +975,10 @@
       + `<span class="muted">(${monthName(s0.date)}). It triggers at 0.5: the 3-month average unemployment rate rising 0.5pt above its 12-month low has marked the start of every US recession since 1970.</span>` : "";
 
     const pay = diff(ser("payems")), p24 = pay.slice(-24), a3 = avgK(pay, 3).slice(-24);
-    plot("c-nfp", [{ ...xy(p24), name: "Monthly change", type: "bar", marker: { color: p24.map((p) => (p.v < 0 ? css("--up") : rgba(P[0], 0.75))) }, hovertemplate: "%{y:+.0f}k" },
+    // 那個月公布時，對前兩個月的合計修正（ALFRED）
+    const rev = new Map(D.rel.filter((r) => r.measure === "nfp" && r.rev2 !== "").map((r) => [r.ref, +r.rev2]));
+    const revTxt = p24.map((p) => (rev.has(p.date) ? `<br>Prior 2 months revised ${rev.get(p.date) > 0 ? "+" : ""}${rev.get(p.date)}k in this report` : ""));
+    plot("c-nfp", [{ ...xy(p24), name: "Monthly change", type: "bar", marker: { color: p24.map((p) => (p.v < 0 ? css("--up") : rgba(P[0], 0.75))) }, customdata: revTxt, hovertemplate: "%{y:+.0f}k%{customdata}" },
       { ...xy(a3), name: "3-month average", line: { color: css("--ink"), width: 2 }, hovertemplate: "%{y:+.0f}k" }],
       baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
 
@@ -1018,13 +1021,131 @@
       + `<p class="hint">Real + breakeven adds up to the 10y TIPS-implied nominal yield, which sits a few bp from the Treasury 10y (black line). Data from FRED (T10YIE, DFII10), ${last.date}.</p>`;
   }
 
+  // ---------- 數據 surprise：預期（FF / 手動）vs 首次公布（ALFRED） ----------
+  // sd = 歷史不夠時用的典型 surprise 大小；sign = +1 代表數字高 = 經濟較熱 / 通膨較高（對利率偏鷹）
+  const SM = {
+    core_cpi_mm: { name: "Core CPI m/m", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1 },
+    cpi_mm: { name: "CPI m/m", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1 },
+    cpi_yy: { name: "CPI y/y", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1 },
+    core_pce_mm: { name: "Core PCE m/m", unit: "%", dec: 1, page: "inflation", type: "pce", sd: 0.1, sign: 1 },
+    core_ppi_mm: { name: "Core PPI m/m", unit: "%", dec: 1, page: "inflation", type: "ppi", sd: 0.2, sign: 1 },
+    ppi_mm: { name: "PPI m/m", unit: "%", dec: 1, page: "inflation", type: "ppi", sd: 0.2, sign: 1 },
+    nfp: { name: "Nonfarm payrolls", unit: "k", dec: 0, page: "jobs", type: "nfp", sd: 75, sign: 1 },
+    unrate: { name: "Unemployment rate", unit: "%", dec: 1, page: "jobs", type: "nfp", sd: 0.1, sign: -1 },
+    ahe_mm: { name: "Avg hourly earnings m/m", unit: "%", dec: 1, page: "jobs", type: "nfp", sd: 0.1, sign: 1 },
+    claims: { name: "Initial claims", unit: "k", dec: 0, page: "jobs", type: "claims", sd: 12, sign: -1 },
+  };
+  const fmtU = (m, v) => (v === "" || v == null || isNaN(v) ? "–" : (+v).toFixed(SM[m].dec) + SM[m].unit);
+  const fmtS = (m, v) => (v == null || isNaN(v) ? "–" : (v > 0 ? "+" : "") + v.toFixed(SM[m].dec) + SM[m].unit);
+  // 預期值：手動的優先
+  function consensus(date, m) {
+    const f = (rows) => rows.find((r) => r.date === date && r.measure === m && r.forecast !== "");
+    const r = f(D.conManual) || f(D.con);
+    return r ? { v: +r.forecast, src: r.source || "manual" } : null;
+  }
+  // 某個 measure 的每次公布，舊到新；z = 標準化 surprise（正 = 比預期熱 / 鷹）
+  const _sur = {};
+  function surRows(m) {
+    if (_sur[m]) return _sur[m];
+    const rows = D.rel.filter((r) => r.measure === m).map((r) => {
+      const c = consensus(r.date, m), a = +r.actual, s = c ? +(a - c.v).toFixed(4) : null, re = reaction(r.date);
+      return { ...r, actual: a, forecast: c ? c.v : null, src: c ? c.src : "", surprise: s, d2: re ? re.d2 : null, fed: re ? re.fed : null };
+    });
+    const ss = rows.filter((r) => r.surprise != null).map((r) => r.surprise);
+    const sd = ss.length >= 12 ? Math.sqrt(ss.reduce((a, x) => a + x * x, 0) / ss.length) || SM[m].sd : SM[m].sd;
+    rows.forEach((r) => (r.z = r.surprise == null ? null : (SM[m].sign * r.surprise) / sd));
+    return (_sur[m] = rows);
+  }
+  const refLabel = (m, ref) => (m === "claims" ? `wk ${md(ref)}` : monthName(ref));
+  const zTxt = (z) => (z == null ? "–" : `<span class="${z > 0.05 ? "up" : z < -0.05 ? "down" : ""}">${z > 0 ? "+" : ""}${z.toFixed(1)}σ</span>`);
+
+  // ECO 風格表：每個指標最新一次公布 + 下次已有預期值的
+  function ecoTable(measures) {
+    const today = localToday();
+    let h = "<table><thead><tr><th>Date</th><th>Indicator</th><th>Period</th><th>Survey</th><th>Actual</th><th>Prior</th><th>Revised</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
+    const up = [], last = [];
+    measures.forEach((m) => {
+      const rs = surRows(m), r = rs[rs.length - 1];
+      const nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= today && (!r || c.date > r.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+      if (nx) up.push(`<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`);
+      if (r) last.push([r.date, `<tr><td class="n">${md(r.date)}</td><td>${SM[m].name}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}</td><td class="n"><b>${fmtU(m, r.actual)}</b></td>`
+        + `<td class="n">${fmtU(m, r.prior)}</td><td class="n">${r.revised !== "" && r.prior !== "" && +r.revised !== +r.prior ? fmtU(m, r.revised) : ""}</td>`
+        + `<td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`]);
+    });
+    last.sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    return `<div class="table-wrap eco">${h}${up.join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
+  }
+  function conStart() { const d = [...D.con, ...D.conManual].map((r) => r.date).sort(); return d[0] || null; }
+  const conNote = () => { const s = conStart(); return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected since ${s}` : " and are collected from this week on"}; earlier releases show the actual but no forecast unless added to consensus_manual.csv. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
+
+  // 一個指標的歷史：柱子 = 實際、點 = 預期
+  function renderSurprisePanel(page) {
+    const ms = Object.keys(SM).filter((m) => SM[m].page === page), key = page === "inflation" ? "sIn" : "sJob";
+    if (!ms.includes(S[key])) S[key] = ms[0];
+    const el = $(`#sur-${page}`); if (!el) return;
+    if (!D.rel.length) { el.innerHTML = `<p class="hint">Release data load after the next daily update.</p>`; return; }
+    el.innerHTML = ecoTable(ms) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint">${conNote()}</p>`;
+    el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
+    const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
+    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
+    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => r.actual), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
+    const fc = rs.filter((r) => r.forecast != null);
+    if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
+    plot(`c-sur-${page}`, tr, baseLayout({ hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
+    let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
+    rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
+    el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
+  }
+
+  // 首頁卡片：這一類最近一次公布
+  function lastSurpriseLine(page) {
+    const all = Object.keys(SM).filter((m) => SM[m].page === page && m !== "claims").flatMap((m) => surRows(m).slice(-1).map((r) => ({ ...r, m })));
+    if (!all.length) return "";
+    all.sort((a, b) => (a.date < b.date ? 1 : -1));
+    const d = all[0].date, same = all.filter((r) => r.date === d);
+    return `<div class="sur">● Last release (${md(d)}): ` + same.map((r) => `${SM[r.m].name} <b class="num">${fmtU(r.m, r.actual)}</b>`
+      + (r.forecast == null ? "" : ` vs ${fmtU(r.m, r.forecast)} exp. ${zTxt(r.z)}`)).join(" · ") + "</div>";
+  }
+
+  // Rates：surprise 指數（類似 Citi）和數據對 2y 的影響
+  const SUR_TYPES = { cpi: "CPI", pce: "PCE", ppi: "PPI", nfp: "Jobs report", claims: "Claims" };
+  function allSurprises() { return Object.keys(SM).flatMap((m) => surRows(m).filter((r) => r.z != null).map((r) => ({ ...r, m }))); }
+  function renderSurIndex() {
+    const el = $("#c-surix"); if (!el) return;
+    const all = allSurprises().sort((a, b) => (a.date < b.date ? -1 : 1));
+    const note = $("#surix-note");
+    if (all.length < 3) { empty("c-surix", `Not enough forecasts yet. The index and scatter fill in as forecasts are collected${conStart() ? ` (since ${conStart()})` : ""}.`); note.textContent = ""; return; }
+    clearEmpty("c-surix");
+    const P = palette();
+    if (S.sixView === "index") {
+      // 每天：過去 90 天的 surprise，半衰期 30 天加權
+      const xs = [], ys = [];
+      for (let d = all[0].date; d <= localToday(); d = shiftDays(d, 1)) {
+        let s = 0; all.forEach((r) => { const age = daysBetween(r.date, d); if (age >= 0 && age <= 90) s += r.z * Math.pow(0.5, age / 30); });
+        xs.push(d); ys.push(+s.toFixed(2));
+      }
+      plot("c-surix", [{ x: xs, y: ys, name: "Surprise index", fill: "tozeroy", line: { color: P[0], width: 2 }, fillcolor: rgba(P[0], 0.15), hovertemplate: "%{y:+.2f}<extra></extra>" }],
+        baseLayout({ yaxis: { ...baseLayout().yaxis, zeroline: true, zerolinecolor: css("--muted") } }));
+      note.textContent = "Sum of recent standardized surprises across CPI, PCE, PPI, the jobs report and claims, with a 30-day half-life. Above zero: data have been coming in hotter / stronger than expected, which usually pushes yields up.";
+    } else {
+      const tr = Object.keys(SUR_TYPES).map((t, i) => {
+        const r = all.filter((x) => SM[x.m].type === t && x.d2 != null && ["core_cpi_mm", "core_pce_mm", "core_ppi_mm", "nfp", "claims"].includes(x.m));
+        return { x: r.map((x) => x.z), y: r.map((x) => x.d2), text: r.map((x) => `${SM[x.m].name} ${x.date}`), name: SUR_TYPES[t], mode: "markers", marker: { size: 9, color: P[i % P.length] },
+          hovertemplate: "%{text}<br>%{x:+.1f}σ → 2y %{y:+.1f}bp<extra></extra>" };
+      }).filter((t) => t.x.length);
+      plot("c-surix", tr, baseLayout({ hovermode: "closest", xaxis: { ...baseLayout().xaxis, title: { text: "Surprise (σ, + = hotter)", font: { size: 12 } }, zeroline: true, zerolinecolor: css("--muted") },
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } }));
+      note.textContent = "Each dot is one release (headline measure for each report): how big the surprise was against how much the 2y moved that day, close to close. A steeper cloud means the market is more sensitive to that data right now.";
+    }
+  }
+
   // ---------- 分頁：#overview / #rates / #calendar（舊的 #events 也導到 calendar）----------
   const PAGES = ["overview", "rates", "inflation", "jobs", "calendar"];
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); },
-    rates: () => { renderYields(); renderFed(); renderDecomp(); renderFomcChart(); renderFomcTable(); },
-    inflation: () => renderInflation(),
-    jobs: () => renderJobs(),
+    rates: () => { renderYields(); renderFed(); renderDecomp(); renderFomcChart(); renderFomcTable(); renderSurIndex(); },
+    inflation: () => { renderInflation(); renderSurprisePanel("inflation"); },
+    jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     calendar: () => renderCalendar(),
   };
   function route() {
@@ -1038,8 +1159,8 @@
   function renderAll() { RENDER[S.page](); }
 
   async function main() {
-    [D.yields, D.effr, D.path, D.summ, D.macro, D.claims, D.be, D.sep] = await Promise.all(
-      ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv"].map(load));
+    [D.yields, D.effr, D.path, D.summ, D.macro, D.claims, D.be, D.sep, D.rel, D.con, D.conManual] = await Promise.all(
+      ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv", "releases.csv", "consensus.csv", "consensus_manual.csv"].map(load));
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     D.yields.forEach((r, i) => (yIdx[r.date] = i));
@@ -1051,6 +1172,7 @@
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
     bindSeg("#d-range", "dRange", renderDecomp);
+    bindSeg("#six-views", "sixView", renderSurIndex);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
     window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
