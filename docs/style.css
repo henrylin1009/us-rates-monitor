@@ -135,3 +135,25 @@ table.dist td.top { font-weight: 600; }
 
 .tag.warn { color: var(--up); border-color: var(--up); }
 .hint.stale { color: var(--up); }
+.tile .d .muted { opacity: .75; }
+
+/* 行事曆（仿 Fed FOMC calendar：左月份、右事件） */
+.cal { margin: 12px 0 14px; }
+.cal-year { font-size: 15px; font-weight: 600; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--ink); }
+.cal-year:first-child { margin-top: 0; }
+.cal-month { display: grid; grid-template-columns: 110px 1fr; border-bottom: 1px solid var(--line); }
+.cal-m { font-weight: 600; font-size: 13.5px; padding: 9px 12px 9px 0; }
+.cal-evs { padding: 4px 0; }
+.cal-ev { display: grid; grid-template-columns: 112px 18px 1fr; align-items: baseline; padding: 4px 0; font-size: 13.5px; }
+.cal-d { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; font-size: 13px; }
+.cal-d small { color: var(--muted); }
+.cal-g { text-align: center; }
+.cal-ev.fomc .cal-l { font-weight: 600; }
+.cal-ev.past { opacity: .45; }
+.cal-ev.today .cal-d { color: var(--accent); font-weight: 600; }
+.cal-priced { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; font-weight: 400; margin-left: 6px; }
+@media (max-width: 640px) {
+  .cal-month { grid-template-columns: 1fr; }
+  .cal-m { padding: 8px 0 0; }
+  .cal-ev { grid-template-columns: 96px 18px 1fr; }
+}
