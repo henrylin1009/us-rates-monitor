@@ -15,6 +15,8 @@ from pathlib import Path
 
 import requests
 
+import fomc
+from calendars import update_calendars
 from fedpricing import implied_month_rate, price_path
 from fomc import MEETINGS
 
@@ -226,6 +228,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--backfill", action="store_true", help="第一次執行：補齊歷史資料")
     args = ap.parse_args()
+    global MEETINGS
+    try:
+        update_calendars(get)  # 先更新 FOMC 日期，下面算 Fed 定價才會用到最新的
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_calendars 失敗：{e}")
+    MEETINGS = fomc.load_meetings()
     errors = 0
     for step in (update_yields, update_effr, update_zq):
         try:

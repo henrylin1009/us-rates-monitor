@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>US Rates Monitor</title>
-<meta name="description" content="每日美國利率市場：殖利率曲線與從 ZQ 期貨自算的 Fed 定價">
+<meta name="description" content="Daily US rates monitor: Treasury yield curve and Fed pricing computed from ZQ futures">
 <script>try { const t = localStorage.getItem("theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,31 +17,31 @@
   <div class="wrap">
     <div class="brand">
       <h1>US Rates Monitor</h1>
-      <p class="sub">美國利率市場每日紀錄 · 殖利率曲線與自算 Fed 定價</p>
+      <p class="sub">Daily US rates log · Treasury curve and self-computed Fed pricing</p>
     </div>
     <div class="top-right">
-      <div class="asof" id="asof">載入中…</div>
-      <button class="theme-btn" id="theme" type="button" title="切換暗色／亮色模式" aria-label="切換暗色／亮色模式">☾</button>
+      <div class="asof" id="asof">Loading…</div>
+      <button class="theme-btn" id="theme" type="button" title="Toggle dark / light mode" aria-label="Toggle dark / light mode">☾</button>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="tiles" id="tiles" aria-label="今日摘要"></section>
+  <section class="tiles" id="tiles" aria-label="Today's summary"></section>
 
   <section class="panel" id="p-yields">
     <div class="panel-head">
       <div>
-        <h2>美債殖利率</h2>
+        <h2>Treasury yields</h2>
         <p class="hint" id="y-hint"></p>
       </div>
       <div class="seg" role="tablist" id="y-views">
-        <button data-v="tenor" class="on">走勢</button>
-        <button data-v="curve">曲線</button>
-        <button data-v="spread">利差</button>
-        <button data-v="change">變動</button>
-        <button data-v="heat">熱力圖</button>
-        <button data-v="vsfed">2y vs 預期</button>
+        <button data-v="tenor" class="on">Trend</button>
+        <button data-v="curve">Curve</button>
+        <button data-v="spread">Spreads</button>
+        <button data-v="change">Change</button>
+        <button data-v="heat">Heatmap</button>
+        <button data-v="vsfed">2y vs Fed</button>
       </div>
     </div>
     <div class="controls" id="y-controls"></div>
@@ -53,14 +53,15 @@
   <section class="panel" id="p-fed">
     <div class="panel-head">
       <div>
-        <h2>Fed 定價 <span class="tag">自算 · ZQ 期貨</span></h2>
+        <h2>Fed pricing <span class="tag">computed · ZQ futures</span> <span class="tag" id="f-asof"></span></h2>
         <p class="hint" id="f-hint"></p>
+        <p class="hint stale" id="f-stale" hidden></p>
       </div>
       <div class="seg" role="tablist" id="f-views">
-        <button data-v="path" class="on">隱含路徑</button>
-        <button data-v="probs">會議機率</button>
-        <button data-v="cum">累積定價</button>
-        <button data-v="spag">過去 + 未來</button>
+        <button data-v="path" class="on">Implied path</button>
+        <button data-v="probs">Meeting odds</button>
+        <button data-v="cum">Cumulative</button>
+        <button data-v="spag">Past + future</button>
       </div>
     </div>
     <div class="controls" id="f-controls"></div>
@@ -71,17 +72,17 @@
 
   <section class="notes">
     <details>
-      <summary>Fed 定價怎麼算</summary>
+      <summary>How Fed pricing is computed</summary>
       <ul>
-        <li>ZQ（30 天聯邦基金期貨）價格 = 100 − 該月 EFFR 平均。</li>
-        <li>會議月份：月平均 =（會議前天數 × 舊利率 + 會議後天數 × 新利率）÷ 當月天數，解出會議後利率。</li>
-        <li>會議後剩不到 7 天時改用下個月合約，因為整個月都是會議後利率，比較準。</li>
-        <li>多次會議用接力：上一次會議後的利率當下一次的起點，第一次從當天 EFFR 開始。</li>
-        <li>每次會議的隱含變動 ÷ 25bp，拆成最接近的兩檔結果；再從今天的目標區間一路接下去，算出每次會議後落在各個區間的機率（和 CME FedWatch 同一種做法）。期貨只告訴我們平均預期，分佈形狀是假設；價格也含少量風險溢酬。</li>
-        <li>ZQ 報價來自 Yahoo Finance（非官方、有延遲），可以和 CME FedWatch 對照。</li>
+        <li>ZQ (30-day fed funds futures) price = 100 − that month's average EFFR.</li>
+        <li>Meeting months: monthly average = (days before × old rate + days after × new rate) ÷ days in month, solved for the post-meeting rate.</li>
+        <li>If fewer than 7 days remain after the meeting, the next month's contract is used instead, since that whole month is at the post-meeting rate.</li>
+        <li>Meetings are chained: each post-meeting rate is the next meeting's starting point, starting from today's EFFR.</li>
+        <li>Each meeting's implied move ÷ 25bp is split between the two nearest outcomes, then chained from today's target range to get the probability of each range after each meeting (the same method as CME FedWatch). Futures only give the average expectation, so the distribution shape is an assumption, and prices include a small risk premium.</li>
+        <li>ZQ prices come from Yahoo Finance (unofficial, delayed); compare with CME FedWatch.</li>
       </ul>
     </details>
-    <p class="src">資料：U.S. Treasury Daily Par Yield Curve · New York Fed EFFR · CBOT ZQ via Yahoo Finance。每個交易日收盤後由 GitHub Actions 自動更新。<span id="updated"></span></p>
+    <p class="src">Data: U.S. Treasury Daily Par Yield Curve · New York Fed EFFR · CBOT ZQ via Yahoo Finance. Updated automatically by GitHub Actions after each trading day's close.<span id="updated"></span></p>
   </section>
 </main>
 
