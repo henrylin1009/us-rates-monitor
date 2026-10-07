@@ -240,7 +240,7 @@
     curve: "整條曲線的形狀，和過去比較。x 軸照期限排，間距相等。",
     spread: "期限利差。往上 = 變陡，往下 = 變平；低於 0 是倒掛。",
     change: "各期限在這段期間漲跌幾 bp。看是短端還是長端帶動，判斷 bull/bear steepening 或 flattening。",
-    heat: "日期 × 期限的熱力圖，看整條曲線長期怎麼演變。",
+    heat: "日期 × 期限的熱力圖，看整條曲線長期怎麼演變。空白是財政部還沒發行那個期限的時候：2 個月期從 2018/10 開始，4 個月期從 2022/10 開始。",
     vsfed: "2y 殖利率對比 ZQ 隱含的 12 個月後政策利率。2y 大致反映 Fed 預期，兩條線的差距可以想成期限溢酬加雜訊。",
   };
   function renderYields() {
@@ -317,7 +317,7 @@
       plot(id, [{
         type: "heatmap", x: rows.map((r) => r.date), y: TENORS, z: TENORS.map((t) => rows.map((r) => num(r[t]))),
         colorscale: dark ? "Viridis" : "YlGnBu", reversescale: !dark, colorbar: { ticksuffix: "%", thickness: 10, outlinewidth: 0, tickfont: { color: css("--muted") } },
-        hovertemplate: "%{x}<br>%{y}: %{z:.2f}%<extra></extra>",
+        hoverongaps: false, hovertemplate: "%{x}<br>%{y}: %{z:.2f}%<extra></extra>",
       }], baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, type: "category" } }));
     }
 
