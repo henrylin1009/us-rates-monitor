@@ -834,9 +834,11 @@
   // 月資料一欄 → [{date, v}]，跳過空白
   const ser = (col, rows = D.macro) => rows.filter((r) => r[col] !== "" && r[col] != null).map((r) => ({ date: r.date, v: +r[col] }));
   // 變化率：k 期前比較，ann = 換算成年率（12 個月）
-  const rate = (s, k, ann) => s.slice(k).map((p, i) => ({ date: p.date, v: (ann ? Math.pow(p.v / s[i].v, 12 / k) - 1 : p.v / s[i].v - 1) * 100 }));
+  // 用日期找 k 個月前（不是往前數 k 筆）：2025 年 10 月政府關門，CPI 那個月沒資料
+  const mBack = (iso, k) => { const n = +iso.slice(0, 4) * 12 + +iso.slice(5, 7) - 1 - k; return `${Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, "0")}-01`; };
+  const rate = (s, k, ann) => { const v = new Map(s.map((p) => [p.date, p.v])); return s.filter((p) => v.has(mBack(p.date, k))).map((p) => { const b = v.get(mBack(p.date, k)); return { date: p.date, v: (ann ? Math.pow(p.v / b, 12 / k) - 1 : p.v / b - 1) * 100 }; }); };
   const yoy = (s) => rate(s, 12, false), mom = (s) => rate(s, 1, false), annK = (s, k) => rate(s, k, true);
-  const diff = (s) => s.slice(1).map((p, i) => ({ date: p.date, v: p.v - s[i].v }));
+  const diff = (s) => { const v = new Map(s.map((p) => [p.date, p.v])); return s.filter((p) => v.has(mBack(p.date, 1))).map((p) => ({ date: p.date, v: p.v - v.get(mBack(p.date, 1)) })); };
   const avgK = (s, k) => s.slice(k - 1).map((p, i) => ({ date: p.date, v: s.slice(i, i + k).reduce((a, x) => a + x.v, 0) / k }));
   const lastV = (s) => (s.length ? s[s.length - 1] : null);
   const fromYears = (s, y) => { if (!s.length) return s; const start = shiftDays(s[s.length - 1].date, -Math.round(365.25 * y)); return s.filter((p) => p.date >= start); };

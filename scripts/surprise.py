@@ -66,14 +66,21 @@ def parse_ff(events: list[dict]) -> list[dict]:
     return out
 
 
+def months_back(iso: str, k: int) -> str:
+    y, m = divmod(int(iso[:4]) * 12 + int(iso[5:7]) - 1 - k, 12)
+    return f"{y:04d}-{m + 1:02d}-01"
+
+
 def compute(kind: str, obs: list[tuple[str, float]], i: int) -> float | None:
-    """obs 是同一個 vintage 的 (日期, 值)，算第 i 期的數字。"""
+    """obs 是同一個 vintage 的 (日期, 值)，算第 i 期的數字。
+    用日期找 k 個月前，不用位置：2025 年 10 月政府關門 CPI 整個月沒資料，用位置會差一個月。"""
     if kind in ("level", "level_k"):
         return round(obs[i][1] / (1000 if kind == "level_k" else 1), 3)
     k = 12 if kind == "pct12" else 1
-    if i - k < 0:
+    b = dict(obs).get(months_back(obs[i][0], k))
+    if b is None:
         return None
-    a, b = obs[i][1], obs[i - k][1]
+    a = obs[i][1]
     return round(a - b) if kind == "diff" else round((a / b - 1) * 100, 1) + 0.0  # + 0.0 去掉 -0.0
 
 

@@ -39,4 +39,11 @@ v = [("2026-09-11", [("2026-07-01", 100.0), ("2026-08-01", 100.3)]),
      ("2026-10-14", [("2026-07-01", 100.0), ("2026-08-01", 100.2), ("2026-09-01", 100.6)])]
 r = vintage_rows("cpi_mm", "pct1", v)
 assert (r[1]["actual"], r[1]["prior"], r[1]["revised"]) == (0.4, 0.3, 0.2), r
+# 缺一個月（2025 年 10 月 CPI 沒公布）：y/y 要用日期找 12 個月前，不能用位置
+from surprise import compute
+obs = [(f"2024-{m:02d}-01", 100.0 + m) for m in range(9, 13)] + [(f"2025-{m:02d}-01", 110.0 + m) for m in range(1, 13) if m != 10]
+i = len(obs) - 1  # 2025-12
+assert compute("pct12", obs, i) == round((122 / 112 - 1) * 100, 1), compute("pct12", obs, i)
+assert compute("pct1", obs, i) == round((122 / 121 - 1) * 100, 1)
+assert compute("pct1", obs, obs.index(("2025-11-01", 121.0))) is None  # 前一個月沒資料
 print("test_surprise OK")
