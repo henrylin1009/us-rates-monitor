@@ -224,3 +224,4 @@ a.more:hover { text-decoration: underline; }
 .eco tr.upcoming td { background: var(--chip); }
 .sur-ctl { margin: 6px 0 2px; }
 .eco td:nth-child(2), .eco th:nth-child(2), .eco td:nth-child(3), .eco th:nth-child(3) { text-align: left; }
+sup.man { font-size: 9px; color: var(--muted); margin-left: 2px; font-family: Inter, system-ui, sans-serif; }

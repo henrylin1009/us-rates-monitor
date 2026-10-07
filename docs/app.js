@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", iYears: "5", dRange: "1Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", iYears: "5", dRange: "1Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
@@ -834,9 +834,11 @@
   // 月資料一欄 → [{date, v}]，跳過空白
   const ser = (col, rows = D.macro) => rows.filter((r) => r[col] !== "" && r[col] != null).map((r) => ({ date: r.date, v: +r[col] }));
   // 變化率：k 期前比較，ann = 換算成年率（12 個月）
-  const rate = (s, k, ann) => s.slice(k).map((p, i) => ({ date: p.date, v: (ann ? Math.pow(p.v / s[i].v, 12 / k) - 1 : p.v / s[i].v - 1) * 100 }));
+  // 用日期找 k 個月前（不是往前數 k 筆）：2025 年 10 月政府關門，CPI 那個月沒資料
+  const mBack = (iso, k) => { const n = +iso.slice(0, 4) * 12 + +iso.slice(5, 7) - 1 - k; return `${Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, "0")}-01`; };
+  const rate = (s, k, ann) => { const v = new Map(s.map((p) => [p.date, p.v])); return s.filter((p) => v.has(mBack(p.date, k))).map((p) => { const b = v.get(mBack(p.date, k)); return { date: p.date, v: (ann ? Math.pow(p.v / b, 12 / k) - 1 : p.v / b - 1) * 100 }; }); };
   const yoy = (s) => rate(s, 12, false), mom = (s) => rate(s, 1, false), annK = (s, k) => rate(s, k, true);
-  const diff = (s) => s.slice(1).map((p, i) => ({ date: p.date, v: p.v - s[i].v }));
+  const diff = (s) => { const v = new Map(s.map((p) => [p.date, p.v])); return s.filter((p) => v.has(mBack(p.date, 1))).map((p) => ({ date: p.date, v: p.v - v.get(mBack(p.date, 1)) })); };
   const avgK = (s, k) => s.slice(k - 1).map((p, i) => ({ date: p.date, v: s.slice(i, i + k).reduce((a, x) => a + x.v, 0) / k }));
   const lastV = (s) => (s.length ? s[s.length - 1] : null);
   const fromYears = (s, y) => { if (!s.length) return s; const start = shiftDays(s[s.length - 1].date, -Math.round(365.25 * y)); return s.filter((p) => p.date >= start); };
@@ -910,6 +912,52 @@
     plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis() }));
   }
 
+  // CPI 拆項三種看法：時間序列的貢獻疊圖、最新一個月的橫條、各項 × 月份的熱力圖
+  function renderCpiParts(comps) {
+    const P = palette(), v = S.cpiView, narrow = innerWidth < 600;
+    const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
+      latest: "The latest month only: each component's own m/m change (bar), against the month before (dot) and its 12-month average (tick). The quickest read on release day.",
+      heat: "Each component's m/m change over the last 24 months. Colour is how unusual the move is for that component (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
+    $("#cpi-hint").textContent = hint;
+    if (v === "time") {
+      const tb = comps.map(([c, n, w], i) => {
+        const m = mom(ser(c)).slice(-12);
+        return { x: m.map((p) => p.date), y: m.map((p) => (p.v * w) / 100), customdata: m.map((p) => p.v), name: n, type: "bar", marker: { color: P[i % P.length] },
+          hovertemplate: `%{y:+.2f}pt (${n.split(" (")[0]} itself %{customdata:+.2f}% m/m)<extra></extra>` };
+      });
+      const head = mom(ser("cpi")).slice(-12);
+      tb.push({ ...xy(head), name: "Headline CPI m/m", mode: "markers", marker: { symbol: "diamond", size: 10, color: css("--ink"), line: { color: css("--surface"), width: 1.5 } }, hovertemplate: "Headline %{y:+.2f}%<extra></extra>" });
+      const nb = narrow ? { legend: { ...baseLayout().legend, y: -0.1, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 140 } } : {};
+      return plot("c-cpi-parts", tb, baseLayout({ ...nb, barmode: "relative", bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+    }
+    const rows = [["cpi", "Headline CPI"], ["core_cpi", "Core CPI"], ...comps.map(([c, n]) => [c, narrow && c === "cpi_supercore" ? "Supercore" : n.split(" (")[0]])];
+    if (v === "latest") {
+      const d = rows.map(([c, n]) => { const m = mom(ser(c)), l = m[m.length - 1], p = m[m.length - 2], a = m.slice(-12); return { n, l, p, avg: a.reduce((x, y) => x + y.v, 0) / a.length }; }).reverse();
+      const month = d[d.length - 1].l ? monthName(d[d.length - 1].l.date) : "";
+      return plot("c-cpi-parts", [
+        { y: d.map((x) => x.n), x: d.map((x) => x.l.v), name: `${month} m/m`, type: "bar", orientation: "h", marker: { color: d.map((x) => (x.l.v >= 0 ? rgba(P[1], 0.75) : rgba(P[2], 0.75))) }, hovertemplate: "%{y}: %{x:+.2f}%<extra></extra>" },
+        { y: d.map((x) => x.n), x: d.map((x) => (x.p ? x.p.v : null)), name: "Month before", mode: "markers", marker: { size: 9, color: css("--ink"), symbol: "circle-open", line: { width: 2 } }, hovertemplate: "%{y} month before: %{x:+.2f}%<extra></extra>" },
+        { y: d.map((x) => x.n), x: d.map((x) => x.avg), name: "12-month average", mode: "markers", marker: { size: 16, color: css("--muted"), symbol: "line-ns", line: { width: 2.5, color: css("--muted") } }, hovertemplate: "%{y} 12m average: %{x:+.2f}%<extra></extra>" },
+      ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 10, b: narrow ? 100 : 40 }, ...(narrow ? { legend: { ...baseLayout().legend, y: -0.15, yanchor: "top" } } : {}), xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, tickfont: { color: css("--ink"), size: 12 } } }));
+    }
+    // 熱力圖：顏色 = 和自己 2015-19 平均差幾個標準差
+    const months = mom(ser("cpi")).slice(narrow ? -12 : -24).map((p) => p.date);
+    const z = [], txt = [];
+    rows.forEach(([c]) => {
+      const m = mom(ser(c)), base = m.filter((p) => p.date >= "2015-01-01" && p.date < "2020-01-01").map((p) => p.v);
+      const mu = base.reduce((a, x) => a + x, 0) / base.length, sd = Math.sqrt(base.reduce((a, x) => a + (x - mu) ** 2, 0) / base.length) || 1;
+      const mp = new Map(m.map((p) => [p.date, p.v]));
+      z.push(months.map((d) => (mp.has(d) ? (mp.get(d) - mu) / sd : null)));
+      txt.push(months.map((d) => (mp.has(d) ? mp.get(d).toFixed(1).replace(/^-0\.0$/, "0.0") : "")));
+    });
+    const lo = css("--down"), hi = css("--up"), mid = css("--surface");
+    // 月份當類別軸：2025 年 10 月沒有資料，用日期軸會變成一格很寬的空白
+    plot("c-cpi-parts", [{ type: "heatmap", x: months.map((d) => monthName(d).replace(/ (\d{2})(\d{2})$/, " $2")), y: rows.map((r) => r[1]), z, text: txt, texttemplate: narrow ? "" : "%{text}", textfont: { size: 10 },
+      colorscale: [[0, lo], [0.5, mid], [1, hi]], zmin: -3, zmax: 3, xgap: 2, ygap: 2, showscale: false,
+      hovertemplate: "%{y} %{x}: %{text}% m/m (%{z:+.1f}σ vs 2015-19)<extra></extra>" }],
+      baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 10, t: 10, b: 40 }, xaxis: { ...baseLayout().xaxis, type: "category", showgrid: false, nticks: 12 }, yaxis: { ...baseLayout().yaxis, autorange: "reversed", showgrid: false, tickfont: { color: css("--ink"), size: 12 } } }));
+  }
+
   // Inflation 頁
   const I_VIEWS = { yoy: ["YoY", (s) => yoy(s)], a3: ["3m annualized", (s) => annK(s, 3)], a6: ["6m annualized", (s) => annK(s, 6)] };
   function renderInflation() {
@@ -928,15 +976,7 @@
     // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
     // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
     const comps = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore, approx.)", 25.3], ["cpi_food", "Food", 13.6], ["cpi_energy", "Energy", 6.4]];
-    const tb = comps.map(([c, n, w], i) => {
-      const m = mom(ser(c)).slice(-12);
-      return { x: m.map((p) => p.date), y: m.map((p) => (p.v * w) / 100), customdata: m.map((p) => p.v), name: n, type: "bar", marker: { color: P[i % P.length] },
-        hovertemplate: `%{y:+.2f}pt (${n.split(" (")[0]} itself %{customdata:+.2f}% m/m)<extra></extra>` };
-    });
-    const head = mom(ser("cpi")).slice(-12);
-    tb.push({ ...xy(head), name: "Headline CPI m/m", mode: "markers", marker: { symbol: "diamond", size: 10, color: css("--ink"), line: { color: css("--surface"), width: 1.5 } }, hovertemplate: "Headline %{y:+.2f}%<extra></extra>" });
-    const nb = innerWidth < 600 ? { legend: { ...baseLayout().legend, y: -0.1, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 140 } } : {};
-    plot("c-cpi-parts", tb, baseLayout({ ...nb, barmode: "relative", bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+    renderCpiParts(comps);
     let h = "<table><thead><tr><th>Component</th><th>Weight</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
     comps.forEach(([c, n, w]) => { const s = ser(c); h += `<tr><td>${n}</td><td class="n">${w}%</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`; });
     $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
@@ -1036,6 +1076,8 @@
     claims: { name: "Initial claims", unit: "k", dec: 0, page: "jobs", type: "claims", sd: 12, sign: -1 },
   };
   const fmtU = (m, v) => (v === "" || v == null || isNaN(v) ? "–" : (+v).toFixed(SM[m].dec) + SM[m].unit);
+  // 手動 key 的預期值加一個小 m
+  const manTag = (r) => (r && /manual/.test(r.src || "") ? `<sup class="man" title="Entered by hand: ${r.src}">m</sup>` : "");
   const fmtS = (m, v) => (v == null || isNaN(v) ? "–" : (v > 0 ? "+" : "") + v.toFixed(SM[m].dec) + SM[m].unit);
   // 預期值：手動的優先
   function consensus(date, m) {
@@ -1068,7 +1110,7 @@
       const rs = surRows(m), r = rs[rs.length - 1];
       const nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= today && (!r || c.date > r.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
       if (nx) up.push(`<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`);
-      if (r) last.push([r.date, `<tr><td class="n">${md(r.date)}</td><td>${SM[m].name}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}</td><td class="n"><b>${fmtU(m, r.actual)}</b></td>`
+      if (r) last.push([r.date, `<tr><td class="n">${md(r.date)}</td><td>${SM[m].name}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n"><b>${fmtU(m, r.actual)}</b></td>`
         + `<td class="n">${fmtU(m, r.prior)}</td><td class="n">${r.revised !== "" && r.prior !== "" && +r.revised !== +r.prior ? fmtU(m, r.revised) : ""}</td>`
         + `<td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`]);
     });
@@ -1076,7 +1118,7 @@
     return `<div class="table-wrap eco">${h}${up.join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
   }
   function conStart() { const d = [...D.con, ...D.conManual].map((r) => r.date).sort(); return d[0] || null; }
-  const conNote = () => { const s = conStart(); return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected since ${s}` : " and are collected from this week on"}; earlier releases show the actual but no forecast unless added to consensus_manual.csv. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
+  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
 
   // 一個指標的歷史：柱子 = 實際、點 = 預期
   function renderSurprisePanel(page) {
@@ -1087,13 +1129,13 @@
     el.innerHTML = ecoTable(ms) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint">${conNote()}</p>`;
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
-    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
+    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
     const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => r.actual), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
     const fc = rs.filter((r) => r.forecast != null);
     if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
     plot(`c-sur-${page}`, tr, baseLayout({ hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
     let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
-    rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
+    rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
     el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
   }
 
@@ -1171,6 +1213,7 @@
     bindSeg("#f-views", "fView", renderFed);
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
+    bindSeg("#cpi-views", "cpiView", () => renderInflation());
     bindSeg("#d-range", "dRange", renderDecomp);
     bindSeg("#six-views", "sixView", renderSurIndex);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
