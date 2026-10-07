@@ -316,7 +316,8 @@
       const dark = isDark();
       plot(id, [{
         type: "heatmap", x: rows.map((r) => r.date), y: TENORS, z: TENORS.map((t) => rows.map((r) => num(r[t]))),
-        colorscale: dark ? "Viridis" : "YlGnBu", reversescale: !dark, colorbar: { ticksuffix: "%", thickness: 10, outlinewidth: 0, tickfont: { color: css("--muted") } },
+        // 單一藍色：利率越高顏色越濃（亮色模式越深，暗色模式越亮）
+        colorscale: dark ? [[0, "#1c2433"], [0.5, "#3f63b8"], [1, "#b3cbff"]] : [[0, "#eef2fb"], [0.5, "#6b8fd6"], [1, "#12296b"]], colorbar: { ticksuffix: "%", thickness: 10, outlinewidth: 0, tickfont: { color: css("--muted") } },
         hoverongaps: false, hovertemplate: "%{x}<br>%{y}: %{z:.2f}%<extra></extra>",
       }], baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, type: "category" } }));
     }
