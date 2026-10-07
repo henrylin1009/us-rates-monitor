@@ -6,14 +6,14 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [] };
   const S = {
-    yView: "tenor", fView: "path",
+    yView: "tenor", fView: "priced",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
     spreads: ["2s10s", "5s30s"],
     cum: ["cum_yearend_bp", "cum_12m_bp"],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null, histMeeting: null,
+    pathCmp: ["1W", "1M"], pricedCmp: ["1W"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null, histMeeting: null, calAll: false,
   };
 
   // ---------- 小工具 ----------
@@ -24,6 +24,8 @@
   const num = (x) => (x === "" || x == null ? null : +x);
   const bp = (x, d = 0) => { if (x == null || isNaN(x)) return "–"; const r = +x.toFixed(d); return (r > 0 ? "+" : "") + (r === 0 ? 0 : r).toFixed(d); };
   const pct = (x) => (x == null ? "–" : Math.round(x * 100) + "%");
+  // bp 換成「幾次一碼」：desk 習慣講 "1.3 hikes priced"
+  const moves = (b) => { if (b == null || isNaN(b)) return "–"; const n = b / 25; return Math.abs(n) < 0.005 ? "no change" : `${Math.abs(n).toFixed(2)} ${n > 0 ? "hikes" : "cuts"}`; };
   const fmtD = (s) => s; // ISO
   const shiftDays = (iso, k) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + k); return d.toISOString().slice(0, 10); };
   const cmpDays = { "1D": 1, "1W": 7, "1M": 30, "3M": 91, "1Y": 365 };
@@ -222,9 +224,9 @@
     const f = D.summ[D.summ.length - 1];
     if (f) {
       const ph = num(f.next_p_hike), pc = num(f.next_p_cut);
-      const lead = ph >= pc ? `Hike ${pct(ph)}` : `Cut ${pct(pc)}`;
-      h += tile(`Next FOMC ${f.next_meeting.slice(5).replace("-", "/")}`, bp(num(f.next_move_bp), 1) + "bp", lead);
-      h += tile("Priced by year-end", bp(num(f.cum_yearend_bp), 0) + "bp", `12 months out ${bp(num(f.cum_12m_bp), 0)}bp`);
+      const odds = ph >= pc ? `hike odds ${pct(ph)}` : `cut odds ${pct(pc)}`;
+      h += tile(`Priced for FOMC ${f.next_meeting.slice(5).replace("-", "/")}`, bp(num(f.next_move_bp), 1) + "bp", `${moves(num(f.next_move_bp))} · <span class="muted">${odds}</span>`);
+      h += tile("Priced by year-end", bp(num(f.cum_yearend_bp), 0) + "bp", `${moves(num(f.cum_yearend_bp))} · <span class="muted">12m ${bp(num(f.cum_12m_bp), 0)}bp</span>`);
     }
     const nx = D.events.filter((e) => ["fomc", "cpi", "nfp", "pce"].includes(e.type) && e.date > a.date).slice(0, 2);
     if (nx.length) {
@@ -387,9 +389,10 @@
 
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
+    priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
     path: "The implied policy rate after each FOMC meeting. Compare with a week or a month ago to see how much the market has repriced.",
-    probs: "Probability of each target range after each FOMC meeting (FedWatch style). Always relative to today's range: grey = same as today, deeper orange = higher, deeper green = lower.",
-    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range.",
+    probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
+    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range. For meetings after the next one, read the direction of the shift rather than exact percentages: the split assumes meetings are independent.",
     cum: "Cumulative bp priced relative to today's EFFR, one point per day, to see whether pricing is getting more hawkish or dovish.",
     spag: "The black line is the actual EFFR; the orange line is today's expected path; dotted lines are expectations from earlier dates. The bigger the gap, the more the market has repriced.",
   };
@@ -426,6 +429,44 @@
       return [lo - 0.1, hi + 0.1];
     };
     const fedNote = `Drag the slider to see the expected path as of that day, or press ▶ to play; today's path stays faint as a reference. Fed pricing history starts on ${A[0]}, so the slider only reaches back that far for now and will grow over time.`;
+
+    if (v === "priced") {
+      // WIRP 式：每次會議 price 了多少 bp（柱）＋從今天起累計（線），可疊一週 / 一個月前的累計來看 repricing
+      ctl.append(chips("Compare", ["1W", "1M"].map((k) => [k, cmpLabel[k]]), S.pricedCmp, true, rr));
+      const rows = pathOn(last), x = rows.map((r) => r.meeting), start = rows.length ? num(rows[0].pre) : effrNow;
+      const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + " '" + iso.slice(2, 4);
+      const xl = x.map(mon);
+      // 舊日期的累計：用那天的會議後隱含利率減今天的起點，同一把尺才比得起來（中間開過會也不會錯位）
+      const then = (a) => { const m = new Map(pathOn(a).map((r) => [r.meeting, num(r.post)])); return x.map((d) => (m.has(d) ? (m.get(d) - start) * 100 : null)); };
+      const cmp = [];
+      S.pricedCmp.forEach((k) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) cmp.push([k, a, then(a)]); });
+      const mv = rows.map((r) => num(r.move_bp)), cum = rows.map((r) => num(r.cum_bp));
+      const tr = [
+        { x: xl, y: mv, name: "This meeting", type: "bar", marker: { color: mv.map((b) => rgba(css(b >= 0 ? "--up" : "--down"), 0.45)) },
+          text: mv.map((b) => (Math.abs(b) >= 5 ? bp(b, 1) : "")), textposition: "inside", insidetextanchor: "end", textfont: { size: 10.5, color: css("--ink") },
+          customdata: mv.map((b) => moves(b)), hovertemplate: "This meeting %{y:+.1f}bp (%{customdata})<extra></extra>" },
+        ...cmp.map(([k, a, y], j) => ({ x: xl, y, name: `Cumulative ${cmpLabel[k]} (${a})`, type: "scatter", mode: "lines+markers",
+          line: { color: [P[3], P[4]][j % 2], width: 1.6, dash: "dot" }, marker: { size: 5 }, hovertemplate: `${cmpLabel[k]}: %{y:+.1f}bp<extra></extra>` })),
+        { x: xl, y: cum, name: "Cumulative from today", type: "scatter", mode: "lines+markers+text", line: { color: P[0], width: 2.6 }, marker: { size: 7 },
+          text: cum.map((b) => bp(b, 0)), textposition: "top left", cliponaxis: false,
+          textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--ink") },
+          customdata: cum.map((b) => moves(b)), hovertemplate: "Cumulative %{y:+.1f}bp (%{customdata})<extra></extra>" },
+      ];
+      plot(id, tr, baseLayout({ hovermode: "x unified", xaxis: { ...baseLayout().xaxis, type: "category" },
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } }));
+      // 表：每次會議 bp / 幾碼 / 累計 / 和一週、一個月前比
+      const cols = [["1W", "Δ vs 1 week"], ["1M", "Δ vs 1 month"]].map(([k, n]) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); return a && a !== last ? [n, then(a)] : null; }).filter(Boolean);
+      let h = "<table><thead><tr><th>FOMC</th><th>This meeting (bp)</th><th>Moves</th><th>Cumulative (bp)</th><th>Cumulative moves</th><th>Implied rate</th>"
+        + cols.map(([n]) => `<th>${n}</th>`).join("") + "</tr></thead><tbody>";
+      const c = (z) => (z > 0.05 ? "up" : z < -0.05 ? "down" : "");
+      rows.forEach((r, i) => {
+        h += `<tr><td>${r.meeting}</td><td class="n">${bp(mv[i], 1)}</td><td class="n">${moves(mv[i])}</td>`
+          + `<td class="n"><b>${bp(cum[i], 1)}</b></td><td class="n">${moves(cum[i])}</td><td class="n">${num(r.post).toFixed(3)}%</td>`
+          + cols.map(([, y]) => { const d = y[i] == null ? null : cum[i] - y[i]; return `<td class="n ${d == null ? "" : c(d)}">${d == null ? "–" : bp(d, 1)}</td>`; }).join("") + "</tr>";
+      });
+      $("#f-table").innerHTML = h + "</tbody></table>"
+        + `<p class="hint">One move = 25bp. Cumulative is measured from today's EFFR (${start.toFixed(2)}%). Δ columns show how much cumulative pricing has changed: positive = more hawkish than then. These numbers come straight from futures prices; the Meeting odds tab adds an independence assumption on top.</p>`;
+    }
 
     if (v === "path") {
       ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
@@ -615,6 +656,42 @@
       + `<p class="hint">Each cell is the probability that the target range sits at that level after the meeting; each row sums to 100%. Bold is the most likely level. Futures only give the average expectation, so each meeting is assumed to land on the two nearest levels; the further out, the less precise.</p>`;
   }
 
+  // ---------- 行事曆：仿 Fed 官網 FOMC calendar，左邊月份、右邊當月事件，由上往下 ----------
+  function renderCalendar() {
+    const el = $("#cal"); if (!el) return;
+    const today = lastYieldDate() || new Date().toISOString().slice(0, 10), m0 = today.slice(0, 7);
+    const horizon = S.calAll ? "9999" : shiftDays(today, 92);
+    const evs = D.events.filter((e) => e.date.slice(0, 7) >= m0 && e.date <= horizon);
+    // FOMC 會議 → 那次會議 price 了多少 bp（最新一天的路徑）
+    const A = asofs(), priced = new Map(A.length ? pathOn(A[A.length - 1]).map((r) => [r.meeting, r]) : []);
+    const mon = (ym) => new Date(ym + "-01T00:00:00Z").toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+    const md = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+    const dow = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+    const groups = new Map();
+    evs.forEach((e) => { const k = e.date.slice(0, 7); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
+    let h = "", yr = "";
+    groups.forEach((list, ym) => {
+      if (ym.slice(0, 4) !== yr) { yr = ym.slice(0, 4); h += `<div class="cal-year">${yr}</div>`; }
+      h += `<div class="cal-month"><div class="cal-m">${mon(ym)}</div><div class="cal-evs">` + list.map((e) => {
+        const past = e.date < today, isF = e.type === "fomc";
+        // FOMC 是兩天的會，日期顯示「前一天–決議日」，和 Fed 官網一樣；3/6/9/12 月有經濟預測（SEP / 點陣圖）
+        let d = isF ? `${md(shiftDays(e.date, -1))}–${shiftDays(e.date, -1).slice(5, 7) === e.date.slice(5, 7) ? e.date.slice(8).replace(/^0/, "") : md(e.date)}` : md(e.date);
+        let extra = "";
+        if (isF) {
+          if (["03", "06", "09", "12"].includes(e.date.slice(5, 7))) extra += ` <span class="badge" title="Summary of Economic Projections (dot plot)">SEP</span>`;
+          const r = priced.get(e.date);
+          if (r && !past) extra += ` <span class="cal-priced ${num(r.move_bp) > 0.05 ? "up" : num(r.move_bp) < -0.05 ? "down" : ""}">priced ${bp(num(r.move_bp), 1)}bp · ${moves(num(r.move_bp))}</span>`;
+        }
+        return `<div class="cal-ev${isF ? " fomc" : ""}${past ? " past" : ""}${e.date === today ? " today" : ""}">`
+          + `<span class="cal-d">${d}<small>${isF ? "" : " " + dow(e.date)}</small></span>`
+          + `<span class="cal-g" style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span>`
+          + `<span class="cal-l">${e.label}${extra}</span></div>`;
+      }).join("") + "</div></div>";
+    });
+    el.innerHTML = h || `<div class="empty">No upcoming events.</div>`;
+    $("#cal-all").textContent = S.calAll ? "Next 3 months" : "Show all";
+  }
+
   // ---------- 啟動 ----------
   function bindSeg(sel, key, render) {
     $(sel).addEventListener("click", (e) => {
@@ -628,7 +705,7 @@
     b.title = d ? "Switch to light mode" : "Switch to dark mode";
     b.setAttribute("aria-label", b.title);
   }
-  function renderAll() { renderTiles(); renderYields(); renderFed(); }
+  function renderAll() { renderTiles(); renderYields(); renderFed(); renderCalendar(); }
 
   async function main() {
     [D.yields, D.effr, D.path, D.summ] = await Promise.all(["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv"].map(load));
@@ -640,6 +717,7 @@
     if (D.meta.updated) $("#updated").textContent = ` Last updated: ${D.meta.updated}.`;
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
+    $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
     renderAll();
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) { syncThemeBtn(); renderAll(); } });
     $("#theme").addEventListener("click", () => {

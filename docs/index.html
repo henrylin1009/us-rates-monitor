@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -58,7 +58,8 @@
         <p class="hint stale" id="f-stale" hidden></p>
       </div>
       <div class="seg" role="tablist" id="f-views">
-        <button data-v="path" class="on">Implied path</button>
+        <button data-v="priced" class="on">Priced (bp)</button>
+        <button data-v="path">Implied path</button>
         <button data-v="probs">Meeting odds</button>
         <button data-v="cum">Cumulative</button>
         <button data-v="spag">Past + future</button>
@@ -71,6 +72,17 @@
     <div class="table-wrap" id="f-table"></div>
   </section>
 
+  <section class="panel" id="p-cal">
+    <div class="panel-head">
+      <div>
+        <h2>Calendar</h2>
+        <p class="hint">FOMC meetings, minutes and the data releases that move rates, month by month. FOMC rows show what futures price for that meeting; SEP marks meetings with new projections and the dot plot.</p>
+      </div>
+      <div class="seg"><button id="cal-all" type="button" class="on">Show all</button></div>
+    </div>
+    <div class="cal" id="cal"></div>
+  </section>
+
   <section class="notes">
     <details>
       <summary>How Fed pricing is computed</summary>
@@ -79,7 +91,8 @@
         <li>Meeting months: monthly average = (days before × old rate + days after × new rate) ÷ days in month, solved for the post-meeting rate.</li>
         <li>If fewer than 7 days remain after the meeting, the next month's contract is used instead, since that whole month is at the post-meeting rate.</li>
         <li>Meetings are chained: each post-meeting rate is the next meeting's starting point, starting from today's EFFR.</li>
-        <li>Each meeting's implied move ÷ 25bp is split between the two nearest outcomes, then chained from today's target range to get the probability of each range after each meeting (the same method as CME FedWatch). Futures only give the average expectation, so the distribution shape is an assumption, and prices include a small risk premium.</li>
+        <li>Each meeting's implied move ÷ 25bp is split between the two nearest outcomes, then chained from today's target range to get the probability of each range after each meeting (the same method as CME FedWatch).</li>
+        <li>Futures only pin down the average, which is why the site leads with bp priced. The odds additionally assume each meeting's move is independent of the previous one; in reality a hike in one meeting makes the next less likely, so the true distribution is probably more concentrated than shown. Option-based tools such as the <a href="https://www.atlantafed.org/cenfis/market-probability-tracker">Atlanta Fed Market Probability Tracker</a> measure the shape directly. Prices also include a small risk premium.</li>
         <li>ZQ prices come from Yahoo Finance (unofficial, delayed); compare with CME FedWatch.</li>
       </ul>
     </details>
@@ -87,6 +100,6 @@
   </section>
 </main>
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
