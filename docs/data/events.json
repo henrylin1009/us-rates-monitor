@@ -1,10 +1,241 @@
 {
- "_note": "Dates: BLS (CPI/NFP/PPI), BEA (PCE), Fed (FOMC); auto-updated daily from FRED and the Fed calendar. Some Oct-Nov 2025 releases were delayed or cancelled by the government shutdown.",
+ "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar, CPI/NFP/PPI/PCE from FRED. Past events keep their existing labels.",
+ "updated": "2026-10-07",
  "events": [
+  {
+   "date": "2025-01-10",
+   "type": "nfp",
+   "label": "NFP (Dec 2024)"
+  },
+  {
+   "date": "2025-01-14",
+   "type": "ppi",
+   "label": "PPI (Dec 2024)"
+  },
+  {
+   "date": "2025-01-15",
+   "type": "cpi",
+   "label": "CPI (Dec 2024)"
+  },
+  {
+   "date": "2025-01-29",
+   "type": "fomc",
+   "label": "FOMC decision"
+  },
+  {
+   "date": "2025-01-31",
+   "type": "pce",
+   "label": "PCE (Dec 2024)"
+  },
+  {
+   "date": "2025-02-07",
+   "type": "nfp",
+   "label": "NFP (Jan 2025)"
+  },
+  {
+   "date": "2025-02-12",
+   "type": "cpi",
+   "label": "CPI (Jan 2025)"
+  },
+  {
+   "date": "2025-02-13",
+   "type": "ppi",
+   "label": "PPI (Jan 2025)"
+  },
+  {
+   "date": "2025-02-19",
+   "type": "minutes",
+   "label": "FOMC minutes (Jan meeting)"
+  },
+  {
+   "date": "2025-02-28",
+   "type": "pce",
+   "label": "PCE (Jan 2025)"
+  },
+  {
+   "date": "2025-03-07",
+   "type": "nfp",
+   "label": "NFP (Feb 2025)"
+  },
+  {
+   "date": "2025-03-12",
+   "type": "cpi",
+   "label": "CPI (Feb 2025)"
+  },
+  {
+   "date": "2025-03-13",
+   "type": "ppi",
+   "label": "PPI (Feb 2025)"
+  },
+  {
+   "date": "2025-03-19",
+   "type": "fomc",
+   "label": "FOMC decision"
+  },
+  {
+   "date": "2025-03-28",
+   "type": "pce",
+   "label": "PCE (Feb 2025)"
+  },
+  {
+   "date": "2025-04-04",
+   "type": "nfp",
+   "label": "NFP (Mar 2025)"
+  },
+  {
+   "date": "2025-04-09",
+   "type": "minutes",
+   "label": "FOMC minutes (Mar meeting)"
+  },
+  {
+   "date": "2025-04-10",
+   "type": "cpi",
+   "label": "CPI (Mar 2025)"
+  },
+  {
+   "date": "2025-04-11",
+   "type": "ppi",
+   "label": "PPI (Mar 2025)"
+  },
+  {
+   "date": "2025-04-30",
+   "type": "pce",
+   "label": "PCE (Mar 2025)"
+  },
+  {
+   "date": "2025-05-02",
+   "type": "nfp",
+   "label": "NFP (Apr 2025)"
+  },
+  {
+   "date": "2025-05-07",
+   "type": "fomc",
+   "label": "FOMC decision"
+  },
+  {
+   "date": "2025-05-13",
+   "type": "cpi",
+   "label": "CPI (Apr 2025)"
+  },
+  {
+   "date": "2025-05-15",
+   "type": "ppi",
+   "label": "PPI (Apr 2025)"
+  },
+  {
+   "date": "2025-05-28",
+   "type": "minutes",
+   "label": "FOMC minutes (May meeting)"
+  },
+  {
+   "date": "2025-05-30",
+   "type": "pce",
+   "label": "PCE (Apr 2025)"
+  },
+  {
+   "date": "2025-06-06",
+   "type": "nfp",
+   "label": "NFP (May 2025)"
+  },
+  {
+   "date": "2025-06-11",
+   "type": "cpi",
+   "label": "CPI (May 2025)"
+  },
+  {
+   "date": "2025-06-12",
+   "type": "ppi",
+   "label": "PPI (May 2025)"
+  },
+  {
+   "date": "2025-06-18",
+   "type": "fomc",
+   "label": "FOMC decision"
+  },
+  {
+   "date": "2025-06-27",
+   "type": "pce",
+   "label": "PCE (May 2025)"
+  },
+  {
+   "date": "2025-07-03",
+   "type": "nfp",
+   "label": "NFP (Jun 2025)"
+  },
+  {
+   "date": "2025-07-09",
+   "type": "minutes",
+   "label": "FOMC minutes (Jun meeting)"
+  },
+  {
+   "date": "2025-07-15",
+   "type": "cpi",
+   "label": "CPI (Jun 2025)"
+  },
+  {
+   "date": "2025-07-16",
+   "type": "ppi",
+   "label": "PPI (Jun 2025)"
+  },
+  {
+   "date": "2025-07-30",
+   "type": "fomc",
+   "label": "FOMC decision"
+  },
+  {
+   "date": "2025-07-31",
+   "type": "pce",
+   "label": "PCE (Jun 2025)"
+  },
+  {
+   "date": "2025-08-01",
+   "type": "nfp",
+   "label": "NFP (Jul 2025)"
+  },
+  {
+   "date": "2025-08-12",
+   "type": "cpi",
+   "label": "CPI (Jul 2025)"
+  },
+  {
+   "date": "2025-08-14",
+   "type": "ppi",
+   "label": "PPI (Jul 2025)"
+  },
+  {
+   "date": "2025-08-20",
+   "type": "minutes",
+   "label": "FOMC minutes (Jul meeting)"
+  },
+  {
+   "date": "2025-08-29",
+   "type": "pce",
+   "label": "PCE (Jul 2025)"
+  },
+  {
+   "date": "2025-09-05",
+   "type": "nfp",
+   "label": "NFP (Aug 2025)"
+  },
+  {
+   "date": "2025-09-10",
+   "type": "ppi",
+   "label": "PPI (Aug 2025)"
+  },
+  {
+   "date": "2025-09-11",
+   "type": "cpi",
+   "label": "CPI (Aug 2025)"
+  },
   {
    "date": "2025-09-17",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2025-09-26",
+   "type": "pce",
+   "label": "PCE (Aug 2025)"
   },
   {
    "date": "2025-10-08",
@@ -55,6 +286,16 @@
    "date": "2025-12-18",
    "type": "cpi",
    "label": "CPI (Nov 2025)"
+  },
+  {
+   "date": "2025-12-23",
+   "type": "pce",
+   "label": "PCE (Nov 2025)"
+  },
+  {
+   "date": "2025-12-30",
+   "type": "minutes",
+   "label": "FOMC minutes (Dec meeting)"
   },
   {
    "date": "2025-12-31",
