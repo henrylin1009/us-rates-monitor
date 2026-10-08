@@ -1184,16 +1184,23 @@
     measures.forEach((m) => {
       const rs = surRows(m), r = rs[rs.length - 1];
       const nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= today && (!r || c.date > r.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
-      if (nx) up.push(`<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`);
+      if (nx) up.push([nx.date, `<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`]);
+      else {
+        // 還沒有預期：先從 events.json 列出下一次公布日，預期出來（公布當週）會自動換成上面那種
+        const ev = D.events.find((e) => e.type === SM[m].type && e.date >= today && (!r || e.date > r.date));
+        const ref = ev && evtMonth(ev.label);
+        if (ev) up.push([ev.date, `<tr class="upcoming"><td class="n">${md(ev.date)}</td><td>${SM[m].name}</td><td>${ref ? monthName(ref) : ""}</td><td class="n muted" title="The forecast shows up in the week of the release">not out yet</td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`]);
+      }
       if (r) last.push([r.date, `<tr><td class="n">${md(r.date)}</td><td>${SM[m].name}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n"><b>${fmtU(m, r.actual)}</b></td>`
         + `<td class="n">${fmtU(m, r.prior)}</td><td class="n">${r.revised !== "" && r.prior !== "" && +r.revised !== +r.prior ? fmtU(m, r.revised) : ""}</td>`
         + `<td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`]);
     });
     last.sort((a, b) => (a[0] < b[0] ? 1 : -1));
-    return `<div class="table-wrap eco">${h}${up.join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
+    up.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    return `<div class="table-wrap eco">${h}${up.map((x) => x[1]).join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
   }
   function conStart() { const d = [...D.con, ...D.conManual].map((r) => r.date).sort(); return d[0] || null; }
-  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
+  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. It only lists the current week, so later releases show "not out yet" until their week starts. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
 
   // 一個指標的歷史：柱子 = 實際、點 = 預期
   function renderSurprisePanel(page) {
