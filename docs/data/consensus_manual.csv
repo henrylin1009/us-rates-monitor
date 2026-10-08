@@ -75,6 +75,7 @@ date,measure,forecast,previous,source
 2026-09-04,nfp,55,,investing.com (manual)
 2026-09-04,unrate,4.1,,investing.com (manual)
 2026-09-10,core_ppi_mm,0.3,,investing.com (manual)
+2026-09-10,ppi_mm,0.4,,forexfactory.com (manual)
 2026-09-11,core_cpi_mm,0.2,,investing.com (manual)
 2026-09-11,cpi_mm,0.4,,investing.com (manual)
 2026-09-11,cpi_yy,3.4,,investing.com (manual)
