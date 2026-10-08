@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", itemView: "latest", iYears: "5", dRange: "1Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", itemView: "latest", iYears: "5", dRange: "1Y", fomcRange: "2Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
@@ -312,12 +312,13 @@
   // 實際 EFFR（實線）vs 會前一天 price 的利率（菱形）+ 今天 price 的未來路徑（虛線）
   function renderFomcChart() {
     if (!D.effr.length) return empty("c-fomc", "No EFFR data");
-    const start = shiftDays(D.effr[D.effr.length - 1].date, -731);
+    const yrs = { "6M": 0.5, "1Y": 1, "2Y": 2, "5Y": 5 }[S.fomcRange];
+    const start = yrs ? shiftDays(D.effr[D.effr.length - 1].date, -Math.round(365.25 * yrs)) : D.effr[0].date;
     const eff = D.effr.filter((r) => r.date >= start && r.effr !== "");
     const ink = css("--ink"), acc = css("--s1"), muted = css("--muted");
     const decTxt = (d) => (d == null ? "–" : d > 0 ? `hike ${d}bp` : d < 0 ? `cut ${-d}bp` : "hold");
     const traces = [{ x: eff.map((r) => r.date), y: eff.map((r) => num(r.effr)), name: "Actual (EFFR)", mode: "lines", line: { color: ink, width: 2, shape: "hv" }, hovertemplate: "%{y:.2f}%<extra>EFFR</extra>" }];
-    const sur = fomcSurprises().filter((x) => x.pricedRate != null);
+    const sur = fomcSurprises().filter((x) => x.pricedRate != null && x.date >= start);
     if (sur.length) traces.push({
       x: sur.map((x) => x.date), y: sur.map((x) => x.pricedRate), name: "Priced day before", mode: "markers",
       marker: { symbol: "diamond", size: 11, color: acc, line: { color: css("--surface"), width: 1.5 } },
@@ -336,7 +337,7 @@
     }
     const lay = baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
     lay.shapes = asof ? [{ type: "line", xref: "x", yref: "paper", x0: asof, x1: asof, y0: 0, y1: 1, line: { color: muted, width: 1, dash: "dot" } }] : [];
-    lay.annotations = asof ? [{ x: asof, y: 1, xref: "x", yref: "paper", text: "today", showarrow: false, yanchor: "bottom", font: { color: muted, size: 11 } }] : [];
+    lay.annotations = asof ? [{ x: asof, y: 0, xref: "x", yref: "paper", text: " today", showarrow: false, xanchor: "left", yanchor: "bottom", font: { color: muted, size: 11 } }] : [];
     clearEmpty("c-fomc");
     plot("c-fomc", traces, lay);
   }
@@ -1246,6 +1247,7 @@
     bindSeg("#cpi-views", "cpiView", () => renderInflation());
     bindSeg("#item-views", "itemView", () => renderCpiItems());
     bindSeg("#d-range", "dRange", renderDecomp);
+    bindSeg("#fomc-range", "fomcRange", renderFomcChart);
     bindSeg("#six-views", "sixView", renderSurIndex);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
