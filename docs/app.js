@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", iYears: "5", dRange: "1Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", itemView: "latest", iYears: "5", dRange: "1Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
     changeWin: "1D",
@@ -933,19 +933,28 @@
       return plot("c-cpi-parts", tb, baseLayout({ ...nb, barmode: "relative", bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
     }
     const rows = [["cpi", "Headline CPI"], ["core_cpi", "Core CPI"], ...comps.map(([c, n]) => [c, narrow && c === "cpi_supercore" ? "Supercore" : n.split(" (")[0]])];
-    if (v === "latest") {
-      const d = rows.map(([c, n]) => { const m = mom(ser(c)), l = m[m.length - 1], p = m[m.length - 2], a = m.slice(-12); return { n, l, p, avg: a.reduce((x, y) => x + y.v, 0) / a.length }; }).reverse();
-      const month = d[d.length - 1].l ? monthName(d[d.length - 1].l.date) : "";
-      return plot("c-cpi-parts", [
-        { y: d.map((x) => x.n), x: d.map((x) => x.l.v), name: `${month} m/m`, type: "bar", orientation: "h", marker: { color: d.map((x) => (x.l.v > PACE2 ? rgba(css("--up"), 0.75) : rgba(css("--down"), 0.6))) },
-          customdata: d.map((x) => (Math.pow(1 + x.l.v / 100, 12) - 1) * 100), hovertemplate: "%{y}: %{x:+.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>" },
-        { y: d.map((x) => x.n), x: d.map((x) => (x.p ? x.p.v : null)), name: "Month before", mode: "markers", marker: { size: 9, color: css("--ink"), symbol: "circle-open", line: { width: 2 } }, hovertemplate: "%{y} month before: %{x:+.2f}%<extra></extra>" },
-        { y: d.map((x) => x.n), x: d.map((x) => x.avg), name: "12-month average", mode: "markers", marker: { size: 16, color: css("--muted"), symbol: "line-ns", line: { width: 2.5, color: css("--muted") } }, hovertemplate: "%{y} 12m average: %{x:+.2f}%<extra></extra>" },
-      ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 24, b: narrow ? 100 : 40 },
-        shapes: [{ type: "line", xref: "x", yref: "paper", x0: PACE2, x1: PACE2, y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
-        annotations: [{ x: PACE2, y: 1, xref: "x", yref: "paper", yanchor: "bottom", xanchor: "left", showarrow: false, text: "2% a year pace (0.17%/month)", font: { size: 11, color: css("--muted") } }], ...(narrow ? { legend: { ...baseLayout().legend, y: -0.15, yanchor: "top" } } : {}), xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, tickfont: { color: css("--ink"), size: 12 } } }));
-    }
-    // 熱力圖：顏色 = 和自己 2015-19 平均差幾個標準差
+    if (v === "latest") return latestBars("c-cpi-parts", rows);
+    heatRows("c-cpi-parts", rows);
+  }
+
+  // 每一列自己的最新 m/m 橫條：對照上個月、12 個月平均和 2% 年速
+  function latestBars(id, rows) {
+    const narrow = innerWidth < 600;
+    const d = rows.map(([c, n]) => { const m = mom(ser(c)), l = m[m.length - 1], p = m[m.length - 2], a = m.slice(-12); return { n, l, p, avg: a.reduce((x, y) => x + y.v, 0) / a.length }; }).reverse();
+    const month = d[d.length - 1].l ? monthName(d[d.length - 1].l.date) : "";
+    return plot(id, [
+      { y: d.map((x) => x.n), x: d.map((x) => x.l.v), name: `${month} m/m`, type: "bar", orientation: "h", marker: { color: d.map((x) => (x.l.v > PACE2 ? rgba(css("--up"), 0.75) : rgba(css("--down"), 0.6))) },
+        customdata: d.map((x) => (Math.pow(1 + x.l.v / 100, 12) - 1) * 100), hovertemplate: "%{y}: %{x:+.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>" },
+      { y: d.map((x) => x.n), x: d.map((x) => (x.p ? x.p.v : null)), name: "Month before", mode: "markers", marker: { size: 9, color: css("--ink"), symbol: "circle-open", line: { width: 2 } }, hovertemplate: "%{y} month before: %{x:+.2f}%<extra></extra>" },
+      { y: d.map((x) => x.n), x: d.map((x) => x.avg), name: "12-month average", mode: "markers", marker: { size: 16, color: css("--muted"), symbol: "line-ns", line: { width: 2.5, color: css("--muted") } }, hovertemplate: "%{y} 12m average: %{x:+.2f}%<extra></extra>" },
+    ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 24, b: narrow ? 100 : 70 },
+      shapes: [{ type: "line", xref: "x", yref: "paper", x0: PACE2, x1: PACE2, y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
+      annotations: [{ x: PACE2, y: 1, xref: "x", yref: "paper", yanchor: "bottom", xanchor: "left", showarrow: false, text: "2% a year pace (0.17%/month)", font: { size: 11, color: css("--muted") } }], legend: { ...baseLayout().legend, y: narrow ? -0.15 : -0.1, yanchor: "top" }, xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, automargin: true, tickfont: { color: css("--ink"), size: 12 } } }));
+  }
+
+  // 熱力圖：每列 × 月份，顏色 = 和自己 2015-19 平均差幾個標準差
+  function heatRows(id, rows) {
+    const narrow = innerWidth < 600;
     const months = mom(ser("cpi")).slice(narrow ? -12 : -24).map((p) => p.date);
     const z = [], txt = [];
     rows.forEach(([c]) => {
@@ -957,10 +966,20 @@
     });
     const lo = css("--down"), hi = css("--up"), mid = css("--surface");
     // 月份當類別軸：2025 年 10 月沒有資料，用日期軸會變成一格很寬的空白
-    plot("c-cpi-parts", [{ type: "heatmap", x: months.map((d) => monthName(d).replace(/ (\d{2})(\d{2})$/, " $2")), y: rows.map((r) => r[1]), z, text: txt, texttemplate: narrow ? "" : "%{text}", textfont: { size: 10 },
+    plot(id, [{ type: "heatmap", x: months.map((d) => monthName(d).replace(/ (\d{2})(\d{2})$/, " $2")), y: rows.map((r) => r[1]), z, text: txt, texttemplate: narrow ? "" : "%{text}", textfont: { size: 10 },
       colorscale: [[0, lo], [0.5, mid], [1, hi]], zmin: -3, zmax: 3, xgap: 2, ygap: 2, showscale: false,
       hovertemplate: "%{y} %{x}: %{text}% m/m (%{z:+.1f}σ vs 2015-19)<extra></extra>" }],
-      baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 10, t: 10, b: 40 }, xaxis: { ...baseLayout().xaxis, type: "category", showgrid: false, nticks: 12 }, yaxis: { ...baseLayout().yaxis, autorange: "reversed", showgrid: false, tickfont: { color: css("--ink"), size: 12 } } }));
+      baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 10, t: 10, b: 40 }, xaxis: { ...baseLayout().xaxis, type: "category", showgrid: false, nticks: 12 }, yaxis: { ...baseLayout().yaxis, automargin: true, autorange: "reversed", showgrid: false, tickfont: { color: css("--ink"), size: 12 } } }));
+  }
+
+  // CPI 細項：desk 常看的幾個，括號是它屬於上面哪一塊
+  const CPI_ITEMS = [["cpi_oer", "OER (shelter)"], ["cpi_rent", "Rent (shelter)"], ["cpi_medsvc", "Medical services (supercore)"],
+    ["cpi_transvc", "Transport services (supercore)"], ["cpi_airfare", "Airfares (supercore)"], ["cpi_usedcars", "Used cars (core goods)"]];
+  function renderCpiItems() {
+    const rows = CPI_ITEMS.filter(([c]) => ser(c).length).map(([c, n]) => [c, innerWidth < 600 ? n.split(" (")[0] : n]);
+    if (!rows.length) return empty("c-cpi-items", "No CPI item data yet");
+    clearEmpty("c-cpi-items");
+    if (S.itemView === "latest") latestBars("c-cpi-items", rows); else heatRows("c-cpi-items", rows);
   }
 
   // Inflation 頁
@@ -982,6 +1001,7 @@
     // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
     const comps = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore, approx.)", 25.3], ["cpi_food", "Food", 13.6], ["cpi_energy", "Energy", 6.4]];
     renderCpiParts(comps);
+    renderCpiItems();
     let h = "<table><thead><tr><th>Component</th><th>Weight</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
     comps.forEach(([c, n, w]) => { const s = ser(c); h += `<tr><td>${n}</td><td class="n">${w}%</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`; });
     $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
@@ -1027,9 +1047,14 @@
       { ...xy(a3), name: "3-month average", line: { color: css("--ink"), width: 2 }, hovertemplate: "%{y:+.0f}k" }],
       baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
 
-    const ahe = ser("ahe");
-    plot("c-ahe", [{ ...xy(fromYears(yoy(ahe), 5)), name: "YoY", line: { color: P[4], width: 2 }, hovertemplate: "%{y:.1f}%" },
-      { ...xy(fromYears(annK(ahe, 3), 5)), name: "3m annualized", line: { color: P[4], width: 1.3, dash: "dot" }, hovertemplate: "%{y:.1f}%" }], baseLayout({ yaxis: pctAxis() }));
+    // 工資 vs 服務通膨：三種工資量法 + supercore CPI，都是 YoY
+    const ahe = ser("ahe"), eci = yoy(ser("eci_wag")), atl = ser("atl_wage"), sc = yoy(ser("cpi_supercore"));
+    const wt = [{ ...xy(fromYears(yoy(ahe), 5)), name: "Avg hourly earnings", line: { color: P[4], width: 2 }, hovertemplate: "AHE %{y:.1f}%<extra></extra>" }];
+    if (eci.length) wt.push({ ...xy(fromYears(eci, 5)), name: "ECI wages (quarterly)", mode: "lines+markers", line: { color: P[0], width: 2 }, marker: { size: 6 }, hovertemplate: "ECI %{y:.1f}%<extra></extra>" });
+    if (atl.length) wt.push({ ...xy(fromYears(atl, 5)), name: "Atlanta Fed wage tracker", line: { color: P[2], width: 2 }, hovertemplate: "Atlanta Fed %{y:.1f}%<extra></extra>" });
+    wt.push({ ...xy(fromYears(sc, 5)), name: "Supercore CPI", line: { color: css("--muted"), width: 1.6, dash: "dash" }, hovertemplate: "Supercore %{y:.1f}%<extra></extra>" });
+    plot("c-ahe", wt, baseLayout({ yaxis: pctAxis(), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 40, r: 12, t: 10, b: 110 } } : {}) }));
+    $("#wage-date").innerHTML = [["ahe", "AHE"], ["eci_wag", "ECI"], ["atl_wage", "Atlanta Fed"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n} ${c === "eci_wag" ? "Q" + (Math.floor((+l.date.slice(5, 7) - 1) / 3) + 1) + " " + l.date.slice(0, 4) : monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
 
     const cl = D.claims.filter((r) => r.icsa !== "").map((r) => ({ date: r.date, v: r.icsa / 1000 })), c2 = fromYears(cl, 2);
     plot("c-claims", [{ ...xy(c2), name: "Weekly", line: { color: rgba(P[1], 0.55), width: 1.2 }, hovertemplate: "%{y:.0f}k" },
@@ -1219,6 +1244,7 @@
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
     bindSeg("#cpi-views", "cpiView", () => renderInflation());
+    bindSeg("#item-views", "itemView", () => renderCpiItems());
     bindSeg("#d-range", "dRange", renderDecomp);
     bindSeg("#six-views", "sixView", renderSurIndex);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
