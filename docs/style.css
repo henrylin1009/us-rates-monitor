@@ -125,7 +125,7 @@ table.dist th.today { color: var(--ink); }
 table.dist td.zero { color: var(--line); }
 table.dist td.top { font-weight: 600; }
 
-.scrub { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.scrub { display: flex; align-items: center; gap: 10px; flex: 1 1 320px; min-width: 0; }
 .scrub input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
 .scrub .play, .scrub .reset {
   font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
@@ -238,7 +238,6 @@ sup.man { font-size: 9px; color: var(--muted); margin-left: 2px; font-family: In
 /* 說明文字預設收起來，按標題旁的 ? 才顯示 */
 .panel:not(.help) > .panel-head .hint:not(.stale),
 .panel:not(.help) > p.hint,
-.panel:not(.help) .scrub + .hint,
 .panel:not(.help) .hint.note { display: none; }
 .help-btn {
   font: 600 11px/1 Inter, system-ui, sans-serif; width: 18px; height: 18px; border-radius: 50%; margin-left: 8px; vertical-align: 2px;

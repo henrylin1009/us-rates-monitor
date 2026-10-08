@@ -438,19 +438,20 @@
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
-    curve: "Today's curve against earlier dates (top), and how many bp each tenor moved since the first date picked (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the slider to watch the curve change over time.",
+    curve: "Today's curve against earlier dates (top), and how many bp each tenor moved since the first date picked (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the date slider to look at a single day (the Compare picks clear), or press ▶ to play.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
   };
   // ---------- 拖的日期拉桿 + 播放鍵 ----------
   // dates：可以拉的日期（最後一個是今天）；i = null 代表今天；onChange(i) 負責重畫圖
+  // 放在上面 Compare 那一排（Henry：拉桿跟比較日期放一起），回傳元素讓呼叫的人 append
   const timers = {};
-  function scrubber(el, key, dates, i, onChange, note) {
+  function scrubber(key, dates, i, onChange) {
     clearInterval(timers[key]); timers[key] = null;
-    const n = dates.length;
-    el.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="Play">▶</button>`
+    const n = dates.length, el = document.createElement("div");
+    el.className = "scrub";
+    el.innerHTML = `<span>Date</span><button type="button" class="play" aria-label="Play">▶</button>`
       + `<input type="range" min="0" max="${n - 1}" step="1" aria-label="Drag date">`
-      + `<span class="scrub-date num"></span><button type="button" class="reset">Back to today</button></div>`
-      + `<p class="hint">${note || "Drag the slider to see how things changed, or press ▶ to play."}</p>`;
+      + `<span class="scrub-date num"></span><button type="button" class="reset">Back to today</button>`;
     const range = el.querySelector("input"), dateEl = el.querySelector(".scrub-date"), play = el.querySelector(".play"), reset = el.querySelector(".reset");
     let cur = null;
     const set = (j) => {
@@ -472,10 +473,19 @@
       timers[key] = setInterval(() => { j = Math.min(n - 1, j + step); set(j); if (j >= n - 1) stop(); }, ms);
     };
     set(i);
+    return el;
   }
+  // 拉桿一拉就只看那一天：把 Compare 的選擇和自訂日期都取消（直接改畫面上的按鈕，不整個重畫，拖的手才不會斷）
+  function clearCompare(ctl, arr) {
+    arr.length = 0;
+    ctl.querySelectorAll(".chips[data-cmp] button.on").forEach((b) => b.classList.remove("on"));
+    ctl.querySelectorAll('input[type="date"]').forEach((x) => { x.value = ""; });
+  }
+  // 點 Compare 就回到今天（拉桿歸位）
+  const cmpChips = (opts, arr, key, rr) => { const c = chips("Compare", opts, arr, true, () => { S[key] = null; rr(); }); c.dataset.cmp = "1"; return c; };
 
   function renderYields() {
-    clearInterval(timers.y); $("#y-scrub").innerHTML = "";
+    clearInterval(timers.y);
     const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
     if (!D.yields.length) return empty(id, "No yield data yet. For the first run, trigger the GitHub Action manually with backfill checked.");
     clearEmpty(id);
@@ -502,10 +512,10 @@
 
     if (v === "curve") {
       const Y = D.yields, last = Y[Y.length - 1];
-      ctl.append(chips("Compare", Object.keys(cmpDays).map((k) => [k, cmpLabel[k]]), S.curveCmp, true, rr));
+      ctl.append(cmpChips(Object.keys(cmpDays).map((k) => [k, cmpLabel[k]]), S.curveCmp, "curveScrub", rr));
       const lab = document.createElement("label"); lab.textContent = "Custom date ";
       const inp = document.createElement("input"); inp.type = "date"; inp.value = S.curveCustom; inp.max = last.date; inp.min = Y[0].date;
-      inp.onchange = () => { S.curveCustom = inp.value; rr(); }; lab.appendChild(inp); ctl.append(lab);
+      inp.onchange = () => { S.curveCustom = inp.value; S.curveScrub = null; rr(); }; lab.appendChild(inp); ctl.append(lab);
 
       // 拉桿：拖著看曲線一路怎麼變；拖動時今天的曲線變淡當參考
       let lo = Infinity, hi = -Infinity;
@@ -518,7 +528,7 @@
       const draw = (i) => {
         S.curveScrub = i;
         let tr, base = null;
-        if (i != null) { tr = [curve("Today " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")]; base = Y[i]; }
+        if (i != null) { clearCompare(ctl, S.curveCmp); S.curveCustom = ""; tr = [curve("Today " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")]; base = Y[i]; }
         else {
           const snaps = [["Today " + last.date, last, 2.6, P[0], "solid"]];
           // 比較日期照時間由近到遠排；變動 bar 用最近的那一個（沒選就用自訂日期）
@@ -548,7 +558,7 @@
         }
         plot(id, tr, L);
       };
-      scrubber($("#y-scrub"), "y", Y.map((r) => r.date), S.curveScrub, draw, "Drag the slider to watch the curve change over time, or press ▶ to play. Today's curve stays faint as a reference.");
+      ctl.append(scrubber("y", Y.map((r) => r.date), S.curveScrub, draw));
     }
 
     if (v === "spread") {
@@ -585,7 +595,7 @@
   function nearestAsof(list, iso) { let ans = null; for (const a of list) { if (a <= iso) ans = a; else break; } return ans; }
 
   function renderFed() {
-    clearInterval(timers.f); $("#f-scrub").innerHTML = "";
+    clearInterval(timers.f);
     const id = "c-fed", ctl = $("#f-controls"); ctl.innerHTML = ""; $("#f-hint").textContent = F_HINT[S.fView]; $("#f-table").innerHTML = "";
     const A = asofs();
     if (!A.length) return empty(id, "No Fed pricing data yet (it needs ZQ futures prices first).");
@@ -605,7 +615,6 @@
       D.effr.filter((r) => r.date >= A[0]).forEach((r) => { const x = num(r.effr); lo = Math.min(lo, x); hi = Math.max(hi, x); });
       return [lo - 0.1, hi + 0.1];
     };
-    const fedNote = `Drag the slider to see the expected path as of that day, or press ▶ to play; today's path stays faint as a reference. Fed pricing history starts on ${A[0]}, so the slider only reaches back that far for now and will grow over time.`;
 
     if (v === "priced") {
       // WIRP 式：每次會議 price 了多少 bp（柱）＋從今天起累計（線），可疊一週 / 一個月前的累計來看 repricing
@@ -646,7 +655,8 @@
     }
 
     if (v === "path") {
-      ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
+      ctl.append(cmpChips(["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, "pathScrub", rr));
+      $("#f-hint").textContent += ` Drag the date slider to see the path as of a single day (the Compare picks clear; today's path stays faint). Fed pricing history starts on ${A[0]}.`;
       const pathTrace = (a, c, w, dash, op = 1, part = false) => {
         const rows = pathAt(a, part), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
         // 部分路徑不畫起點那段（前面幾次會議的合約已到期）
@@ -659,7 +669,7 @@
       const draw = (i) => {
         S.pathScrub = i;
         let tr;
-        if (i != null) tr = [pathTrace(last, css("--muted"), 1.6, "solid", 0.45), pathTrace(A[i], P[0], 2.6, "solid")];
+        if (i != null) { clearCompare(ctl, S.pathCmp); tr = [pathTrace(last, css("--muted"), 1.6, "solid", 0.45), pathTrace(A[i], P[0], 2.6, "solid")]; }
         else {
           const snaps = [[last, P[0], 2.6, "solid"]];
           S.pathCmp.forEach((k, j) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(j + 1) % P.length], 1.6, "dot", 1, part]); });
@@ -675,7 +685,7 @@
           annotations: [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] });
         plot(id, tr, L);
       };
-      scrubber($("#f-scrub"), "f", A, S.pathScrub, draw, fedNote);
+      ctl.append(scrubber("f", A, S.pathScrub, draw));
       renderTable(pathOn(last));
     }
 
