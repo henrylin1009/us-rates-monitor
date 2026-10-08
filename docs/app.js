@@ -947,9 +947,9 @@
         customdata: d.map((x) => (Math.pow(1 + x.l.v / 100, 12) - 1) * 100), hovertemplate: "%{y}: %{x:+.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>" },
       { y: d.map((x) => x.n), x: d.map((x) => (x.p ? x.p.v : null)), name: "Month before", mode: "markers", marker: { size: 9, color: css("--ink"), symbol: "circle-open", line: { width: 2 } }, hovertemplate: "%{y} month before: %{x:+.2f}%<extra></extra>" },
       { y: d.map((x) => x.n), x: d.map((x) => x.avg), name: "12-month average", mode: "markers", marker: { size: 16, color: css("--muted"), symbol: "line-ns", line: { width: 2.5, color: css("--muted") } }, hovertemplate: "%{y} 12m average: %{x:+.2f}%<extra></extra>" },
-    ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 24, b: narrow ? 100 : 40 },
+    ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 24, b: narrow ? 100 : 70 },
       shapes: [{ type: "line", xref: "x", yref: "paper", x0: PACE2, x1: PACE2, y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
-      annotations: [{ x: PACE2, y: 1, xref: "x", yref: "paper", yanchor: "bottom", xanchor: "left", showarrow: false, text: "2% a year pace (0.17%/month)", font: { size: 11, color: css("--muted") } }], ...(narrow ? { legend: { ...baseLayout().legend, y: -0.15, yanchor: "top" } } : {}), xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, automargin: true, tickfont: { color: css("--ink"), size: 12 } } }));
+      annotations: [{ x: PACE2, y: 1, xref: "x", yref: "paper", yanchor: "bottom", xanchor: "left", showarrow: false, text: "2% a year pace (0.17%/month)", font: { size: 11, color: css("--muted") } }], legend: { ...baseLayout().legend, y: narrow ? -0.15 : -0.1, yanchor: "top" }, xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, automargin: true, tickfont: { color: css("--ink"), size: 12 } } }));
   }
 
   // 熱力圖：每列 × 月份，顏色 = 和自己 2015-19 平均差幾個標準差
