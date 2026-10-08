@@ -8,10 +8,10 @@
   const S = {
     page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
-    curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
+    curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], pricedCmp: ["1W"], pathScrub: null, histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pricedCmp: ["1W"], histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -438,44 +438,40 @@
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
-    curve: "Today's curve against earlier dates (top), and how many bp each tenor moved since the first date picked (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the slider to watch the curve change over time.",
+    curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
   };
-  // ---------- 拖的日期拉桿 + 播放鍵 ----------
-  // dates：可以拉的日期（最後一個是今天）；i = null 代表今天；onChange(i) 負責重畫圖
-  const timers = {};
-  function scrubber(el, key, dates, i, onChange, note) {
-    clearInterval(timers[key]); timers[key] = null;
-    const n = dates.length;
-    el.innerHTML = `<div class="scrub"><button type="button" class="play" aria-label="Play">▶</button>`
-      + `<input type="range" min="0" max="${n - 1}" step="1" aria-label="Drag date">`
-      + `<span class="scrub-date num"></span><button type="button" class="reset">Back to today</button></div>`
-      + `<p class="hint">${note || "Drag the slider to see how things changed, or press ▶ to play."}</p>`;
-    const range = el.querySelector("input"), dateEl = el.querySelector(".scrub-date"), play = el.querySelector(".play"), reset = el.querySelector(".reset");
-    let cur = null;
-    const set = (j) => {
-      cur = j == null || j >= n - 1 ? null : j;
-      range.value = cur == null ? n - 1 : cur;
-      dateEl.textContent = cur == null ? dates[n - 1] + " (today)" : dates[cur];
-      reset.hidden = cur == null;
-      onChange(cur);
+  // ---------- 比較日期拉桿 ----------
+  // Henry：不要 Compare 按鈕，只用一條拉桿；刻度 1D / 1W / 1M… 之間等距（不是線性時間），刻度之間也能停在任何一天
+  // ticks：[[標籤, 往回幾天]]，由遠到近，最後一個是 ["Today", 0]；back = 現在往回幾天；show(back) 給右邊顯示的字；onChange(back) 重畫圖
+  function tickSlider(ticks, back, show, onChange) {
+    const n = ticks.length - 1, U = 100, el = document.createElement("div");
+    el.className = "tick-slider";
+    el.innerHTML = `<div class="ts-row"><span>Compare</span><div class="ts-track"><input type="range" min="0" max="${n * U}" step="1" aria-label="Compare date">`
+      + `<div class="ts-ticks">${ticks.map(([t], j) => `<button type="button" style="left:${(j / n) * 100}%">${t}</button>`).join("")}</div></div>`
+      + `<span class="ts-date num"></span></div>`;
+    const range = el.querySelector("input"), dateEl = el.querySelector(".ts-date"), btns = el.querySelectorAll(".ts-ticks button");
+    const toBack = (v) => { const j = Math.min(n - 1, Math.floor(v / U)), f = v / U - j; return Math.round(ticks[j][1] + (ticks[j + 1][1] - ticks[j][1]) * f); };
+    const toVal = (d) => {
+      if (d >= ticks[0][1]) return 0;
+      for (let j = 0; j < n; j++) { const x = ticks[j][1], y = ticks[j + 1][1]; if (d <= x && d >= y) return Math.round((j + (x - d) / (x - y)) * U); }
+      return n * U;
     };
-    const stop = () => { clearInterval(timers[key]); timers[key] = null; play.textContent = "▶"; play.setAttribute("aria-label", "Play"); };
-    range.oninput = () => { stop(); set(+range.value); };
-    reset.onclick = () => { stop(); set(null); };
-    play.onclick = () => {
-      if (timers[key]) return stop();
-      let j = cur == null ? 0 : cur;
-      const step = Math.max(1, Math.round(n / 500)), ms = Math.min(400, Math.max(40, 20000 / (n / step)));  // 整段大約 20 秒播完
-      play.textContent = "❚❚"; play.setAttribute("aria-label", "Pause");
-      set(j);
-      timers[key] = setInterval(() => { j = Math.min(n - 1, j + step); set(j); if (j >= n - 1) stop(); }, ms);
-    };
-    set(i);
+    const set = (d) => { range.value = toVal(d); btns.forEach((x, j) => x.classList.toggle("on", ticks[j][1] === d)); dateEl.innerHTML = show(d); onChange(d); };
+    // 靠近刻度就吸過去
+    range.oninput = () => { const v = +range.value, k = Math.round(v / U); set(Math.abs(v - k * U) <= 6 ? ticks[k][1] : toBack(v)); };
+    btns.forEach((x, j) => { x.onclick = () => set(ticks[j][1]); });
+    set(back);
+    return el;
   }
-
+  // 刻度：只放資料夠得到的（earliest = 最早有資料的日期）；最遠再加一個「最早」
+  function backTicks(keys, earliest, last, maxLabel) {
+    const span = daysBetween(earliest, last), DAYS = { "1D": 1, "1W": 7, "1M": 30, "3M": 91, "6M": 182, "1Y": 365, "2Y": 730, "5Y": 1826 };
+    const t = keys.filter((k) => DAYS[k] <= span).map((k) => [k, DAYS[k]]);
+    if (maxLabel && span > (t.length ? t[t.length - 1][1] : 0) * 1.2) t.push([maxLabel, span]);
+    return [...t.reverse(), ["Today", 0]];
+  }
   function renderYields() {
-    clearInterval(timers.y); $("#y-scrub").innerHTML = "";
     const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
     if (!D.yields.length) return empty(id, "No yield data yet. For the first run, trigger the GitHub Action manually with backfill checked.");
     clearEmpty(id);
@@ -502,35 +498,17 @@
 
     if (v === "curve") {
       const Y = D.yields, last = Y[Y.length - 1];
-      ctl.append(chips("Compare", Object.keys(cmpDays).map((k) => [k, cmpLabel[k]]), S.curveCmp, true, rr));
-      const lab = document.createElement("label"); lab.textContent = "Custom date ";
-      const inp = document.createElement("input"); inp.type = "date"; inp.value = S.curveCustom; inp.max = last.date; inp.min = Y[0].date;
-      inp.onchange = () => { S.curveCustom = inp.value; rr(); }; lab.appendChild(inp); ctl.append(lab);
-
-      // 拉桿：拖著看曲線一路怎麼變；拖動時今天的曲線變淡當參考
-      let lo = Infinity, hi = -Infinity;
-      Y.forEach((r) => TENORS.forEach((t) => { const x = num(r[t]); if (x != null) { lo = Math.min(lo, x); hi = Math.max(hi, x); } }));
-      const yr = [Math.floor(lo * 2) / 2 - 0.25, Math.ceil(hi * 2) / 2 + 0.25];
-      const curve = (n, r, w, c, dash, op = 1) => ({
-        x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers", opacity: op,
+      const curve = (n, r, w, c, dash) => ({
+        x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers",
         line: { width: w, color: c, dash }, marker: { size: w > 2 ? 6 : 4 }, hovertemplate: "%{y:.2f}%", connectgaps: true,
       });
-      const draw = (i) => {
-        S.curveScrub = i;
-        let tr, base = null;
-        if (i != null) { tr = [curve("Today " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")]; base = Y[i]; }
-        else {
-          const snaps = [["Today " + last.date, last, 2.6, P[0], "solid"]];
-          // 比較日期照時間由近到遠排；變動 bar 用最近的那一個（沒選就用自訂日期）
-          Object.keys(cmpDays).filter((k) => S.curveCmp.includes(k)).forEach((k, j) => {
-            const r = k === "1D" ? Y[Y.length - 2] : atOrBefore(Y, "date", shiftDays(last.date, -cmpDays[k]));
-            if (r) { snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(j + 1) % P.length], "dot"]); if (!base) base = r; }
-          });
-          if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) { snaps.push([`Custom ${r.date}`, r, 1.6, P[4], "dash"]); if (!base) base = r; } }
-          tr = snaps.map((x) => curve(...x));
-        }
+      const baseAt = (d) => (d ? atOrBefore(Y, "date", shiftDays(last.date, -d)) : null);
+      const draw = (d) => {
+        S.curveBack = d;
+        const base = baseAt(d), tr = [curve("Today " + last.date, last, 2.6, P[0], "solid")];
+        if (base) tr.push(curve(base.date, base, 1.8, P[1], "dot"));
         const L = baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
-          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) } });
+          yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
         if (base) {
           // 下面一排：每個天期從比較日到今天變了幾 bp（Bloomberg GC 的排法）
           const ys = TENORS.map((t) => (num(last[t]) == null || num(base[t]) == null ? null : +((num(last[t]) - num(base[t])) * 100).toFixed(1)));
@@ -548,7 +526,8 @@
         }
         plot(id, tr, L);
       };
-      scrubber($("#y-scrub"), "y", Y.map((r) => r.date), S.curveScrub, draw, "Drag the slider to watch the curve change over time, or press ▶ to play. Today's curve stays faint as a reference.");
+      ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "5Y"], Y[0].date, last.date, Y[0].date.slice(0, 4)), S.curveBack,
+        (d) => { const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
     }
 
     if (v === "spread") {
@@ -570,7 +549,7 @@
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
     priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
-    path: "The implied policy rate after each FOMC meeting. Compare with a week or a month ago to see how much the market has repriced.",
+    path: "The implied policy rate after each FOMC meeting. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
@@ -585,7 +564,6 @@
   function nearestAsof(list, iso) { let ans = null; for (const a of list) { if (a <= iso) ans = a; else break; } return ans; }
 
   function renderFed() {
-    clearInterval(timers.f); $("#f-scrub").innerHTML = "";
     const id = "c-fed", ctl = $("#f-controls"); ctl.innerHTML = ""; $("#f-hint").textContent = F_HINT[S.fView]; $("#f-table").innerHTML = "";
     const A = asofs();
     if (!A.length) return empty(id, "No Fed pricing data yet (it needs ZQ futures prices first).");
@@ -598,14 +576,6 @@
     $("#f-stale").hidden = behind < 2;
     $("#f-stale").textContent = behind >= 2 ? `⚠ ZQ futures prices haven't updated for ${behind} trading days (Yahoo unavailable); showing pricing as of ${last}.` : "";
     const effrNow = num(D.summ[D.summ.length - 1].effr);
-    // 拉桿用：y 軸固定在所有日期的範圍，拖的時候才不會跳
-    const fedRange = () => {
-      let lo = Infinity, hi = -Infinity;
-      D.path.forEach((r) => { const x = num(r.post); lo = Math.min(lo, x); hi = Math.max(hi, x); });
-      D.effr.filter((r) => r.date >= A[0]).forEach((r) => { const x = num(r.effr); lo = Math.min(lo, x); hi = Math.max(hi, x); });
-      return [lo - 0.1, hi + 0.1];
-    };
-    const fedNote = `Drag the slider to see the expected path as of that day, or press ▶ to play; today's path stays faint as a reference. Fed pricing history starts on ${A[0]}, so the slider only reaches back that far for now and will grow over time.`;
 
     if (v === "priced") {
       // WIRP 式：每次會議 price 了多少 bp（柱）＋從今天起累計（線），可疊一週 / 一個月前的累計來看 repricing
@@ -646,7 +616,6 @@
     }
 
     if (v === "path") {
-      ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
       const pathTrace = (a, c, w, dash, op = 1, part = false) => {
         const rows = pathAt(a, part), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
         // 部分路徑不畫起點那段（前面幾次會議的合約已到期）
@@ -655,27 +624,23 @@
           name: (a === last ? "Today " : "") + a + (part && rows.length ? ` (from ${md(rows[0].meeting)} on)` : ""), type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
           marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp, this meeting %{customdata[1]:+.1f}bp)" };
       };
-      const yr = fedRange();
-      const draw = (i) => {
-        S.pathScrub = i;
-        let tr;
-        if (i != null) tr = [pathTrace(last, css("--muted"), 1.6, "solid", 0.45), pathTrace(A[i], P[0], 2.6, "solid")];
-        else {
-          const snaps = [[last, P[0], 2.6, "solid"]];
-          S.pathCmp.forEach((k, j) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(j + 1) % P.length], 1.6, "dot", 1, part]); });
-          tr = snaps.map((x) => pathTrace(...x));
-        }
+      const part0 = (D.pathPart || []).reduce((m, r) => (r.asof < m ? r.asof : m), A[0]);
+      const draw = (d) => {
+        S.pathBack = d;
+        const tr = [pathTrace(last, P[0], 2.6, "solid")];
+        if (d) { const [a, part] = cmpAsof(A, shiftDays(last, -d)); if (a && a !== last) tr.push(pathTrace(a, P[1], 1.8, "dot", 1, part)); }
         // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
         const lastM = pathOn(last).slice(-1)[0], dots = D.sep.filter((r) => r.fedfunds !== "" && `${r.year}-12-31` >= last && (!lastM || `${r.year}-12-31` <= shiftDays(lastM.meeting, 45)));
         if (dots.length) tr.push({ x: dots.map((r) => `${r.year}-12-31`), y: dots.map((r) => +r.fedfunds), name: "Fed dots (SEP median)", mode: "markers",
           marker: { symbol: "diamond-open", size: 11, color: css("--ink"), line: { width: 2 } }, customdata: dots.map((r) => r.year),
           hovertemplate: "%{y:.2f}%: Fed median for end-%{customdata} (midpoint of the target range)<extra></extra>" });
-        const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) },
+        const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
           shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }],
           annotations: [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] });
         plot(id, tr, L);
       };
-      scrubber($("#f-scrub"), "f", A, S.pathScrub, draw, fedNote);
+      ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y"], part0, last), S.pathBack,
+        (d) => { const [a] = d ? cmpAsof(A, shiftDays(last, -d)) : [null]; return a && a !== last ? `vs <b>${a}</b>` : "Today only"; }, draw));
       renderTable(pathOn(last));
     }
 
@@ -1132,7 +1097,8 @@
     if (!ms.includes(S[key])) S[key] = ms[0];
     const el = $(`#sur-${page}`); if (!el) return;
     if (!D.rel.length) { el.innerHTML = `<p class="hint">Release data load after the next daily update.</p>`; return; }
-    el.innerHTML = ecoTable(ms) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
+    // 公布表格預設收起來，點開才看（Henry 覺得一打開就一大張表太雜）
+    el.innerHTML = fold(`eco-${page}`, "Release table: latest prints and what's next", ecoTable(ms)) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
     const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);

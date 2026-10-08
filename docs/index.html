@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=17">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -111,7 +111,6 @@
     </div>
     <div class="controls" id="y-controls"></div>
     <div class="chart" id="c-yields"></div>
-    <div id="y-scrub"></div>
     <div class="table-wrap" id="y-table"></div>
   </section>
 
@@ -130,7 +129,6 @@
     </div>
     <div class="controls" id="f-controls"></div>
     <div class="chart" id="c-fed"></div>
-    <div id="f-scrub"></div>
     <div class="table-wrap" id="f-table"></div>
   </section>
 
@@ -209,7 +207,7 @@
     <div id="cpi-table"></div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Inflation surprises</h2><p class="hint">Each release against what the market expected, Bloomberg ECO style: latest prints on top, then the history of one indicator as bars (actual) and ticks (forecast).</p></div></div>
+    <div class="panel-head"><div><h2>Inflation surprises</h2><p class="hint">Each release against what the market expected, Bloomberg ECO style: the folded table lists the latest prints and what comes next; the chart is one indicator's history as bars (actual) and ticks (forecast).</p></div></div>
     <div id="sur-inflation"></div>
   </section>
   <details class="panel more" data-fold="ppi">
@@ -246,7 +244,7 @@
     <div class="chart short" id="c-claims"></div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Jobs surprises</h2><p class="hint">Each release against what the market expected: latest prints on top, then one indicator's history as bars (actual) and ticks (forecast). For unemployment and claims, a higher number is a dovish surprise.</p></div></div>
+    <div class="panel-head"><div><h2>Jobs surprises</h2><p class="hint">Each release against what the market expected: the folded table lists the latest prints and what comes next; the chart is one indicator's history as bars (actual) and ticks (forecast). For unemployment and claims, a higher number is a dovish surprise.</p></div></div>
     <div id="sur-jobs"></div>
   </section>
   <details class="panel more" data-fold="jolts">
@@ -272,6 +270,6 @@
 </div>
 </main>
 
-<script src="app.js?v=22"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>
