@@ -1303,6 +1303,16 @@
     bindSeg("#cpi-views", "cpiView", () => renderInflation());
     bindSeg("#item-views", "itemView", () => renderCpiItems());
     bindSeg("#d-range", "dRange", renderDecomp);
+    // Overview 卡片整張可點；在圖上拖曳（縮放）或點到裡面的連結 / 按鈕時不跳頁
+    document.querySelectorAll(".panel.go").forEach((el) => {
+      let down = null;
+      el.addEventListener("pointerdown", (e) => (down = [e.clientX, e.clientY]));
+      el.addEventListener("click", (e) => {
+        if (e.target.closest("a, button") || (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) || getSelection().toString()) return;
+        location.hash = el.dataset.href;
+      });
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter") location.hash = el.dataset.href; });
+    });
     bindSeg("#fomc-range", "fomcRange", renderFomcChart);
     bindSeg("#six-views", "sixView", renderSurIndex);
     document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -37,21 +37,19 @@
 </nav>
 <main class="wrap">
 <div class="page" id="pg-overview" data-page="overview">
-  <section class="panel next" id="p-next">
+  <section class="panel next go" id="p-next" data-href="#calendar" tabindex="0" role="link" aria-label="Open Calendar">
     <div class="panel-head">
       <h2>Next 2 weeks</h2>
-      <a class="more" href="#calendar">Full calendar →</a>
     </div>
     <div class="next-list" id="next"></div>
   </section>
-  <section class="panel hero" id="p-hero">
+  <section class="panel hero go" id="p-hero" data-href="#rates" tabindex="0" role="link" aria-label="Open Rates">
     <div class="panel-head">
       <div class="hero-title">
         <h2>Rates</h2>
         <span class="badge" id="hero-regime"></span>
         <p class="takeaway" id="hero-take"></p>
       </div>
-      <a class="more" href="#rates">Details →</a>
     </div>
     <div class="hero-grid">
       <div class="hero-col">
@@ -70,27 +68,25 @@
     </div>
   </section>
   <div class="duo">
-    <section class="panel card" id="p-infl-card">
+    <section class="panel card go" id="p-infl-card" data-href="#inflation" tabindex="0" role="link" aria-label="Open Inflation">
       <div class="panel-head">
         <div class="hero-title">
           <h2>Inflation</h2>
           <p class="takeaway" id="infl-take"></p>
           <p class="dline" id="infl-date"></p>
         </div>
-        <a class="more" href="#inflation">Details →</a>
       </div>
       <div class="kline" id="infl-k"></div>
       <h3>Core PCE and Core CPI, YoY, last 5 years</h3>
       <div class="mini" id="c-infl-mini"></div>
     </section>
-    <section class="panel card" id="p-jobs-card">
+    <section class="panel card go" id="p-jobs-card" data-href="#jobs" tabindex="0" role="link" aria-label="Open Jobs">
       <div class="panel-head">
         <div class="hero-title">
           <h2>Jobs</h2>
           <p class="takeaway" id="jobs-take"></p>
           <p class="dline" id="jobs-date"></p>
         </div>
-        <a class="more" href="#jobs">Details →</a>
       </div>
       <div class="kline" id="jobs-k"></div>
       <h3>Unemployment rate, last 5 years</h3>
@@ -282,6 +278,6 @@
 </div>
 </main>
 
-<script src="app.js?v=19"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>
