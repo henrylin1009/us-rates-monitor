@@ -6,13 +6,15 @@
   --line: #e4e2dc;
   --grid: #eceae4;
   --accent: #1f4fd1;
-  --up: #c2410c;     /* 利率上升（債券跌） */
-  --down: #0f766e;   /* 利率下降（債券漲） */
+  /* 全站方向色只有這兩個：利率上升 / 鷹派 / 比預期熱 = --up，利率下降 / 鴿派 / 比預期冷 = --down */
+  --up: #c2410c;
+  --down: #0f766e;
+  /* 一般的線用 s1–s5，刻意避開上面兩個方向色，免得看起來像在表示漲跌 */
   --s1: #1f4fd1;
-  --s2: #c2410c;
-  --s3: #0f766e;
-  --s4: #7c3aed;
-  --s5: #a16207;
+  --s2: #7c3aed;
+  --s3: #a16207;
+  --s4: #be185d;
+  --s5: #475569;
   --ghost: 31, 79, 209;
   --chip: #f0efea;
 }
@@ -28,18 +30,18 @@
     --up: #fb923c;
     --down: #2dd4bf;
     --s1: #7aa2ff;
-    --s2: #fb923c;
-    --s3: #2dd4bf;
-    --s4: #c4b5fd;
-    --s5: #facc15;
+    --s2: #c4b5fd;
+    --s3: #facc15;
+    --s4: #f472b6;
+    --s5: #cbd5e1;
     --ghost: 122, 162, 255;
     --chip: #1f232b;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1115; --surface: #171a20; --ink: #e8e9ec; --muted: #9298a3; --line: #262a33; --grid: #22262e;
-  --accent: #7aa2ff; --up: #fb923c; --down: #2dd4bf; --s1: #7aa2ff; --s2: #fb923c; --s3: #2dd4bf;
-  --s4: #c4b5fd; --s5: #facc15; --ghost: 122, 162, 255; --chip: #1f232b;
+  --accent: #7aa2ff; --up: #fb923c; --down: #2dd4bf; --s1: #7aa2ff; --s2: #c4b5fd; --s3: #facc15;
+  --s4: #f472b6; --s5: #cbd5e1; --ghost: 122, 162, 255; --chip: #1f232b;
 }
 
 * { box-sizing: border-box; }
@@ -232,3 +234,21 @@ sup.man { font-size: 9px; color: var(--muted); margin-left: 2px; font-family: In
 .panel.go:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .panel.go h2::after { content: " ›"; color: var(--muted); font-weight: 400; }
 .panel.go:hover h2::after { color: var(--accent); }
+
+/* 說明文字預設收起來，按標題旁的 ? 才顯示 */
+.panel:not(.help) > .panel-head .hint:not(.stale),
+.panel:not(.help) > p.hint,
+.panel:not(.help) .scrub + .hint,
+.panel:not(.help) .hint.note { display: none; }
+.help-btn {
+  font: 600 11px/1 Inter, system-ui, sans-serif; width: 18px; height: 18px; border-radius: 50%; margin-left: 8px; vertical-align: 2px;
+  border: 1px solid var(--line); background: var(--chip); color: var(--muted); cursor: pointer; padding: 0;
+}
+.help-btn:hover, .panel.help .help-btn { color: var(--ink); border-color: var(--muted); }
+/* 次要區塊：收成一行，點開才看 */
+details.panel.more { padding-bottom: 12px; }
+details.panel.more > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+details.panel.more > summary::-webkit-details-marker { display: none; }
+details.panel.more > summary::before { content: "▸"; color: var(--muted); font-size: 12px; }
+details.panel.more[open] > summary::before { content: "▾"; }
+details.panel.more > summary h2 { font-size: 15px; }
