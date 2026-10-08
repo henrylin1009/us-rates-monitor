@@ -1132,7 +1132,8 @@
     if (!ms.includes(S[key])) S[key] = ms[0];
     const el = $(`#sur-${page}`); if (!el) return;
     if (!D.rel.length) { el.innerHTML = `<p class="hint">Release data load after the next daily update.</p>`; return; }
-    el.innerHTML = ecoTable(ms) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
+    // 公布表格預設收起來，點開才看（Henry 覺得一打開就一大張表太雜）
+    el.innerHTML = fold(`eco-${page}`, "Release table: latest prints and what's next", ecoTable(ms)) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
     const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
