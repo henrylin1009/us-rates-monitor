@@ -17,7 +17,7 @@ import requests
 
 import fomc
 from calendars import update_calendars
-from fedpricing import implied_month_rate, price_path
+from fedpricing import implied_month_rate, partial_path, price_path
 from macro import update_macro
 from surprise import update_surprise
 from fomc import MEETINGS
@@ -172,7 +172,7 @@ def compute_pricing() -> None:
     for r in read_csv("zq.csv"):
         by_day.setdefault(r["date"], {})[r["contract"]] = float(r["price"])
 
-    path_rows, summ_rows = [], []
+    path_rows, summ_rows, part_rows = [], [], []
     for ds in sorted(by_day):
         asof = date.fromisoformat(ds)
         prices = by_day[ds]
@@ -190,6 +190,10 @@ def compute_pricing() -> None:
             e = after[0]
         path = price_path(asof, e, prices, MEETINGS)
         if not path:
+            # 下一次會議的合約已到期（Yahoo 沒有）：從接得上的會議開始算，另存一個檔，只給「過去 vs 現在」比較用
+            for p in partial_path(asof, e, prices, MEETINGS):
+                part_rows.append({"asof": ds, "meeting": p.meeting.isoformat(), "pre": p.pre, "post": p.post,
+                                  "move_bp": p.move_bp, "cum_bp": p.cum_bp})
             continue
         for p in path:
             path_rows.append({"asof": ds, "meeting": p.meeting.isoformat(), "pre": p.pre, "post": p.post,
@@ -214,6 +218,7 @@ def compute_pricing() -> None:
     write_csv("fed_summary.csv", summ_rows, ["asof", "effr", "next_meeting", "next_move_bp", "next_p_hike",
                                              "next_p_cut", "yearend_meeting", "cum_yearend_bp", "implied_6m",
                                              "cum_6m_bp", "implied_12m", "cum_12m_bp"])
+    write_csv("fed_path_partial.csv", part_rows, ["asof", "meeting", "pre", "post", "move_bp", "cum_bp"])
     if summ_rows:
         s = summ_rows[-1]
         print(f"Fed 定價（{s['asof']}）：下次會議 {s['next_meeting']} 隱含 {s['next_move_bp']:+}bp，"

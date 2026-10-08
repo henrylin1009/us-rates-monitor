@@ -15,6 +15,7 @@ GitHub Actions（週一到週五 23:40 UTC）
       ├ 紐約 Fed EFFR                    → docs/data/effr.csv
       ├ ZQ 期貨（Yahoo Finance）          → docs/data/zq.csv
       ├ scripts/fedpricing.py 算定價      → docs/data/fed_path.csv、fed_summary.csv
+      │                                    fed_path_partial.csv（下一次會議合約已到期的舊日子，從接得上的會議開始，只給比較用）
       ├ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
       └ scripts/surprise.py 預期值（FF）＋首次公布值（ALFRED） → docs/data/consensus.csv、releases.csv
 GitHub Pages（main 分支 /docs）

@@ -23,3 +23,17 @@ for p in path:
     print(p.meeting, f"post={p.post:.3f}", f"move={p.move_bp:+.1f}bp", f"cum={p.cum_bp:+.1f}bp",
           f"hike={p.p_hike:.0%} hold={p.p_hold:.0%} cut={p.p_cut:.0%}")
 print("OK：和 10/5 基準一致")
+
+# partial_path：前面的合約不見時從第一個接得上的會議開始。有完整資料時，結果要和 price_path 一樣
+from fedpricing import partial_path
+
+part = partial_path(date(2026, 10, 5), EFFR, PRICES, MEETINGS)
+assert [p.meeting for p in part] == [p.meeting for p in path], part
+for a, b in zip(part, path):
+    assert abs(a.post - b.post) < 1e-6 and abs(a.cum_bp - b.cum_bp) < 0.11, (a, b)
+# 10 月合約到期了（拿掉）：10/28 接不上，從 12/9 開始，cum 還是相對當天 EFFR
+P2 = {k: v for k, v in PRICES.items() if k != "2026-10"}   # 11 月沒有會議 → 12/9 的會前利率 = 100 − 11 月
+part2 = partial_path(date(2026, 10, 5), EFFR, P2, MEETINGS)
+assert part2[0].meeting == date(2026, 12, 9), part2
+assert abs(part2[0].cum_bp - dec_.cum_bp) < 0.5, (part2[0], dec_)
+print("OK：partial_path 和完整路徑一致")
