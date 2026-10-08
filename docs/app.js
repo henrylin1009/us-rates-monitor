@@ -1191,15 +1191,38 @@
     clearEmpty("c-surix");
     const P = palette();
     if (S.sixView === "index") {
-      // 每天：過去 90 天的 surprise，半衰期 30 天加權
-      const xs = [], ys = [];
-      for (let d = all[0].date; d <= localToday(); d = shiftDays(d, 1)) {
-        let s = 0; all.forEach((r) => { const age = daysBetween(r.date, d); if (age >= 0 && age <= 90) s += r.z * Math.pow(0.5, age / 30); });
-        xs.push(d); ys.push(+s.toFixed(2));
-      }
-      plot("c-surix", [{ x: xs, y: ys, name: "Surprise index", fill: "tozeroy", line: { color: P[0], width: 2 }, fillcolor: rgba(P[0], 0.15), hovertemplate: "%{y:+.2f}<extra></extra>" }],
-        baseLayout({ yaxis: { ...baseLayout().yaxis, zeroline: true, zerolinecolor: css("--muted") } }));
-      note.textContent = "Sum of recent standardized surprises across CPI, PCE, PPI, the jobs report and claims, with a 30-day half-life. Above zero: data have been coming in hotter / stronger than expected, which usually pushes yields up.";
+      // 照 Citi surprise index 的做法：通膨、就業各一條，每天 = 過去 90 天 surprise 的加權平均（σ），越舊權重越小（半衰期 30 天）
+      // 一份報告只算一個代表數字，避免 CPI 和 core CPI 重複算；claims 每週都有，權重給 1/4
+      const GROUPS = [["Inflation", ["core_cpi_mm", "core_pce_mm", "core_ppi_mm"], P[3]], ["Jobs and activity", ["nfp", "unrate", "claims"], P[0]]];
+      const W = { claims: 0.25 };
+      const inG = all.filter((r) => GROUPS.some((g) => g[1].includes(r.m)));
+      if (!inG.length) return empty("c-surix", "Not enough forecasts yet.");
+      const first = inG[0].date, today = localToday();
+      const tr = [];
+      GROUPS.forEach(([g, ms, col]) => {
+        const rs = all.filter((r) => ms.includes(r.m));
+        if (!rs.length) return;
+        const xs = [], ys = [];
+        for (let d = first; d <= today; d = shiftDays(d, 1)) {
+          let sw = 0, sz = 0;
+          rs.forEach((r) => { const age = daysBetween(r.date, d); if (age >= 0 && age <= 90) { const w = (W[r.m] || 1) * Math.pow(0.5, age / 30); sw += w; sz += w * r.z; } });
+          xs.push(d); ys.push(sw ? +(sz / sw).toFixed(2) : null);
+        }
+        tr.push({ x: xs, y: ys, name: `${g} surprises`, line: { color: col, width: 2.2 }, connectgaps: false, hoverinfo: "skip" });
+        // 每次公布畫一個點，hover 看是哪個數據、差多少
+        const at = new Map(xs.map((d, i) => [d, ys[i]]));
+        const ev = rs.filter((r) => r.m !== "claims");
+        tr.push({ x: ev.map((r) => r.date), y: ev.map((r) => at.get(r.date)), mode: "markers", showlegend: false, marker: { size: 7, color: col, line: { color: css("--surface"), width: 1 } },
+          customdata: ev.map((r) => `${SM[r.m].name} (${refLabel(r.m, r.ref)}): actual ${fmtU(r.m, r.actual)} vs forecast ${fmtU(r.m, r.forecast)}, ${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ`),
+          hovertemplate: `%{customdata}<br>${g} index now %{y:+.2f}σ<extra></extra>` });
+      });
+      const y2 = D.yields.filter((r) => r.date >= first && r["2y"] !== "");
+      tr.push({ x: y2.map((r) => r.date), y: y2.map((r) => +r["2y"]), name: "2y yield (right)", yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "2y %{y:.2f}%<extra></extra>" });
+      const narrow = innerWidth < 600;
+      plot("c-surix", tr, baseLayout({ hovermode: "closest", margin: { l: 44, r: 48, t: 10, b: narrow ? 90 : 40 }, ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" } } : {}),
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "σ", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1.5 },
+        yaxis2: { ...pctAxis(), overlaying: "y", side: "right", showgrid: false } }));
+      note.textContent = "Built the way the Citi surprise index is: one line for inflation data (core CPI, core PCE, core PPI) and one for jobs and activity (payrolls, unemployment, claims). Each line is the average surprise of the last 3 months of releases, in standard deviations, with recent releases counting more. Above zero: data beating forecasts (hotter inflation, stronger jobs), which usually pushes the 2y up. Dots are releases; hover one to see what came out.";
     } else {
       const tr = Object.keys(SUR_TYPES).map((t, i) => {
         const r = all.filter((x) => SM[x.m].type === t && x.d2 != null && ["core_cpi_mm", "core_pce_mm", "core_ppi_mm", "nfp", "claims"].includes(x.m));
