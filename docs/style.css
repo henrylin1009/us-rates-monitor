@@ -125,15 +125,21 @@ table.dist th.today { color: var(--ink); }
 table.dist td.zero { color: var(--line); }
 table.dist td.top { font-weight: 600; }
 
-.scrub { display: flex; align-items: center; gap: 10px; flex: 1 1 320px; min-width: 0; }
-.scrub input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
-.scrub .play, .scrub .reset {
-  font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
-  border-radius: 8px; padding: 5px 12px; cursor: pointer; white-space: nowrap;
+/* 比較日期拉桿：刻度 1D / 1W / 1M… 等距排，點刻度或拖都可以 */
+.tick-slider { flex: 1 1 100%; min-width: 0; }
+.ts-row { display: flex; align-items: flex-start; gap: 14px; }
+.ts-row > span:first-child { padding-top: 3px; }
+.ts-track { flex: 1; min-width: 0; padding: 0 9px; }
+.ts-track input[type="range"] { width: calc(100% + 18px); margin: 4px -9px 0; accent-color: var(--accent); display: block; }
+.ts-ticks { position: relative; height: 22px; }
+.ts-ticks button {
+  position: absolute; top: 2px; transform: translateX(-50%); font: inherit; font-size: 12px; color: var(--muted);
+  background: none; border: 0; padding: 0 2px; cursor: pointer; white-space: nowrap;
 }
-.scrub .play { width: 42px; padding: 5px 0; }
-.scrub-date { font-size: 13px; min-width: 9.5em; color: var(--ink); }
-@media (max-width: 640px) { .scrub { flex-wrap: wrap; } .scrub input[type="range"] { flex-basis: 100%; order: 3; } }
+.ts-ticks button:hover { color: var(--ink); }
+.ts-ticks button.on { color: var(--accent); font-weight: 600; }
+.ts-date { font-size: 13px; color: var(--ink); min-width: 8.5em; padding-top: 3px; }
+@media (max-width: 640px) { .ts-row { flex-wrap: wrap; gap: 4px 12px; } .ts-track { flex-basis: 100%; order: 3; } .ts-ticks button { font-size: 11px; } }
 
 .tag.warn { color: var(--up); border-color: var(--up); }
 .hint.stale { color: var(--up); }
