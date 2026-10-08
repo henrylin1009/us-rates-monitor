@@ -12,7 +12,7 @@ from __future__ import annotations
 import calendar
 import math
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 STEP = 0.25  # 一碼
 
@@ -92,6 +92,34 @@ def price_path(asof: date, effr: float, prices: dict[str, float], meetings: list
         ))
         pre = post
     return out
+
+
+def partial_path(asof: date, effr: float, prices: dict[str, float], meetings: list[date]) -> list[MeetingPricing]:
+    """前面幾次會議的合約已到期（Yahoo 沒有）時，從第一個算得出來的會議開始接。
+
+    會前利率：上個月沒有會議就直接用上個月合約；不然用「下個月沒有會議 → 會後利率 = 100 − 下個月」
+    配 m 的月平均倒推 pre = (avg·n − post·(n − d)) / d。之後照 price_path 往下接。
+    cum_bp 還是相對 asof 當天的 EFFR，所以和完整的路徑可以直接比。
+    """
+    meeting_months = {month_key(m) for m in meetings}
+    for m in sorted(x for x in meetings if x > asof):
+        mk, nk = month_key(m), next_month_key(m)
+        pk = f"{m.year - (m.month == 1):04d}-{(m.month - 2) % 12 + 1:02d}"
+        if pk in prices and pk not in meeting_months:
+            pre = 100 - prices[pk]          # 上個月沒有會議 → 整個月都是會前利率
+        elif mk in prices and nk in prices and nk not in meeting_months:
+            n, d = calendar.monthrange(m.year, m.month)[1], m.day
+            post = 100 - prices[nk]
+            pre = ((100 - prices[mk]) * n - post * (n - d)) / d
+        else:
+            continue
+        path = price_path(m - timedelta(days=1), pre, prices, [x for x in meetings if x >= m])
+        if not path:
+            continue
+        for p in path:
+            p.cum_bp = round((p.post - effr) * 100, 1)
+        return path
+    return []
 
 
 def implied_month_rate(prices: dict[str, float], key: str):

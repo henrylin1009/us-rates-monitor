@@ -66,7 +66,14 @@
   }
   const palette = () => ["--s1", "--s2", "--s3", "--s4", "--s5"].map(css);
   const CFG = { displaylogo: false, responsive: true, modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d", "toggleSpikelines"] };
-  function plot(id, traces, layout) { Plotly.react(id, traces, layout, CFG); }
+  // Plotly 2.35 的 hovertemplate 吃不下 "+.2f" 這種帶正號的格式，會直接印出完整小數 → 一律改成 ".2f"
+  // 沒寫 hovertemplate 的線，hover 也預設到小數兩位（日期 / 類別軸不動）
+  const fixFmt = (t) => (typeof t === "string" ? t.replace(/%\{([^}:]+):\+([^}]*)\}/g, "%{$1:$2}") : t);
+  function plot(id, traces, layout) {
+    traces.forEach((t) => { if (t) { t.hovertemplate = fixFmt(t.hovertemplate); t.texttemplate = fixFmt(t.texttemplate); } });
+    Object.keys(layout).filter((k) => /^yaxis\d*$/.test(k)).forEach((k) => { const a = layout[k]; if (a && !a.hoverformat && !["date", "category"].includes(a.type)) a.hoverformat = ".2f"; });
+    Plotly.react(id, traces, layout, CFG);
+  }
   function empty(id, msg) { Plotly.purge(id); $("#" + id).innerHTML = `<div class="empty">${msg}</div>`; }
   function clearEmpty(id) { const e = $("#" + id).querySelector(".empty"); if (e) e.remove(); }
 
@@ -527,10 +534,17 @@
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
     hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range. For meetings after the next one, read the direction of the shift rather than exact percentages: the split assumes meetings are independent.",
     cum: "Cumulative bp priced relative to today's EFFR, one point per day, to see whether pricing is getting more hawkish or dovish.",
-    spag: "The black line is the actual EFFR; the orange line is today's expected path; dotted lines are expectations from earlier dates. The bigger the gap, the more the market has repriced.",
+    spag: "The black line is the actual EFFR; the orange line is today's expected path; dotted lines are expectations from earlier dates. The bigger the gap, the more the market has repriced. Before 2026-09-16 a dated line starts at the first meeting whose futures are still trading (expired contracts are not available), so it has no early segment.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
   const pathOn = (a) => D.path.filter((r) => r.asof === a);
+  // 比較用的舊日期：fed_path 沒有（下一次會議合約已到期）就用 fed_path_partial（從接得上的會議開始）
+  function cmpAsof(A, iso) {
+    const a = nearestAsof(A, iso); if (a) return [a, false];
+    const b = nearestAsof([...new Set((D.pathPart || []).map((r) => r.asof))].sort(), iso);
+    return b ? [b, true] : [null, false];
+  }
+  const pathAt = (a, part) => (part ? (D.pathPart || []).filter((r) => r.asof === a) : pathOn(a));
   function nearestAsof(list, iso) { let ans = null; for (const a of list) { if (a <= iso) ans = a; else break; } return ans; }
 
   function renderFed() {
@@ -570,9 +584,9 @@
       const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + " '" + iso.slice(2, 4);
       const xl = x.map(mon);
       // 舊日期的累計：用那天的會議後隱含利率減今天的起點，同一把尺才比得起來（中間開過會也不會錯位）
-      const then = (a) => { const m = new Map(pathOn(a).map((r) => [r.meeting, num(r.post)])); return x.map((d) => (m.has(d) ? (m.get(d) - start) * 100 : null)); };
+      const then = (a, part) => { const m = new Map(pathAt(a, part).map((r) => [r.meeting, num(r.post)])); return x.map((d) => (m.has(d) ? (m.get(d) - start) * 100 : null)); };
       const cmp = [];
-      S.pricedCmp.forEach((k) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) cmp.push([k, a, then(a)]); });
+      S.pricedCmp.forEach((k) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) cmp.push([k, a, then(a, part)]); });
       const mv = rows.map((r) => num(r.move_bp)), cum = rows.map((r) => num(r.cum_bp));
       const tr = [
         { x: xl, y: mv, name: "This meeting", type: "bar", marker: { color: mv.map((b) => rgba(css(b >= 0 ? "--up" : "--down"), 0.45)) },
@@ -588,7 +602,7 @@
       plot(id, tr, baseLayout({ hovermode: "x unified", xaxis: { ...baseLayout().xaxis, type: "category" },
         yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } }));
       // 表：每次會議 bp / 幾碼 / 累計 / 和一週、一個月前比
-      const cols = [["1W", "Δ vs 1 week"], ["1M", "Δ vs 1 month"]].map(([k, n]) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); return a && a !== last ? [n, then(a)] : null; }).filter(Boolean);
+      const cols = [["1W", "Δ vs 1 week"], ["1M", "Δ vs 1 month"]].map(([k, n]) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); return a && a !== last ? [n, then(a, part)] : null; }).filter(Boolean);
       let h = "<table><thead><tr><th>FOMC</th><th>This meeting (bp)</th><th>Moves</th><th>Cumulative (bp)</th><th>Cumulative moves</th><th>Implied rate</th>"
         + cols.map(([n]) => `<th>${n}</th>`).join("") + "</tr></thead><tbody>";
       const c = (z) => (z > 0.05 ? "up" : z < -0.05 ? "down" : "");
@@ -603,10 +617,12 @@
 
     if (v === "path") {
       ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pathCmp, true, rr));
-      const pathTrace = (a, c, w, dash, op = 1) => {
-        const rows = pathOn(a), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
-        return { x: [a, ...rows.map((r) => r.meeting)], y: [e0, ...rows.map((r) => num(r.post))], customdata: [[0, 0], ...rows.map((r) => [num(r.cum_bp), num(r.move_bp)])],
-          name: (a === last ? "Today " : "") + a, type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
+      const pathTrace = (a, c, w, dash, op = 1, part = false) => {
+        const rows = pathAt(a, part), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
+        // 部分路徑不畫起點那段（前面幾次會議的合約已到期）
+        const x = part ? rows.map((r) => r.meeting) : [a, ...rows.map((r) => r.meeting)], y = part ? rows.map((r) => num(r.post)) : [e0, ...rows.map((r) => num(r.post))];
+        return { x, y, customdata: (part ? [] : [[0, 0]]).concat(rows.map((r) => [num(r.cum_bp), num(r.move_bp)])),
+          name: (a === last ? "Today " : "") + a + (part && rows.length ? ` (from ${md(rows[0].meeting)} on)` : ""), type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
           marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp, this meeting %{customdata[1]:+.1f}bp)" };
       };
       const yr = fedRange();
@@ -616,7 +632,7 @@
         if (i != null) tr = [pathTrace(last, css("--muted"), 1.6, "solid", 0.45), pathTrace(A[i], P[0], 2.6, "solid")];
         else {
           const snaps = [[last, P[0], 2.6, "solid"]];
-          S.pathCmp.forEach((k, j) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(j + 1) % P.length], 1.6, "dot"]); });
+          S.pathCmp.forEach((k, j) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) snaps.push([a, P[(j + 1) % P.length], 1.6, "dot", 1, part]); });
           tr = snaps.map((x) => pathTrace(...x));
         }
         // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
@@ -702,7 +718,7 @@
     if (v === "spag") {
       ctl.append(chips("Compare", ["1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.spagCmp, true, rr));
       const lines = [], missing = [];
-      S.spagCmp.forEach((k) => { const a = nearestAsof(A, shiftDays(last, -cmpDays[k])); a && a !== last ? lines.push([k, a]) : missing.push(cmpLabel[k]); });
+      S.spagCmp.forEach((k) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); a && a !== last ? lines.push([k, a, part]) : missing.push(cmpLabel[k]); });
       const start = shiftDays(last, -Math.max(92, ...S.spagCmp.map((k) => cmpDays[k] + 31)));
       const ef = D.effr.filter((r) => r.date >= start), lp = stepXY(pathOn(last), last, effrNow), yr = fedRange();
       const draw = (i) => {
@@ -711,9 +727,11 @@
         if (scrub) {
           const a = A[i], e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
           tr.push({ x, y, name: `Expected as of ${a}`, type: "scatter", mode: "lines", line: { color: P[0], width: 2.6, shape: "hv" }, hovertemplate: `As of ${a}: %{y:.2f}%<extra></extra>` });
-        } else lines.forEach(([k, a], j) => {
-          const e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
-          tr.push({ x, y, name: `Expected ${cmpLabel[k]} (${a})`, type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][j % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}: %{y:.2f}%<extra></extra>` });
+        } else lines.forEach(([k, a, part], j) => {
+          const e = num((atOrBefore(D.effr, "date", a) || {}).effr), pr = part ? pathAt(a, true) : null;
+          // 部分路徑：只從第一個算得出來的會議開始畫，前面那段（合約已到期）不畫
+          const { x, y } = part ? stepXY(pr.slice(1), pr[0].meeting, num(pr[0].post)) : stepXY(pathOn(a), a, e);
+          tr.push({ x, y, name: `Expected ${cmpLabel[k]} (${a})` + (part ? `, from ${md(pr[0].meeting)} meeting on` : ""), type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][j % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}: %{y:.2f}%<extra></extra>` });
         });
         const efS = scrub ? ef.filter((r) => r.date <= mark) : ef;  // 拉回過去時，EFFR 只畫到那天
         tr.push({ x: efS.map((r) => r.date), y: efS.map((r) => num(r.effr)), name: "EFFR actual", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
@@ -725,7 +743,7 @@
           annotations: scrub ? [] : [{ x: mark, yref: "paper", y: 1, text: "Today", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
       };
       scrubber($("#f-scrub"), "f", A, S.spagScrub, draw, fedNote);
-      if (missing.length) { const n = document.createElement("span"); n.textContent = `(No data yet for ${missing.join(", ")}; Fed pricing starts on ${A[0]})`; ctl.append(n); }
+      if (missing.length) { const n = document.createElement("span"); n.textContent = `(No data for ${missing.join(", ")})`; ctl.append(n); }
     }
   }
 
@@ -754,9 +772,10 @@
   }
   const rangeLabel = (b, k, short) => { const lo = b.lo + k * 0.25, hi = b.hi + k * 0.25; return short ? lo.toFixed(2) : `${lo.toFixed(2)}–${hi.toFixed(2)}`; };
   function levelColor(k, levels) {
-    if (k === 0) return css("--muted");
+    // 柔和一點：今天那檔用淡灰，越遠的檔顏色越深，但不到全飽和
+    if (k === 0) return rgba(css("--muted"), 0.22);
     const n = Math.max(1, ...levels.filter((x) => Math.sign(x) === Math.sign(k)).map(Math.abs));
-    return rgba(css(k > 0 ? "--up" : "--down"), (0.3 + 0.7 * Math.abs(k) / n).toFixed(2));
+    return rgba(css(k > 0 ? "--up" : "--down"), (0.18 + 0.32 * Math.abs(k) / n).toFixed(2));
   }
   // 相對今天：比今天低 / 一樣 / 比今天高
   function vsToday(d) { let lo = 0, eq = 0, hi = 0; d.forEach((p, k) => { if (k < 0) lo += p; else if (k > 0) hi += p; else eq += p; }); return { lo, eq, hi }; }
@@ -1269,6 +1288,7 @@
   async function main() {
     [D.yields, D.effr, D.path, D.summ, D.macro, D.claims, D.be, D.sep, D.rel, D.con, D.conManual] = await Promise.all(
       ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv", "releases.csv", "consensus.csv", "consensus_manual.csv"].map(load));
+    D.pathPart = await load("fed_path_partial.csv").catch(() => []);
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }
