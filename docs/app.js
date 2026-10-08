@@ -1015,19 +1015,32 @@
   }
 
   // Inflation 頁
-  const I_VIEWS = { yoy: ["YoY", (s) => yoy(s)], a3: ["3m annualized", (s) => annK(s, 3)], a6: ["6m annualized", (s) => annK(s, 6)] };
+  const I_VIEWS = { mm: ["m/m", (s) => mom(s)], yoy: ["YoY", (s) => yoy(s)], a3: ["3m annualized", (s) => annK(s, 3)], a6: ["6m annualized", (s) => annK(s, 6)] };
   function renderInflation() {
     if (!D.macro.length) return empty("c-infl", "No inflation data yet");
     const P = palette(), f = I_VIEWS[S.iView][1];
     $("#infl-take2").textContent = inflTakeaway();
     $("#infl-date2").innerHTML = dataLine("core_pce", "pce", "PCE", "Core PCE: ") + `<span class="muted"> &nbsp;|&nbsp; </span>` + dataLine("core_cpi", "cpi", "CPI", "Core CPI: ");
     const pce = fromYears(f(ser("core_pce")), S.iYears), cpi = fromYears(f(ser("core_cpi")), S.iYears);
-    const tr = [{ ...xy(pce), name: `Core PCE ${I_VIEWS[S.iView][0]}`, line: { color: P[0], width: 2.2 }, hovertemplate: "%{y:.2f}%" },
-      { ...xy(cpi), name: `Core CPI ${I_VIEWS[S.iView][0]}`, line: { color: P[3], width: 1.6 }, hovertemplate: "%{y:.2f}%" }];
-    const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
-    clearEmpty("c-infl");
+    const mm = S.iView === "mm";
     const narrow = innerWidth < 600, lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
-    plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
+    clearEmpty("c-infl");
+    if (mm) {
+      // 月增率用柱子；虛線是一年 2% 換成每月的速度（0.17%）
+      const bar = (s, n, c) => ({ ...xy(s), name: `${n} m/m`, type: "bar", marker: { color: rgba(c, 0.75) },
+        customdata: s.map((p) => (Math.pow(1 + p.v / 100, 12) - 1) * 100), hovertemplate: `${n} %{y:.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>` });
+      // 速度線的說明放在圖例（放圖上會蓋到最近的柱子）
+      const pace = { x: [null], y: [null], name: "2% a year pace (0.17%/month)", mode: "lines", line: { color: css("--ink"), width: 1.2, dash: "dash" }, hoverinfo: "skip" };
+      plot("c-infl", [bar(pce, "Core PCE", P[0]), bar(cpi, "Core CPI", P[3]), pace],
+        baseLayout({ barmode: "group", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), ...lg,
+          shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: PACE2, y1: PACE2, layer: "above", line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
+ }));
+    } else {
+      const tr = [{ ...xy(pce), name: `Core PCE ${I_VIEWS[S.iView][0]}`, line: { color: P[0], width: 2.2 }, hovertemplate: "%{y:.2f}%" },
+        { ...xy(cpi), name: `Core CPI ${I_VIEWS[S.iView][0]}`, line: { color: P[3], width: 1.6 }, hovertemplate: "%{y:.2f}%" }];
+      const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
+      plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
+    }
 
     // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
     // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
