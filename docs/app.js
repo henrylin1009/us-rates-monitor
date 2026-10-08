@@ -6,14 +6,12 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", itemView: "latest", iYears: "5", dRange: "1Y", fomcRange: "2Y", sIn: "core_cpi_mm", sJob: "nfp", sixView: "index",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveCmp: ["1W", "1M"], curveCustom: "", curveScrub: null,
-    changeWin: "1D",
-    spreads: ["2s10s", "5s30s"],
-    cum: ["cum_yearend_bp", "cum_12m_bp"],
+    spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathCmp: ["1W", "1M"], pricedCmp: ["1W"], spagCmp: ["1W", "1M"], pathScrub: null, spagScrub: null, histMeeting: null, calAll: false, folds: {},
+    pathCmp: ["1W", "1M"], pricedCmp: ["1W"], pathScrub: null, histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -260,6 +258,13 @@
     return { text: t, regime: rg };
   }
 
+  // Rates 頁最上面的一句話：一週的曲線動向 + 年底前 Fed 定價
+  function renderRatesTake() {
+    const el = $("#rates-take"); if (!el || D.yields.length < 2) return;
+    const f = D.summ[D.summ.length - 1];
+    el.textContent = ratesTakeaway().text + (f && f.cum_yearend_bp !== "" ? ` Futures price ${bp(num(f.cum_yearend_bp), 0)}bp (${moves(num(f.cum_yearend_bp))}) by year-end.` : "");
+  }
+
   function renderHero() {
     const y = D.yields; if (y.length < 2) return;
     const a = y[y.length - 1], b = y[y.length - 2], w = ago(7), P = palette();
@@ -372,18 +377,69 @@
         + `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td><td class="n ${cls(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
     });
     const first = D.summ.length ? D.summ[0].asof : null;
-    const note = `<p class="hint">Pricing history starts on ${first || "–"}, so meetings before that have no diamond and no surprise yet. Both fill in from each new meeting.</p>`;
+    const note = `<p class="hint note">Pricing history starts on ${first || "–"}, so meetings before that have no diamond and no surprise yet. Both fill in from each new meeting.</p>`;
     el.innerHTML = note + fold("fomc", "Meeting-by-meeting numbers", `<div class="table-wrap">${h}</tbody></table></div>`);
+  }
+
+  // 選一次未來的會議，看各個結果的機率每天怎麼變（FedWatch 的 historical）
+  function renderOddsHistory() {
+    const A = asofs();
+    if (!A.length) return empty("c-fomc", "No Fed pricing data yet.");
+    clearEmpty("c-fomc");
+    const last = A[A.length - 1];
+    const upcoming = pathOn(last).map((r) => r.meeting);
+    if (!upcoming.includes(S.histMeeting)) S.histMeeting = upcoming[0];
+    const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" });
+    $("#fomc-controls").append(chips("Meeting", upcoming.map((m) => [m, mon(m)]), S.histMeeting, false, (x) => { S.histMeeting = x; renderFomc(); }));
+    const m = S.histMeeting, today = baseRange(last);
+    // 每天：那天的路徑 → 分布 → 取出這次會議那一列，換成絕對的區間下緣
+    const series = A.map((a) => {
+      const rows = pathOn(a), i = rows.findIndex((r) => r.meeting === m);
+      if (i < 0) return null;
+      const b = baseRange(a), d = levelDist(rows).dists[i], out = new Map();
+      d.forEach((p, k) => out.set(Math.round((b.lo + k * 0.25) * 100), p));
+      return { a, out };
+    }).filter(Boolean);
+    const lows = new Set();
+    series.forEach(({ out }) => out.forEach((p, lo) => { if (p >= 0.01) lows.add(lo); }));
+    const levels = [...lows].sort((x, y) => x - y), ks = levels.map((lo) => Math.round((lo / 100 - today.lo) / 0.25));
+    const lab = (lo) => `${(lo / 100).toFixed(2)}–${(lo / 100 + 0.25).toFixed(2)}`;
+    const tr = levels.map((lo, j) => ({
+      x: series.map((s) => s.a), y: series.map((s) => (s.out.get(lo) || 0) * 100), name: lab(lo) + (ks[j] === 0 ? " (today)" : ""),
+      type: "scatter", mode: "lines", stackgroup: "p", line: { width: 0.5, color: css("--surface") }, fillcolor: levelColor(ks[j], ks),
+      hovertemplate: `${lab(lo)}%: %{y:.1f}%<extra></extra>`,
+    }));
+    plot("c-fomc", tr, baseLayout({ legend: { ...baseLayout().legend, traceorder: "reversed" },
+      yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
+    // 表：今天、一週前、一個月前、最早
+    const cols = [["Today", series[series.length - 1]]];
+    [["1W", "1 week ago"], ["1M", "1 month ago"]].forEach(([k, n]) => { const a = nearestAsof(series.map((s) => s.a), shiftDays(last, -cmpDays[k])); const s = series.find((x) => x.a === a); if (s && s !== cols[0][1]) cols.push([n, s]); });
+    if (series[0] !== cols[cols.length - 1][1]) cols.push(["First (" + series[0].a + ")", series[0]]);
+    let h = `<table><thead><tr><th>Target range after ${mon(m)}</th>` + cols.map(([n, s]) => `<th>${n}<br><small>${s.a}</small></th>`).join("") + "</tr></thead><tbody>";
+    [...levels].reverse().forEach((lo) => {
+      h += `<tr><td>${lab(lo)}${lo === Math.round(today.lo * 100) ? " <small>(today)</small>" : ""}</td>` + cols.map(([, s]) => `<td class="n">${((s.out.get(lo) || 0) * 100).toFixed(1)}%</td>`).join("") + "</tr>";
+    });
+    $("#fomc-table").innerHTML = fold("fomcHist", "Show table", h + "</tbody></table>"
+      + `<p class="hint">Each day's probabilities use that day's ZQ prices and the same method as Meeting odds. History starts on ${A[0]} and grows every trading day.</p>`);
+  }
+  // 過去的會議：會前定價 vs 實際決定；或某次未來會議的機率怎麼一路變
+  const FOMC_HINT = {
+    past: "The solid line is the actual policy rate (EFFR). Each diamond is the rate futures priced for that meeting the day before; the gap between diamond and line is the surprise. The dashed line is where the market prices the rate today, meeting by meeting. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, open ones still ahead. Hover for the decision or what is priced.",
+    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range. For meetings after the next one, read the direction of the shift rather than exact percentages: the split assumes meetings are independent.",
+  };
+  function renderFomc() {
+    $("#fomc-controls").innerHTML = ""; $("#fomc-table").innerHTML = "";
+    $("#fomc-hint").textContent = FOMC_HINT[S.fomcView];
+    $("#fomc-range").style.display = S.fomcView === "past" ? "" : "none";
+    if (S.fomcView === "hist") return renderOddsHistory();
+    renderFomcChart(); renderFomcTable();
   }
 
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
-    tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks.",
-    curve: "The shape of the whole curve compared with the past. Tenors are evenly spaced on the x-axis. Drag the slider below to watch the curve change over time.",
+    tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
+    curve: "Today's curve against earlier dates (top), and how many bp each tenor moved since the first date picked (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the slider to watch the curve change over time.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
-    change: "How many bp each tenor moved over the period. See whether the front or long end led, to tell bull/bear steepening from flattening.",
-    heat: "Date × tenor heatmap showing how the whole curve evolved. Blank cells are before Treasury issued that tenor: the 2-month bill started in Oct 2018 and the 4-month bill in Oct 2022.",
-    vsfed: "The 2y yield vs the policy rate ZQ implies 12 months out. The 2y mostly reflects Fed expectations, so the gap is roughly term premium plus noise.",
   };
   // ---------- 拖的日期拉桿 + 播放鍵 ----------
   // dates：可以拉的日期（最後一個是今天）；i = null 代表今天；onChange(i) 負責重畫圖
@@ -426,12 +482,18 @@
     const P = palette(), v = S.yView, rr = () => renderYields();
 
     if (v === "tenor") {
-      ctl.append(chips("Tenors", TENORS.map((t) => [t, t]), S.tenors, true, rr), rangeChips("range", rr), eventChips(rr));
+      ctl.append(chips("Tenors", TENORS.map((t) => [t, t]), S.tenors, true, rr), chips("Overlay", [["fed", "EFFR + ZQ 12m ahead"]], S.trendFed, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = TENORS.filter((t) => S.tenors.includes(t)).map((t, i) => ({
         x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
         line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.2f}%",
       }));
+      // 疊 Fed：2y 主要反映對 Fed 的預期，和 EFFR、期貨隱含 12 個月後的利率比，差距大約是 term premium
+      if (S.trendFed.includes("fed") && rows.length) {
+        const start = rows[0].date, ef = D.effr.filter((r) => r.date >= start && r.effr !== ""), fs = D.summ.filter((r) => r.asof >= start && r.implied_12m !== "");
+        tr.push({ x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 1.4, shape: "hv" }, hovertemplate: "%{y:.2f}%" });
+        if (fs.length) tr.push({ x: fs.map((r) => r.asof), y: fs.map((r) => num(r.implied_12m)), name: "ZQ-implied 12m ahead", type: "scatter", mode: "lines", line: { color: css("--muted"), width: 1.6, dash: "dash" }, hovertemplate: "%{y:.2f}%" });
+      }
       const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
       if (rows.length) addEvents(tr, L, rows[0].date);
       plot(id, tr, L);
@@ -455,16 +517,36 @@
       });
       const draw = (i) => {
         S.curveScrub = i;
-        let tr;
-        if (i != null) tr = [curve("Today " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")];
+        let tr, base = null;
+        if (i != null) { tr = [curve("Today " + last.date, last, 1.6, css("--muted"), "solid", 0.45), curve(Y[i].date, Y[i], 2.8, P[0], "solid")]; base = Y[i]; }
         else {
           const snaps = [["Today " + last.date, last, 2.6, P[0], "solid"]];
-          S.curveCmp.forEach((k, j) => { const r = atOrBefore(Y, "date", shiftDays(last.date, -cmpDays[k])); if (r) snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(j + 1) % P.length], "dot"]); });
-          if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) snaps.push([`Custom ${r.date}`, r, 1.6, P[4], "dash"]); }
+          // 比較日期照時間由近到遠排；變動 bar 用最近的那一個（沒選就用自訂日期）
+          Object.keys(cmpDays).filter((k) => S.curveCmp.includes(k)).forEach((k, j) => {
+            const r = k === "1D" ? Y[Y.length - 2] : atOrBefore(Y, "date", shiftDays(last.date, -cmpDays[k]));
+            if (r) { snaps.push([`${cmpLabel[k]} ${r.date}`, r, 1.6, P[(j + 1) % P.length], "dot"]); if (!base) base = r; }
+          });
+          if (S.curveCustom) { const r = atOrBefore(Y, "date", S.curveCustom); if (r) { snaps.push([`Custom ${r.date}`, r, 1.6, P[4], "dash"]); if (!base) base = r; } }
           tr = snaps.map((x) => curve(...x));
         }
-        plot(id, tr, baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
-          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) } }));
+        const L = baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
+          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(i != null ? { range: yr } : {}) } });
+        if (base) {
+          // 下面一排：每個天期從比較日到今天變了幾 bp（Bloomberg GC 的排法）
+          const ys = TENORS.map((t) => (num(last[t]) == null || num(base[t]) == null ? null : +((num(last[t]) - num(base[t])) * 100).toFixed(1)));
+          const d2 = chg(last, base, "2y"), d10 = chg(last, base, "10y");
+          tr.push({ x: TENORS, y: ys, yaxis: "y2", type: "bar", showlegend: false, marker: { color: ys.map((x) => rgba(css(x >= 0 ? "--up" : "--down"), 0.7)) },
+            text: ys.map((x) => (x == null ? "" : bp(x, 0))), textposition: "outside", cliponaxis: false,
+            textfont: { family: "IBM Plex Mono, monospace", size: 10.5, color: css("--muted") }, hovertemplate: `%{x}: %{y:+.1f}bp since ${base.date}<extra></extra>` });
+          const lo = Math.min(0, ...ys.filter((x) => x != null)), hi = Math.max(0, ...ys.filter((x) => x != null)), pad = Math.max(4, (hi - lo) * 0.3);
+          L.yaxis = { ...L.yaxis, domain: [0.36, 1] };
+          L.yaxis2 = { ...baseLayout().yaxis, domain: [0, 0.24], anchor: "x", ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), range: [lo - pad, hi + pad], nticks: 3 };
+          L.xaxis = { ...L.xaxis, anchor: "y2" };
+          L.annotations = [{ xref: "paper", yref: "paper", x: 0, y: 0.27, xanchor: "left", yanchor: "bottom", showarrow: false, font: { size: 11.5, color: css("--muted") },
+            text: `Change since ${base.date} (bp)${d2 == null || d10 == null || innerWidth < 600 ? "" : ` · ${regime(d2, d10)} · 2s10s ${bp(d10 - d2, 0)}bp`}` }];
+          L.hovermode = "closest";
+        }
+        plot(id, tr, L);
       };
       scrubber($("#y-scrub"), "y", Y.map((r) => r.date), S.curveScrub, draw, "Drag the slider to watch the curve change over time, or press ▶ to play. Today's curve stays faint as a reference.");
     }
@@ -483,48 +565,6 @@
       renderReactions($("#y-table"));
     }
 
-    if (v === "change") {
-      ctl.append(chips("Period", ["1D", "1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.changeWin, false, (x) => { S.changeWin = x; rr(); }));
-      const a = D.yields[D.yields.length - 1];
-      const b = S.changeWin === "1D" ? D.yields[D.yields.length - 2] : atOrBefore(D.yields, "date", shiftDays(a.date, -cmpDays[S.changeWin]));
-      const ys = TENORS.map((t) => (num(a[t]) == null || num(b[t]) == null ? null : +((num(a[t]) - num(b[t])) * 100).toFixed(1)));
-      const up = css("--up"), dn = css("--down");
-      const d2 = (num(a["2y"]) - num(b["2y"])) * 100, d10 = (num(a["10y"]) - num(b["10y"])) * 100;
-      const note = document.createElement("span"); note.innerHTML = `${b.date} → ${a.date}  <span class="badge">${regime(d2, d10)}</span>  2s10s ${bp(d10 - d2, 1)}bp`;
-      ctl.append(note);
-      plot(id, [{
-        x: TENORS, y: ys, type: "bar", marker: { color: ys.map((x) => (x >= 0 ? up : dn)) },
-        text: ys.map((x) => (x == null ? "" : bp(x, 1))), textposition: "outside", cliponaxis: false,
-        textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--muted") }, hovertemplate: "%{x}: %{y:+.1f}bp<extra></extra>",
-      }], baseLayout({ hovermode: "closest", showlegend: false, xaxis: { ...baseLayout().xaxis, type: "category" },
-        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } }));
-    }
-
-    if (v === "heat") {
-      ctl.append(rangeChips("range", rr));
-      let rows = inRange(D.yields, "date", S.range);
-      const step = Math.max(1, Math.floor(rows.length / 400)); rows = rows.filter((_, i) => i % step === 0 || i === rows.length - 1);
-      const dark = isDark();
-      plot(id, [{
-        type: "heatmap", x: rows.map((r) => r.date), y: TENORS, z: TENORS.map((t) => rows.map((r) => num(r[t]))),
-        // 單一藍色：利率越高顏色越濃（亮色模式越深，暗色模式越亮）
-        colorscale: dark ? [[0, "#1c2433"], [0.5, "#3f63b8"], [1, "#b3cbff"]] : [[0, "#eef2fb"], [0.5, "#6b8fd6"], [1, "#12296b"]], colorbar: { ticksuffix: "%", thickness: 10, outlinewidth: 0, tickfont: { color: css("--muted") } },
-        hoverongaps: false, hovertemplate: "%{x}<br>%{y}: %{z:.2f}%<extra></extra>",
-      }], baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, type: "category" } }));
-    }
-
-    if (v === "vsfed") {
-      ctl.append(rangeChips("range", rr));
-      const rows = inRange(D.yields, "date", S.range), start = rows.length ? rows[0].date : "";
-      const ef = D.effr.filter((r) => r.date >= start), fs = D.summ.filter((r) => r.asof >= start && r.implied_12m !== "");
-      const tr = [
-        { x: rows.map((r) => r.date), y: rows.map((r) => num(r["2y"])), name: "2y yield", line: { color: P[0], width: 2 } },
-        { x: fs.map((r) => r.asof), y: fs.map((r) => num(r.implied_12m)), name: "ZQ-implied 12m ahead", line: { color: P[1], width: 2 } },
-        { x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR", line: { color: css("--muted"), width: 1.4, shape: "hv" } },
-      ].map((t) => ({ ...t, type: "scatter", mode: "lines", hovertemplate: "%{y:.2f}%" }));
-      plot(id, tr, baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
-      if (!fs.length) { const n = document.createElement("span"); n.textContent = "(Fed pricing history builds up from the day the pipeline started)"; ctl.append(n); }
-    }
   }
 
   // ---------- 圖二：Fed 定價 ----------
@@ -532,9 +572,6 @@
     priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
     path: "The implied policy rate after each FOMC meeting. Compare with a week or a month ago to see how much the market has repriced.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
-    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range. For meetings after the next one, read the direction of the shift rather than exact percentages: the split assumes meetings are independent.",
-    cum: "Cumulative bp priced relative to today's EFFR, one point per day, to see whether pricing is getting more hawkish or dovish.",
-    spag: "The black line is the actual EFFR; the orange line is today's expected path; dotted lines are expectations from earlier dates. The bigger the gap, the more the market has repriced. Before 2026-09-16 a dated line starts at the first meeting whose futures are still trading (expired contracts are not available), so it has no early segment.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
   const pathOn = (a) => D.path.filter((r) => r.asof === a);
@@ -561,13 +598,6 @@
     $("#f-stale").hidden = behind < 2;
     $("#f-stale").textContent = behind >= 2 ? `⚠ ZQ futures prices haven't updated for ${behind} trading days (Yahoo unavailable); showing pricing as of ${last}.` : "";
     const effrNow = num(D.summ[D.summ.length - 1].effr);
-    const stepXY = (rows, startDate, startRate) => {
-      // 階梯：從 asof 起，每次會議後換成新利率
-      const x = [startDate], y = [startRate];
-      rows.forEach((r) => { x.push(r.meeting); y.push(num(r.post)); });
-      if (rows.length) { x.push(shiftDays(rows[rows.length - 1].meeting, 45)); y.push(num(rows[rows.length - 1].post)); }
-      return { x, y };
-    };
     // 拉桿用：y 軸固定在所有日期的範圍，拖的時候才不會跳
     const fedRange = () => {
       let lo = Infinity, hi = -Infinity;
@@ -664,87 +694,6 @@
       renderDistTable(rows, levels, dists, base);
     }
 
-    if (v === "hist") {
-      // 選一次會議，看它各個結果的機率每天怎麼變（FedWatch 的 historical）
-      const upcoming = pathOn(last).map((r) => r.meeting);
-      if (!upcoming.includes(S.histMeeting)) S.histMeeting = upcoming[0];
-      const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" });
-      ctl.append(chips("Meeting", upcoming.map((m) => [m, mon(m)]), S.histMeeting, false, (x) => { S.histMeeting = x; rr(); }));
-      const m = S.histMeeting, today = baseRange(last);
-      // 每天：那天的路徑 → 分布 → 取出這次會議那一列，換成絕對的區間下緣
-      const series = A.map((a) => {
-        const rows = pathOn(a), i = rows.findIndex((r) => r.meeting === m);
-        if (i < 0) return null;
-        const b = baseRange(a), d = levelDist(rows).dists[i], out = new Map();
-        d.forEach((p, k) => out.set(Math.round((b.lo + k * 0.25) * 100), p));
-        return { a, out };
-      }).filter(Boolean);
-      const lows = new Set();
-      series.forEach(({ out }) => out.forEach((p, lo) => { if (p >= 0.01) lows.add(lo); }));
-      const levels = [...lows].sort((x, y) => x - y), ks = levels.map((lo) => Math.round((lo / 100 - today.lo) / 0.25));
-      const lab = (lo) => `${(lo / 100).toFixed(2)}–${(lo / 100 + 0.25).toFixed(2)}`;
-      const tr = levels.map((lo, j) => ({
-        x: series.map((s) => s.a), y: series.map((s) => (s.out.get(lo) || 0) * 100), name: lab(lo) + (ks[j] === 0 ? " (today)" : ""),
-        type: "scatter", mode: "lines", stackgroup: "p", line: { width: 0.5, color: css("--surface") }, fillcolor: levelColor(ks[j], ks),
-        hovertemplate: `${lab(lo)}%: %{y:.1f}%<extra></extra>`,
-      }));
-      plot(id, tr, baseLayout({ legend: { ...baseLayout().legend, traceorder: "reversed" },
-        yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
-      // 表：今天、一週前、一個月前、最早
-      const cols = [["Today", series[series.length - 1]]];
-      [["1W", "1 week ago"], ["1M", "1 month ago"]].forEach(([k, n]) => { const a = nearestAsof(series.map((s) => s.a), shiftDays(last, -cmpDays[k])); const s = series.find((x) => x.a === a); if (s && s !== cols[0][1]) cols.push([n, s]); });
-      if (series[0] !== cols[cols.length - 1][1]) cols.push(["First (" + series[0].a + ")", series[0]]);
-      let h = `<table><thead><tr><th>Target range after ${mon(m)}</th>` + cols.map(([n, s]) => `<th>${n}<br><small>${s.a}</small></th>`).join("") + "</tr></thead><tbody>";
-      [...levels].reverse().forEach((lo) => {
-        h += `<tr><td>${lab(lo)}${lo === Math.round(today.lo * 100) ? " <small>(today)</small>" : ""}</td>` + cols.map(([, s]) => `<td class="n">${((s.out.get(lo) || 0) * 100).toFixed(1)}%</td>`).join("") + "</tr>";
-      });
-      $("#f-table").innerHTML = fold("fTable", "Show table", h + "</tbody></table>"
-        + `<p class="hint">Each day's probabilities use that day's ZQ prices and the same method as Meeting odds. History starts on ${A[0]} and grows every trading day.</p>`);
-    }
-
-    if (v === "cum") {
-      const opts = [["next_move_bp", "Next meeting"], ["cum_yearend_bp", "Year-end"], ["cum_6m_bp", "6 months"], ["cum_12m_bp", "12 months"]];
-      ctl.append(chips("Horizon", opts, S.cum, true, rr), rangeChips("range", rr), eventChips(rr));
-      const rows = inRange(D.summ, "asof", S.range);
-      const tr = opts.filter(([k]) => S.cum.includes(k)).map(([k, n], i) => ({
-        x: rows.map((r) => r.asof), y: rows.map((r) => num(r[k])), name: n, type: "scatter", mode: "lines",
-        line: { color: P[i % P.length], width: 1.8 }, hovertemplate: "%{y:+.1f}bp",
-      }));
-      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } });
-      if (rows.length) addEvents(tr, L, rows[0].asof);
-      plot(id, tr, L);
-    }
-
-    if (v === "spag") {
-      ctl.append(chips("Compare", ["1W", "1M", "3M", "1Y"].map((k) => [k, cmpLabel[k]]), S.spagCmp, true, rr));
-      const lines = [], missing = [];
-      S.spagCmp.forEach((k) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); a && a !== last ? lines.push([k, a, part]) : missing.push(cmpLabel[k]); });
-      const start = shiftDays(last, -Math.max(92, ...S.spagCmp.map((k) => cmpDays[k] + 31)));
-      const ef = D.effr.filter((r) => r.date >= start), lp = stepXY(pathOn(last), last, effrNow), yr = fedRange();
-      const draw = (i) => {
-        S.spagScrub = i;
-        const tr = [], scrub = i != null, mark = scrub ? A[i] : last;
-        if (scrub) {
-          const a = A[i], e = num((atOrBefore(D.effr, "date", a) || {}).effr), { x, y } = stepXY(pathOn(a), a, e);
-          tr.push({ x, y, name: `Expected as of ${a}`, type: "scatter", mode: "lines", line: { color: P[0], width: 2.6, shape: "hv" }, hovertemplate: `As of ${a}: %{y:.2f}%<extra></extra>` });
-        } else lines.forEach(([k, a, part], j) => {
-          const e = num((atOrBefore(D.effr, "date", a) || {}).effr), pr = part ? pathAt(a, true) : null;
-          // 部分路徑：只從第一個算得出來的會議開始畫，前面那段（合約已到期）不畫
-          const { x, y } = part ? stepXY(pr.slice(1), pr[0].meeting, num(pr[0].post)) : stepXY(pathOn(a), a, e);
-          tr.push({ x, y, name: `Expected ${cmpLabel[k]} (${a})` + (part ? `, from ${md(pr[0].meeting)} meeting on` : ""), type: "scatter", mode: "lines", line: { color: [P[0], P[3], P[4], P[2]][j % 4], width: 1.6, dash: "dot", shape: "hv" }, hovertemplate: `${cmpLabel[k]}: %{y:.2f}%<extra></extra>` });
-        });
-        const efS = scrub ? ef.filter((r) => r.date <= mark) : ef;  // 拉回過去時，EFFR 只畫到那天
-        tr.push({ x: efS.map((r) => r.date), y: efS.map((r) => num(r.effr)), name: "EFFR actual", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 2.2, shape: "hv" }, hovertemplate: "EFFR %{y:.2f}%<extra></extra>" });
-        tr.push({ x: lp.x, y: lp.y, name: "Expected today", type: "scatter", mode: "lines", opacity: scrub ? 0.45 : 1,
-          line: { color: scrub ? css("--muted") : css("--up"), width: scrub ? 1.6 : 2.6, shape: "hv" }, hovertemplate: "Today: %{y:.2f}%<extra></extra>" });
-        plot(id, tr, baseLayout({ hovermode: "closest", xaxis: { ...baseLayout().xaxis, range: [start, lp.x[lp.x.length - 1]] },
-          yaxis: { ...baseLayout().yaxis, ticksuffix: "%", ...(scrub ? { range: yr } : {}) },
-          shapes: [{ type: "line", x0: mark, x1: mark, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }],
-          annotations: scrub ? [] : [{ x: mark, yref: "paper", y: 1, text: "Today", showarrow: false, yanchor: "bottom", font: { size: 11, color: css("--muted") } }] }));
-      };
-      scrubber($("#f-scrub"), "f", A, S.spagScrub, draw, fedNote);
-      if (missing.length) { const n = document.createElement("span"); n.textContent = `(No data for ${missing.join(", ")})`; ctl.append(n); }
-    }
   }
 
   // 從今天的利率出發，一次一次會議往下接：每次會議把隱含變動拆成最接近的兩檔（lo_bp / hi_bp），
@@ -946,12 +895,11 @@
 
   // 一年 2% 換成每個月的速度：1.02^(1/12) − 1 ≈ 0.165%
   const PACE2 = (Math.pow(1.02, 1 / 12) - 1) * 100;
-  // CPI 拆項三種看法：時間序列的貢獻疊圖、最新一個月的橫條、各項 × 月份的熱力圖
+  // CPI 拆項兩種看法：時間序列的貢獻疊圖、各項（含 desk 常看的細項）× 月份的熱力圖
   function renderCpiParts(comps) {
     const P = palette(), v = S.cpiView, narrow = innerWidth < 600;
     const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
-      latest: "The latest month only: each component's own m/m change (bar), against the month before (dot) and its 12-month average (tick). This is one month, not a year: 0.3% m/m is about 3.6% annualized. The dashed line is the monthly pace of 2% a year; red bars run hotter than that, green cooler. Energy and food swing far more than the rest and carry small weights (see Contributions).",
-      heat: "Each component's m/m change over the last 24 months. Colour is how unusual the move is for that component (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
+      heat: "Each component's m/m change over the last 24 months, with the items desks watch indented under the block they belong to: OER and rent make up most of shelter; medical and transport services (which includes car insurance) drive supercore; airfares are small but jumpy; used cars swing core goods. Colour is how unusual the move is for that row (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
     $("#cpi-hint").textContent = hint;
     if (v === "time") {
       const tb = comps.map(([c, n, w], i) => {
@@ -964,24 +912,14 @@
       const nb = narrow ? { legend: { ...baseLayout().legend, y: -0.1, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 140 } } : {};
       return plot("c-cpi-parts", tb, baseLayout({ ...nb, barmode: "relative", bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
     }
-    const rows = [["cpi", "Headline CPI"], ["core_cpi", "Core CPI"], ...comps.map(([c, n]) => [c, narrow && c === "cpi_supercore" ? "Supercore" : n.split(" (")[0]])];
-    if (v === "latest") return latestBars("c-cpi-parts", rows);
+    // 細項接在它所屬的那一塊下面
+    const kids = { cpi_goods: ["cpi_usedcars"], cpi_shelter: ["cpi_oer", "cpi_rent"], cpi_supercore: ["cpi_medsvc", "cpi_transvc", "cpi_airfare"] };
+    const rows = [["cpi", "Headline CPI"], ["core_cpi", "Core CPI"]];
+    comps.forEach(([c, n]) => {
+      rows.push([c, narrow && c === "cpi_supercore" ? "Supercore" : n.split(" (")[0]]);
+      (kids[c] || []).filter((k) => ser(k).length).forEach((k) => rows.push([k, "· " + CPI_ITEMS[k]]));
+    });
     heatRows("c-cpi-parts", rows);
-  }
-
-  // 每一列自己的最新 m/m 橫條：對照上個月、12 個月平均和 2% 年速
-  function latestBars(id, rows) {
-    const narrow = innerWidth < 600;
-    const d = rows.map(([c, n]) => { const m = mom(ser(c)), l = m[m.length - 1], p = m[m.length - 2], a = m.slice(-12); return { n, l, p, avg: a.reduce((x, y) => x + y.v, 0) / a.length }; }).reverse();
-    const month = d[d.length - 1].l ? monthName(d[d.length - 1].l.date) : "";
-    return plot(id, [
-      { y: d.map((x) => x.n), x: d.map((x) => x.l.v), name: `${month} m/m`, type: "bar", orientation: "h", marker: { color: d.map((x) => (x.l.v > PACE2 ? rgba(css("--up"), 0.75) : rgba(css("--down"), 0.6))) },
-        customdata: d.map((x) => (Math.pow(1 + x.l.v / 100, 12) - 1) * 100), hovertemplate: "%{y}: %{x:+.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>" },
-      { y: d.map((x) => x.n), x: d.map((x) => (x.p ? x.p.v : null)), name: "Month before", mode: "markers", marker: { size: 9, color: css("--ink"), symbol: "circle-open", line: { width: 2 } }, hovertemplate: "%{y} month before: %{x:+.2f}%<extra></extra>" },
-      { y: d.map((x) => x.n), x: d.map((x) => x.avg), name: "12-month average", mode: "markers", marker: { size: 16, color: css("--muted"), symbol: "line-ns", line: { width: 2.5, color: css("--muted") } }, hovertemplate: "%{y} 12m average: %{x:+.2f}%<extra></extra>" },
-    ], baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 40, t: 24, b: narrow ? 100 : 70 },
-      shapes: [{ type: "line", xref: "x", yref: "paper", x0: PACE2, x1: PACE2, y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
-      annotations: [{ x: PACE2, y: 1, xref: "x", yref: "paper", yanchor: "bottom", xanchor: "left", showarrow: false, text: "2% a year pace (0.17%/month)", font: { size: 11, color: css("--muted") } }], legend: { ...baseLayout().legend, y: narrow ? -0.15 : -0.1, yanchor: "top" }, xaxis: { ...baseLayout().xaxis, ticksuffix: "%", zeroline: true, zerolinecolor: css("--muted") }, yaxis: { ...baseLayout().yaxis, automargin: true, tickfont: { color: css("--ink"), size: 12 } } }));
   }
 
   // 熱力圖：每列 × 月份，顏色 = 和自己 2015-19 平均差幾個標準差
@@ -1004,15 +942,8 @@
       baseLayout({ hovermode: "closest", margin: { l: narrow ? 92 : 120, r: 10, t: 10, b: 40 }, xaxis: { ...baseLayout().xaxis, type: "category", showgrid: false, nticks: 12 }, yaxis: { ...baseLayout().yaxis, automargin: true, autorange: "reversed", showgrid: false, tickfont: { color: css("--ink"), size: 12 } } }));
   }
 
-  // CPI 細項：desk 常看的幾個，括號是它屬於上面哪一塊
-  const CPI_ITEMS = [["cpi_oer", "OER (shelter)"], ["cpi_rent", "Rent (shelter)"], ["cpi_medsvc", "Medical services (supercore)"],
-    ["cpi_transvc", "Transport services (supercore)"], ["cpi_airfare", "Airfares (supercore)"], ["cpi_usedcars", "Used cars (core goods)"]];
-  function renderCpiItems() {
-    const rows = CPI_ITEMS.filter(([c]) => ser(c).length).map(([c, n]) => [c, innerWidth < 600 ? n.split(" (")[0] : n]);
-    if (!rows.length) return empty("c-cpi-items", "No CPI item data yet");
-    clearEmpty("c-cpi-items");
-    if (S.itemView === "latest") latestBars("c-cpi-items", rows); else heatRows("c-cpi-items", rows);
-  }
+  // CPI 細項：desk 常看的幾個，熱力圖裡接在所屬的那一塊下面
+  const CPI_ITEMS = { cpi_oer: "OER", cpi_rent: "Rent", cpi_medsvc: "Medical services", cpi_transvc: "Transport services", cpi_airfare: "Airfares", cpi_usedcars: "Used cars" };
 
   // Inflation 頁
   const I_VIEWS = { mm: ["m/m", (s) => mom(s)], yoy: ["YoY", (s) => yoy(s)], a3: ["3m annualized", (s) => annK(s, 3)], a6: ["6m annualized", (s) => annK(s, 6)] };
@@ -1046,23 +977,16 @@
     // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
     const comps = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore, approx.)", 25.3], ["cpi_food", "Food", 13.6], ["cpi_energy", "Energy", 6.4]];
     renderCpiParts(comps);
-    renderCpiItems();
     let h = "<table><thead><tr><th>Component</th><th>Weight</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
     comps.forEach(([c, n, w]) => { const s = ser(c); h += `<tr><td>${n}</td><td class="n">${w}%</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`; });
     $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
-      + `<p class="hint">Weights are approximate BLS relative importance, so the bars add up close to, not exactly, the headline. Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
+      + `<p class="hint note">Weights are approximate BLS relative importance, so the bars add up close to, not exactly, the headline. Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
 
     // PPI
     const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
     plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
       baseLayout({ yaxis: pctAxis() }));
     $("#ppi-date").innerHTML = dataLine("ppi", "ppi", "PPI");
-
-    const be = D.be.filter((r) => r.be10 !== "");
-    const b0 = be[be.length - 1], b1 = b0 ? atOrBefore(be, "date", shiftDays(b0.date, -30)) : null;
-    $("#infl-mkt").innerHTML = b0 ? `10y breakeven is <b class="num">${(+b0.be10).toFixed(2)}%</b>`
-      + (b1 ? ` (<span class="${cls((b0.be10 - b1.be10) * 100)}">${bp((b0.be10 - b1.be10) * 100, 0)}bp</span> over 1 month)` : "")
-      + ` on ${b0.date}. <a class="more" href="#rates">See the 10y breakdown on Rates →</a>` : "No breakeven data yet.";
   }
 
   // Jobs 頁
@@ -1088,7 +1012,7 @@
     // 那個月公布時，對前兩個月的合計修正（ALFRED）
     const rev = new Map(D.rel.filter((r) => r.measure === "nfp" && r.rev2 !== "").map((r) => [r.ref, +r.rev2]));
     const revTxt = p24.map((p) => (rev.has(p.date) ? `<br>Prior 2 months revised ${rev.get(p.date) > 0 ? "+" : ""}${rev.get(p.date)}k in this report` : ""));
-    plot("c-nfp", [{ ...xy(p24), name: "Monthly change", type: "bar", marker: { color: p24.map((p) => (p.v < 0 ? css("--up") : rgba(P[0], 0.75))) }, customdata: revTxt, hovertemplate: "%{y:+.0f}k%{customdata}" },
+    plot("c-nfp", [{ ...xy(p24), name: "Monthly change", type: "bar", marker: { color: rgba(P[0], 0.75) }, customdata: revTxt, hovertemplate: "%{y:+.0f}k%{customdata}" },
       { ...xy(a3), name: "3-month average", line: { color: css("--ink"), width: 2 }, hovertemplate: "%{y:+.0f}k" }],
       baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
 
@@ -1133,7 +1057,7 @@
       h += `<tr><td>${cmpLabel[k] || k}</td><td class="n ${cls(dr + db)}">${bp(dr + db, 0)}</td><td class="n ${cls(dr)}">${bp(dr, 0)}</td><td class="n ${cls(db)}">${bp(db, 0)}</td><td>${who}</td></tr>`;
     });
     $("#decomp-table").innerHTML = `<div class="table-wrap">${h}</tbody></table></div>`
-      + `<p class="hint">Real + breakeven adds up to the 10y TIPS-implied nominal yield, which sits a few bp from the Treasury 10y (black line). Data from FRED (T10YIE, DFII10), ${last.date}.</p>`;
+      + `<p class="hint note">Real + breakeven adds up to the 10y TIPS-implied nominal yield, which sits a few bp from the Treasury 10y (black line). Data from FRED (T10YIE, DFII10), ${last.date}.</p>`;
   }
 
   // ---------- 數據 surprise：預期（FF / 手動）vs 首次公布（ALFRED） ----------
@@ -1184,16 +1108,23 @@
     measures.forEach((m) => {
       const rs = surRows(m), r = rs[rs.length - 1];
       const nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= today && (!r || c.date > r.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
-      if (nx) up.push(`<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`);
+      if (nx) up.push([nx.date, `<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`]);
+      else {
+        // 還沒有預期：先從 events.json 列出下一次公布日，預期出來（公布當週）會自動換成上面那種
+        const ev = D.events.find((e) => e.type === SM[m].type && e.date >= today && (!r || e.date > r.date));
+        const ref = ev && evtMonth(ev.label);
+        if (ev) up.push([ev.date, `<tr class="upcoming"><td class="n">${md(ev.date)}</td><td>${SM[m].name}</td><td>${ref ? monthName(ref) : ""}</td><td class="n muted" title="The forecast shows up in the week of the release">not out yet</td><td class="n muted">–</td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`]);
+      }
       if (r) last.push([r.date, `<tr><td class="n">${md(r.date)}</td><td>${SM[m].name}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n"><b>${fmtU(m, r.actual)}</b></td>`
         + `<td class="n">${fmtU(m, r.prior)}</td><td class="n">${r.revised !== "" && r.prior !== "" && +r.revised !== +r.prior ? fmtU(m, r.revised) : ""}</td>`
         + `<td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`]);
     });
     last.sort((a, b) => (a[0] < b[0] ? 1 : -1));
-    return `<div class="table-wrap eco">${h}${up.join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
+    up.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    return `<div class="table-wrap eco">${h}${up.map((x) => x[1]).join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
   }
   function conStart() { const d = [...D.con, ...D.conManual].map((r) => r.date).sort(); return d[0] || null; }
-  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
+  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. It only lists the current week, so later releases show "not out yet" until their week starts. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
 
   // 一個指標的歷史：柱子 = 實際、點 = 預期
   function renderSurprisePanel(page) {
@@ -1201,7 +1132,7 @@
     if (!ms.includes(S[key])) S[key] = ms[0];
     const el = $(`#sur-${page}`); if (!el) return;
     if (!D.rel.length) { el.innerHTML = `<p class="hint">Release data load after the next daily update.</p>`; return; }
-    el.innerHTML = ecoTable(ms) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint">${conNote()}</p>`;
+    el.innerHTML = ecoTable(ms) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
     const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
@@ -1225,7 +1156,6 @@
   }
 
   // Rates：surprise 指數（類似 Citi）和數據對 2y 的影響
-  const SUR_TYPES = { cpi: "CPI", pce: "PCE", ppi: "PPI", nfp: "Jobs report", claims: "Claims" };
   function allSurprises() { return Object.keys(SM).flatMap((m) => surRows(m).filter((r) => r.z != null).map((r) => ({ ...r, m }))); }
   function renderSurIndex() {
     const el = $("#c-surix"); if (!el) return;
@@ -1234,7 +1164,7 @@
     if (all.length < 3) { empty("c-surix", `Not enough forecasts yet. The index and scatter fill in as forecasts are collected${conStart() ? ` (since ${conStart()})` : ""}.`); note.textContent = ""; return; }
     clearEmpty("c-surix");
     const P = palette();
-    if (S.sixView === "index") {
+    {
       // 照 Citi surprise index 的做法：通膨、就業各一條，每天 = 過去 90 天 surprise 的加權平均（σ），越舊權重越小（半衰期 30 天）
       // 一份報告只算一個代表數字，避免 CPI 和 core CPI 重複算；claims 每週都有，權重給 1/4
       const GROUPS = [["Inflation", ["core_cpi_mm", "core_pce_mm", "core_ppi_mm"], P[3]], ["Jobs and activity", ["nfp", "unrate", "claims"], P[0]]];
@@ -1267,15 +1197,6 @@
         yaxis: { ...baseLayout().yaxis, ticksuffix: "σ", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1.5 },
         yaxis2: { ...pctAxis(), overlaying: "y", side: "right", showgrid: false } }));
       note.textContent = "Built the way the Citi surprise index is: one line for inflation data (core CPI, core PCE, core PPI) and one for jobs and activity (payrolls, unemployment, claims). Each line is the average surprise of the last 3 months of releases, in standard deviations, with recent releases counting more. Above zero: data beating forecasts (hotter inflation, stronger jobs), which usually pushes the 2y up. Dots are releases; hover one to see what came out.";
-    } else {
-      const tr = Object.keys(SUR_TYPES).map((t, i) => {
-        const r = all.filter((x) => SM[x.m].type === t && x.d2 != null && ["core_cpi_mm", "core_pce_mm", "core_ppi_mm", "nfp", "claims"].includes(x.m));
-        return { x: r.map((x) => x.z), y: r.map((x) => x.d2), text: r.map((x) => `${SM[x.m].name} ${x.date}`), name: SUR_TYPES[t], mode: "markers", marker: { size: 9, color: P[i % P.length] },
-          hovertemplate: "%{text}<br>%{x:+.1f}σ → 2y %{y:+.1f}bp<extra></extra>" };
-      }).filter((t) => t.x.length);
-      plot("c-surix", tr, baseLayout({ hovermode: "closest", xaxis: { ...baseLayout().xaxis, title: { text: "Surprise (σ, + = hotter)", font: { size: 12 } }, zeroline: true, zerolinecolor: css("--muted") },
-        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } }));
-      note.textContent = "Each dot is one release (headline measure for each report): how big the surprise was against how much the 2y moved that day, close to close. A steeper cloud means the market is more sensitive to that data right now.";
     }
   }
 
@@ -1283,7 +1204,7 @@
   const PAGES = ["overview", "rates", "inflation", "jobs", "calendar"];
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); },
-    rates: () => { renderYields(); renderFed(); renderDecomp(); renderFomcChart(); renderFomcTable(); renderSurIndex(); },
+    rates: () => { renderRatesTake(); renderYields(); renderFed(); renderDecomp(); renderFomc(); renderSurIndex(); },
     inflation: () => { renderInflation(); renderSurprisePanel("inflation"); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     calendar: () => renderCalendar(),
@@ -1314,7 +1235,6 @@
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
     bindSeg("#cpi-views", "cpiView", () => renderInflation());
-    bindSeg("#item-views", "itemView", () => renderCpiItems());
     bindSeg("#d-range", "dRange", renderDecomp);
     // Overview 卡片整張可點；在圖上拖曳（縮放）或點到裡面的連結 / 按鈕時不跳頁
     document.querySelectorAll(".panel.go").forEach((el) => {
@@ -1327,8 +1247,21 @@
       el.addEventListener("keydown", (e) => { if (e.key === "Enter") location.hash = el.dataset.href; });
     });
     bindSeg("#fomc-range", "fomcRange", renderFomcChart);
-    bindSeg("#six-views", "sixView", renderSurIndex);
-    document.addEventListener("toggle", (e) => { const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open; }, true);
+    bindSeg("#fomc-views", "fomcView", renderFomc);
+    document.addEventListener("toggle", (e) => {
+      const k = e.target.dataset && e.target.dataset.fold; if (k) S.folds[k] = e.target.open;
+      // 收起來的次要區塊（PPI、JOLTS）打開時才畫：收著的時候寬度是 0
+      if (e.target.classList.contains("more") && e.target.open) renderAll();
+    }, true);
+    // 說明文字預設收起來：每個區塊標題旁一個「?」，點了才顯示
+    document.querySelectorAll(".panel").forEach((panel) => {
+      if (!panel.querySelector(":scope > .panel-head .hint:not(.stale), :scope > p.hint")) return;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "help-btn"; b.textContent = "?"; b.title = "What am I looking at?";
+      b.setAttribute("aria-label", "Show explanation"); b.setAttribute("aria-expanded", "false");
+      b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); b.setAttribute("aria-expanded", panel.classList.toggle("help")); };
+      panel.querySelector("h2").appendChild(b);
+    });
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
     window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
     route();

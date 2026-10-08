@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -100,15 +100,13 @@
     <div class="panel-head">
       <div>
         <h2>Treasury yields</h2>
+        <p class="takeaway" id="rates-take"></p>
         <p class="hint" id="y-hint"></p>
       </div>
       <div class="seg" role="tablist" id="y-views">
         <button data-v="curve" class="on">Curve</button>
         <button data-v="tenor">Trend</button>
         <button data-v="spread">Spreads</button>
-        <button data-v="change">Change</button>
-        <button data-v="heat">Heatmap</button>
-        <button data-v="vsfed">2y vs Fed</button>
       </div>
     </div>
     <div class="controls" id="y-controls"></div>
@@ -128,9 +126,6 @@
         <button data-v="priced" class="on">Priced (bp)</button>
         <button data-v="path">Implied path</button>
         <button data-v="probs">Meeting odds</button>
-        <button data-v="cum">Cumulative</button>
-        <button data-v="spag">Past + future</button>
-        <button data-v="hist">Meeting history</button>
       </div>
     </div>
     <div class="controls" id="f-controls"></div>
@@ -156,18 +151,21 @@
         <h2>Data surprises and the 2y</h2>
         <p class="hint" id="surix-note"></p>
       </div>
-      <div class="seg" id="six-views"><button data-v="index" class="on">Surprise index</button><button data-v="scatter">Surprise vs 2y</button></div>
     </div>
     <div class="chart" id="c-surix"></div>
   </section>
   <section class="panel" id="p-fomc">
     <div class="panel-head">
       <div>
-        <h2>FOMC surprises</h2>
-        <p class="hint">The solid line is the actual policy rate (EFFR). Each diamond is the rate futures priced for that meeting the day before; the gap between diamond and line is the surprise. The dashed line is where the market prices the rate today, meeting by meeting. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, open ones still ahead. Hover for the decision or what is priced.</p>
+        <h2>FOMC meeting history</h2>
+        <p class="hint" id="fomc-hint"></p>
       </div>
-      <div class="seg" id="fomc-range"><button data-v="6M">6M</button><button data-v="1Y">1Y</button><button data-v="2Y" class="on">2Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+      <div class="seg-col">
+        <div class="seg" id="fomc-views"><button data-v="past" class="on">Priced vs decision</button><button data-v="hist">Odds history</button></div>
+        <div class="seg" id="fomc-range"><button data-v="6M">6M</button><button data-v="1Y">1Y</button><button data-v="2Y" class="on">2Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+      </div>
     </div>
+    <div class="controls" id="fomc-controls"></div>
     <div class="chart" id="c-fomc"></div>
     <div id="fomc-table"></div>
   </section>
@@ -206,26 +204,20 @@
   </section>
   <section class="panel">
     <div class="panel-head"><div><h2>CPI breakdown</h2><p class="hint" id="cpi-hint"></p></div>
-      <div class="seg" id="cpi-views"><button data-v="time" class="on">Contributions</button><button data-v="latest">Latest month</button><button data-v="heat">Heatmap</button></div></div>
+      <div class="seg" id="cpi-views"><button data-v="time" class="on">Contributions</button><button data-v="heat">Heatmap</button></div></div>
     <div class="chart" id="c-cpi-parts"></div>
     <div id="cpi-table"></div>
-  </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>CPI items desks watch</h2><p class="hint">One level down. Shelter is mostly OER (what owners would pay to rent their home) plus rent, the slowest-moving and biggest piece. Medical and transport services (which includes car insurance) drive supercore; airfares are small but jumpy. Used cars swing core goods. Same reading as above: bars against the 2% pace, or the heatmap.</p></div>
-      <div class="seg" id="item-views"><button data-v="latest" class="on">Latest month</button><button data-v="heat">Heatmap</button></div></div>
-    <div class="chart" id="c-cpi-items"></div>
   </section>
   <section class="panel">
     <div class="panel-head"><div><h2>Inflation surprises</h2><p class="hint">Each release against what the market expected, Bloomberg ECO style: latest prints on top, then the history of one indicator as bars (actual) and ticks (forecast).</p></div></div>
     <div id="sur-inflation"></div>
   </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>PPI</h2><p class="hint">Producer prices. Secondary, but several PPI parts feed straight into PCE, so desks use it to firm up the PCE forecast. <span id="ppi-date"></span></p></div></div>
+  <details class="panel more" data-fold="ppi">
+    <summary><h2>PPI</h2> <span class="muted">secondary</span></summary>
+    <p class="hint">Producer prices. Several PPI parts feed straight into PCE, so desks use it to firm up the PCE forecast.</p>
+    <p class="dline" id="ppi-date"></p>
     <div class="chart short" id="c-ppi"></div>
-  </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>Market inflation expectations</h2><p class="hint" id="infl-mkt"></p></div></div>
-  </section>
+  </details>
 </div>
 
 <div class="page" id="pg-jobs" data-page="jobs">
@@ -246,21 +238,23 @@
     <div class="chart short" id="c-nfp"></div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Wages vs services inflation</h2><p class="hint">Wages are not part of CPI, but they are most of the cost of services, so the Fed watches wage growth against supercore. Three ways to measure wages, all YoY: average hourly earnings (monthly, jobs report, distorted by who is working), the ECI (quarterly, the Fed's preferred, holds job mix fixed), and the Atlanta Fed tracker (median wage growth of the same people a year apart, 3-month average). Roughly 3 to 3.5% wage growth is consistent with 2% inflation. <span id="wage-date"></span></p></div></div>
+    <div class="panel-head"><div><h2>Wages vs services inflation</h2><p class="hint">Wages are not part of CPI, but they are most of the cost of services, so the Fed watches wage growth against supercore. Three ways to measure wages, all YoY: average hourly earnings (monthly, jobs report, distorted by who is working), the ECI (quarterly, the Fed's preferred, holds job mix fixed), and the Atlanta Fed tracker (median wage growth of the same people a year apart, 3-month average). Roughly 3 to 3.5% wage growth is consistent with 2% inflation.</p><p class="dline" id="wage-date"></p></div></div>
     <div class="chart" id="c-ahe"></div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Initial jobless claims</h2><p class="hint">The most timely labor signal. <span id="claims-date"></span></p></div></div>
+    <div class="panel-head"><div><h2>Initial jobless claims</h2><p class="hint">The most timely labor signal: weekly, out every Thursday.</p><p class="dline" id="claims-date"></p></div></div>
     <div class="chart short" id="c-claims"></div>
   </section>
   <section class="panel">
     <div class="panel-head"><div><h2>Jobs surprises</h2><p class="hint">Each release against what the market expected: latest prints on top, then one indicator's history as bars (actual) and ticks (forecast). For unemployment and claims, a higher number is a dovish surprise.</p></div></div>
     <div id="sur-jobs"></div>
   </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>JOLTS job openings</h2><p class="hint">Secondary: noisy and lagging. <span id="jolts-date"></span></p></div></div>
+  <details class="panel more" data-fold="jolts">
+    <summary><h2>JOLTS job openings</h2> <span class="muted">secondary</span></summary>
+    <p class="hint">Noisy and runs about two months behind, so desks rarely trade it.</p>
+    <p class="dline" id="jolts-date"></p>
     <div class="chart short" id="c-jolts"></div>
-  </section>
+  </details>
 </div>
 
 <div class="page" id="pg-calendar" data-page="calendar">
@@ -278,6 +272,6 @@
 </div>
 </main>
 
-<script src="app.js?v=21"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
