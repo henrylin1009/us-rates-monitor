@@ -335,9 +335,21 @@
         customdata: ["", ...fwd.map((x) => bp(num(x.cum_bp), 1))], hovertemplate: "%{y:.2f}% · %{customdata}bp cum<extra>Priced now</extra>",
       });
     }
-    const lay = baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
-    lay.shapes = asof ? [{ type: "line", xref: "x", yref: "paper", x0: asof, x1: asof, y0: 0, y1: 1, line: { color: muted, width: 1, dash: "dot" } }] : [];
-    lay.annotations = asof ? [{ x: asof, y: 0, xref: "x", yref: "paper", text: " today", showarrow: false, xanchor: "left", yanchor: "bottom", font: { color: muted, size: 11 } }] : [];
+    // 每次 FOMC 會議：底部一排標記 + 淡淡的直線。過去的依決定上色（升息紅、降息綠、不動灰），未來的空心
+    const lastFwd = fwd.length ? fwd[fwd.length - 1].meeting : null;
+    const mtg = [...new Set([...(D.meetings || []), ...D.events.filter((e) => e.type === "fomc").map((e) => e.date), ...fwd.map((x) => x.meeting)])]
+      .filter((d) => d >= start && (!lastFwd || d <= lastFwd)).sort();
+    const done = (d) => d <= eff[eff.length - 1].date;
+    const mc = mtg.map((d) => { const dec = done(d) ? fomcDecision(d) || "" : ""; return dec.startsWith("hike") ? css("--up") : dec.startsWith("cut") ? css("--down") : muted; });
+    const mTxt = mtg.map((d) => { const f = fwd.find((x) => x.meeting === d);
+      return `FOMC ${md(d)} ${d.slice(0, 4)}: ` + (done(d) ? fomcDecision(d) || "–" : f ? `priced ${bp(num(f.cum_bp), 1)}bp cumulative` : "upcoming"); });
+    traces.push({ x: mtg, y: mtg.map(() => 0.03), yaxis: "y2", mode: "markers", name: "FOMC meeting", showlegend: true,
+      marker: { symbol: mtg.map((d) => (done(d) ? "diamond" : "diamond-open")), size: 9, color: mc, line: { width: 1.5, color: mc } },
+      text: mTxt, hovertemplate: "%{text}<extra></extra>" });
+    const lay = baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, yaxis2: { overlaying: "y", range: [0, 1], visible: false, fixedrange: true } });
+    lay.shapes = mtg.map((d) => ({ type: "line", xref: "x", yref: "paper", x0: d, x1: d, y0: 0, y1: 1, layer: "below", line: { color: rgba(muted, 0.25), width: 1 } }));
+    if (asof) lay.shapes.push({ type: "line", xref: "x", yref: "paper", x0: asof, x1: asof, y0: 0, y1: 1, line: { color: muted, width: 1, dash: "dot" } });
+    lay.annotations = asof ? [{ x: asof, y: 1, xref: "x", yref: "paper", text: " today", showarrow: false, xanchor: "left", yanchor: "top", font: { color: muted, size: 11 } }] : [];
     clearEmpty("c-fomc");
     plot("c-fomc", traces, lay);
   }
@@ -1259,6 +1271,7 @@
       ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv", "releases.csv", "consensus.csv", "consensus_manual.csv"].map(load));
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
+    try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }
     D.yields.forEach((r, i) => (yIdx[r.date] = i));
     const ly = D.yields[D.yields.length - 1];
     $("#asof").textContent = ly ? `Data as of ${ly.date}` : "No data yet";
