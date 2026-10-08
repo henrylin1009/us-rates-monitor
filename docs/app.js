@@ -917,8 +917,11 @@
     const P = palette(), f = I_VIEWS[S.iView][1];
     $("#infl-take2").textContent = inflTakeaway();
     $("#infl-date2").innerHTML = dataLine("core_pce", "pce", "PCE", "Core PCE: ") + `<span class="muted"> &nbsp;|&nbsp; </span>` + dataLine("core_cpi", "cpi", "CPI", "Core CPI: ");
-    const pce = fromYears(f(ser("core_pce")), S.iYears), cpi = fromYears(f(ser("core_cpi")), S.iYears);
     const mm = S.iView === "mm";
+    // m/m 柱子只看最近 2 年（業界常見的畫法；5 年 60 對柱子太擠），更長的歷史看 YoY / 年化的線
+    const yrs = mm ? 2 : S.iYears;
+    $("#i-years").style.display = mm ? "none" : "";
+    const pce = fromYears(f(ser("core_pce")), yrs), cpi = fromYears(f(ser("core_cpi")), yrs);
     const narrow = innerWidth < 600, lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
     clearEmpty("c-infl");
     if (mm) {
@@ -928,7 +931,7 @@
       // 速度線的說明放在圖例（放圖上會蓋到最近的柱子）
       const pace = { x: [null], y: [null], name: "2% a year pace (0.17%/month)", mode: "lines", line: { color: css("--ink"), width: 1.2, dash: "dash" }, hoverinfo: "skip" };
       plot("c-infl", [bar(pce, "Core PCE", P[0]), bar(cpi, "Core CPI", P[3]), pace],
-        baseLayout({ barmode: "group", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), ...lg,
+        baseLayout({ barmode: "group", bargap: 0.25, xaxis: { ...baseLayout().xaxis, dtick: "M3", tickformat: "%b '%y" }, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), ...lg,
           shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: PACE2, y1: PACE2, layer: "above", line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
  }));
     } else {
