@@ -1,18 +1,12 @@
-import urllib.request, io
-out = []
+import urllib.request, re
 def fetch(u):
-    req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0 rates-monitor"})
-    return urllib.request.urlopen(req, timeout=120).read()
-for u in ["https://apps.bea.gov/national/Release/TXT/SeriesRegister.txt", "https://apps.bea.gov/national/Release/TXT/NipaDataM.txt", "https://apps.bea.gov/national/Release/TXT/TablesRegister.txt"]:
-    try:
-        b = fetch(u); out.append(f"OK {u} {len(b)} bytes"); t = b.decode("utf-8", "replace")
-        if "SeriesRegister" in u:
-            lines = t.splitlines(); out.append(lines[0])
-            out += [l for l in lines if "U20404" in l or "U20405" in l][:400]
-        elif "TablesRegister" in u:
-            out += [l for l in t.splitlines() if "U2040" in l]
-        else:
-            lines = t.splitlines(); out.append(lines[0]); out += lines[1:4]
-    except Exception as e:
-        out.append(f"ERR {u} {e}")
+    return urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0 rates-monitor"}), timeout=120).read().decode("utf-8", "replace")
+out = []
+reg = fetch("https://apps.bea.gov/national/Release/TXT/SeriesRegister.txt").splitlines()
+pat = re.compile(r"excluding|Portfolio|Personal consumption expenditures|^D(SER|NRG|PCE|PCC|HLC|HSG|IFS|FXA|GOE|GDS|FNL)R[CG],|Medical|Hospital|Physician|insurance|Rental of tenant|Imputed rental|Airline|Motor vehicle insurance", re.I)
+out += [l for l in reg if ("U20404" in l or "U20405" in l) and pat.search(l)]
+data = fetch("https://apps.bea.gov/national/Release/TXT/NipaDataM.txt").splitlines()
+want = {"DPCERG", "DPCCRG", "DHSGRG", "DHLCRG", "DSERRG"}
+rows = [l for l in data if l.split(",")[0] in want]
+out.append(f"datarows {len(rows)}"); out += rows[-12:]
 open("probe/out.txt", "w").write("\n".join(out))
