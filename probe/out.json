@@ -1,0 +1,585 @@
+{
+ "SOFR": [
+  201,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-06",
+    "value": "3.9"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-07",
+    "value": "3.88"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-08",
+    "value": "3.87"
+   }
+  ]
+ ],
+ "IORB": [
+  286,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-11",
+    "value": "3.9"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-12",
+    "value": "3.9"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-13",
+    "value": "3.9"
+   }
+  ]
+ ],
+ "RRPONTSYD": [
+  202,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-07",
+    "value": "2.338"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-08",
+    "value": "0.335"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-09",
+    "value": "0.3"
+   }
+  ]
+ ],
+ "WRESBAL": [
+  40,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-23",
+    "value": "2930193"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-30",
+    "value": "2948090"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-07",
+    "value": "3029659"
+   }
+  ]
+ ],
+ "WTREGEN": [
+  40,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-23",
+    "value": "977084"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-30",
+    "value": "948674"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-07",
+    "value": "880253"
+   }
+  ]
+ ],
+ "WALCL": [
+  40,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-23",
+    "value": "6747704"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-30",
+    "value": "6743031"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-07",
+    "value": "6747560"
+   }
+  ]
+ ],
+ "CCSA": [
+  39,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-12",
+    "value": "1712000"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-19",
+    "value": "1699000"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-26",
+    "value": "1716000"
+   }
+  ]
+ ],
+ "LNS12300060": [
+  9,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "80.4"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "80.4"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-01",
+    "value": "80.7"
+   }
+  ]
+ ],
+ "THREEFF10": [
+  197,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-30",
+    "value": "5.8573"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-01",
+    "value": "5.8527"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-10-02",
+    "value": "5.8986"
+   }
+  ]
+ ],
+ "THREEFYTP10": [
+  197,
+  [
+   {
+    "realtime_start": "2026-10-10",
+    "realtime_end": "2026-10-10",
+    "date": "2026-09-30",
+    "value": "1.0773"
+   },
+   {
+    "realtime_start": "2026-10-10",
+    "realtime_end": "2026-10-10",
+    "date": "2026-10-01",
+    "value": "1.0650"
+   },
+   {
+    "realtime_start": "2026-10-10",
+    "realtime_end": "2026-10-10",
+    "date": "2026-10-02",
+    "value": "1.0847"
+   }
+  ]
+ ],
+ "GDPNOW": [
+  3,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-01-01",
+    "value": "1.2392"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-04-01",
+    "value": "1.5400"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "3.5862"
+   }
+  ]
+ ],
+ "A191RL1Q225SBEA": [
+  2,
+  [
+   {
+    "realtime_start": "2026-10-07",
+    "realtime_end": "2026-10-07",
+    "date": "2026-01-01",
+    "value": "2.5"
+   },
+   {
+    "realtime_start": "2026-10-07",
+    "realtime_end": "2026-10-07",
+    "date": "2026-04-01",
+    "value": "2.2"
+   }
+  ]
+ ],
+ "RSAFS": [
+  8,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-06-01",
+    "value": "732898.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "729538.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "737763.0"
+   }
+  ]
+ ],
+ "RSXFS": [
+  8,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-06-01",
+    "value": "642793.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "639031.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "646347.0"
+   }
+  ]
+ ],
+ "RSMVPD": [
+  8,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-06-01",
+    "value": "140955.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "138534.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "139178.0"
+   }
+  ]
+ ],
+ "RSGASS": [
+  8,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-06-01",
+    "value": "61634.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "61607.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "63432.0"
+   }
+  ]
+ ],
+ "RSBMGESD": [
+  8,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-06-01",
+    "value": "44366.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "44294.0"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "44308.0"
+   }
+  ]
+ ],
+ "INDPRO": [
+  8,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-06-01",
+    "value": "102.842"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "103.0454"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "103.0682"
+   }
+  ]
+ ],
+ "GACDFSA066MSFRBPHI": [
+  9,
+  [
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-07-01",
+    "value": "41.40000"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-08-01",
+    "value": "47.40000"
+   },
+   {
+    "realtime_start": "2026-10-11",
+    "realtime_end": "2026-10-11",
+    "date": "2026-09-01",
+    "value": "37.8"
+   }
+  ]
+ ],
+ "GACDINA066MSFRBNY": [
+  400,
+  "{\"error_code\":400,\"error_message\":\"Bad Request.  The series does not exist.\"}"
+ ],
+ "rel9": [
+  "Advance Monthly Sales for Retail and Food Services",
+  [
+   "2026-09-16",
+   "2026-09-28",
+   "2026-10-15",
+   "2026-11-17",
+   "2026-12-16"
+  ]
+ ],
+ "rel53": [
+  "Gross Domestic Product",
+  [
+   "2026-09-30",
+   "2026-10-29",
+   "2026-11-25",
+   "2026-12-23"
+  ]
+ ],
+ "rel192": [
+  "Job Openings and Labor Turnover Survey",
+  [
+   "2026-09-01",
+   "2026-09-29",
+   "2026-11-03",
+   "2026-12-01"
+  ]
+ ],
+ "rel11": [
+  "Employment Cost Index",
+  [
+   "2026-10-30"
+  ]
+ ],
+ "rel91": [
+  "Surveys of Consumers",
+  [
+   "2026-09-25",
+   "2026-10-23",
+   "2026-11-20",
+   "2026-12-18"
+  ]
+ ],
+ "rel13": [
+  "G.17 Industrial Production and Capacity Utilization",
+  [
+   "2026-09-18",
+   "2026-10-16",
+   "2026-11-17",
+   "2026-12-16"
+  ]
+ ],
+ "rel180": [
+  "Unemployment Insurance Weekly Claims Report",
+  [
+   "2026-09-03",
+   "2026-09-10",
+   "2026-09-17",
+   "2026-09-24",
+   "2026-10-01",
+   "2026-10-08",
+   "2026-10-15",
+   "2026-10-22",
+   "2026-10-29",
+   "2026-11-05",
+   "2026-11-12",
+   "2026-11-19"
+  ]
+ ],
+ "rel10": [
+  "Consumer Price Index",
+  [
+   "2026-09-11",
+   "2026-10-14",
+   "2026-11-10",
+   "2026-12-10"
+  ]
+ ],
+ "rel50": [
+  "Employment Situation",
+  [
+   "2026-09-04",
+   "2026-10-02",
+   "2026-11-06",
+   "2026-12-04"
+  ]
+ ],
+ "rel46": [
+  "Producer Price Index",
+  [
+   "2026-09-10",
+   "2026-10-15",
+   "2026-11-13",
+   "2026-12-15"
+  ]
+ ],
+ "rel54": [
+  "Personal Income and Outlays",
+  [
+   "2026-09-30",
+   "2026-10-29",
+   "2026-11-25",
+   "2026-12-23"
+  ]
+ ],
+ "auctions": [
+  200,
+  "{\"data\":[{\"record_date\":\"2026-10-15\",\"cusip\":\"912797SU2\",\"security_type\":\"Bill\",\"security_term\":\"6-Week\",\"auction_date\":\"2026-10-13\",\"issue_date\":\"2026-10-15\",\"maturity_date\":\"2026-11-27\",\"price_per100\":\"null\",\"accrued_int_per100\":\"null\",\"accrued_int_per1000\":\"null\",\"adj_accrued_int_per1000\":\"null\",\"adj_price\":\"null\",\"allocation_pctage\":\"null\",\"allocation_pctage_decimals\":\"2\",\"announcemtd_cusip\":\"null\",\"announcemt_date\":\"2026-10-08\",\"auction_format\":\"Single-Price\",\"avg_med_discnt_rate\":\"null\",\"avg_med_investment_rate\":\"null\",\"avg_med_price\":\"null\",\"avg_med_discnt_margin\":\"null\",\"avg_med_yield\":\"null\",\"back_dated\":\"null\",\"back_dated_date\":\"null\",\"bid_to_cover_ratio\":\"null\",\"callable\":\"null\",\"call_date\":\"null\",\"called_date\":\"null\",\"cash_management_bill_cmb\":\"No\",\"closing_time_comp\":\"01:00 PM\",\"closing_time_noncomp\":\"12:00 PM\",\"comp_accepted\":\"null\",\"comp_bid_decimals\":\"3\",\"comp_tendered\":\"null\",\"comp_tenders_accepted\":\"Yes\",\"corpus_cusip\":\"null\",\"cpi_base_reference_period\":\"null\",\"currently_outstanding\":\"228403000000.000000\",\"dated_date\":\"null\",\"direct_bidder_accepted\":\"null\",\"direct_bidder_tendered\":\"null\",\"est_pub_held_mat_by_type_amt\":\"250412000000\",\"fima_included\":\"Yes\",\"fima_noncomp_accepted\":\"null\",\"fima_noncomp_tendered\":\"null\",\"first_int_period\":\"null\",\"first_int_payment_date\":\"null\",\"floating_rate\":\"No\",\"frn_index_determination_date\":\"null\",\"frn_index_determination_rate\":\"null\",\"high_discnt_rate\":\"null\",\"high_investment_rate\":\"null\",\"high_price\":\"null\",\"high_discnt_margin\":\"null\",\"high_yield\":\"null\",\"index_ratio_on_issue_date\":\"null\",\"indirect_bidder_accepted\":\"null\",\"indirect_bidder_tendered\":\"null\",\"int_payment_frequency\":\"None\",\"int_rate\":\"null\",\"low_discnt_rate\":\"null\",\"low_investment_rate\":\"null\",\"low_price\":\"null\",\"low_discnt_margin\":\"null\",\"low_yield\":\"null\",\"mat_date\":\"2026-10-15\",\"max_comp_award\":\"33250000000\",\"max_noncomp_award\":\"10000000\",\"max_single_bid\":\"33250000000\",\"min_bid_amt\":\"100\",\"min_strip_amt\":\"null\",\"min_to_issue\":\"100\",\"multiples_to_bid\":\"100\",\"multiples_to_issue\":\"100\",\"nlp_exclusion_amt\":\"73300000000\",\"nlp_reporting_threshold\":\"33250000000\",\"noncomp_accepted\":\"null\",\"noncomp_tenders_accepted\":\"Yes\",\"offering_amt\":\"95000000000\",\"original_cusip\":\"null\",\"original_dated_date\":\"null\",\"original_issue_date\":\"2025-11-28\",\"original_security_term\":\"52-Week\",\"pdf_filenm_announcemt\":\"A_20261008_1.pdf\",\"pdf_filenm_comp_results\":\"null\",\"pdf_filenm_noncomp_results\":\"null\",\"primary_dealer_accepted\":\"null\",\"primary_dealer_tendered\":\"null\",\"ref_cpi_on_dated_date\":\"null\",\"ref_cpi_on_issue_date\":\"null\",\"reopening\":\"Yes\",\"security_term_day_month\":\"43-Day\",\"security_term_week_year\":\"6-Week\",\"series\":\"null\",\"soma_accepted\":\"null\",\"soma_holdings\":\"15473000000\",\"soma_included\":\"No\",\"soma_tendered\":\"null\",\"spread\":\"null\",\"std_int_payment_per1000\":\"null\",\"strippable\":\"null\",\"tiin_conversion_factor_per1000\":\"null\",\"total_accepted\":\"null\",\"total_tendered\":\"null\",\"treas_retail_accepted\":\"null\",\"treas_retail_tenders_accepted\":\"Yes\",\"unadj_accrued_int_per1000\":\"null\",\"unadj_price\":\"null\",\"xml_filenm_announcemt\":\"A_20261008_1.xml\",\"xml_filenm_comp_results\":\"null\",\"inflation_index_security\":\"No\",\"tint_cusip_1\":\"null\",\"tint_cusip_2\":\"null\",\"pdf_filenm_spec_announcemt\":\"SPL_20261008_1.pdf\"},{\"record_date\":\"2026-10-15\",\"cusip\":\"912797UE5\",\"security_type\":\"Bill\",\"security_term\":\"26-Week\",\"auction_date\":\"2026-10-13\",\"issue_date\":\"2026-10-15\",\"maturity_date\":\"2027-04-15\",\"price_per100\":\"null\",\"accrued_int_per100\":\"null\",\"accrued_int_per1000\":\"null\",\"adj_accrued_int_per1000\":\"null\",\"adj_price\":\"null\",\"allocation_pctage\":\"null\",\"allocation_pctage_decimals\":\"2\",\"announcemtd_cusip\":\"null\",\"announcemt_date\":\"2026-10-08\",\"auction_format\":\"Single-Price\",\"avg_med_discnt_rate\":\"null\",\"avg_med_investment_rate\":\"null\",\"avg_med_price\":\"null\",\"avg_med_discnt_margin\":\"null\",\"avg_med_yield\":\"null\",\"back_dated\":\"null\",\"back_dated_date\":\"null\",\"bid_to_cover_ratio\":\"null\",\"callable\":\"null\",\"call_date\":\"null\",\"called_date\":\"null\",\"cash_management_bill_cmb\":\"No\",\"closing_time_comp\":\"11:30 AM\",\"closing_time_noncomp\":\"11:00 AM\",\"comp_accepted\":\"null\",\"comp_bid_decimals\":\"3\",\"comp_tendered\":\"null\",\"comp_tenders_accepted\":\"Yes\",\"corpus_cusip\":\"null\",\"cpi_base_reference_period\":\"null\",\"currently_outstanding\":\"51973000000.000000\",\"dated_date\":\"null\",\"direct_bidder_accepted\":\"null\",\"direct_bidder_tendered\":\"null\",\"est_pub_held_mat_by_type_amt\":\"250412000000\",\"fima_included\":\"Yes\",\"fima_noncomp_accepted\":\"null\",\"fima_noncomp_tendered\":\"null\",\"first_int_period\":\"null\",\"first_int_payment_date\":\"null\",\"floating_rate\":\"No\",\"frn_index_determination_date\":\"null\",\"frn_index_determination_rate\":\"null\",\"high_discnt_rate\":\"null\",\"high_investment_rate\":\"null\",\"high_price\":\"null\",\"high_discnt_margin\":\"null\",\"high_yield\":\"null\",\"index_ratio_on_issue_date\":\"null\",\"indirect_bidder_accepted\":\"null\",\"indirect_bidder_tendered\":\"null\",\"int_payment_frequency\":\"None\",\"int_rate\":\"null\",\"low_discnt_rate\":\"null\",\"low_investment_rate\":\"null\",\"low_price\":\"null\",\"low_discnt_margin\":\"null\",\"low_yield\":\"null\",\"mat_date\":\"2026-10-15\",\"max_comp_award\":\"28700000000\",\"max_noncomp_award\":\"10000000\",\"max_single_bid\":\"28700000000\",\"min_bid_amt\":\"100\",\"min_strip_amt\":\"null\",\"min_to_issue\":\"100\",\"multiples_to_bid\":\"100\",\"multiples_to_issue\":\"100\",\"nlp_exclusion_amt\":\"15400000000\",\"nlp_reporting_threshold\":\"28700000000\",\"noncomp_accepted\":\"null\",\"noncomp_tenders_accepted\":\"Yes\",\"offering_amt\":\"82000000000\",\"original_cusip\":\"null\",\"original_dated_date\":\"null\",\"original_issue_date\":\"2026-04-16\",\"original_security_term\":\"52-Week\",\"pdf_filenm_announcemt\":\"A_20261008_2.pdf\",\"pdf_filenm_comp_results\":\"null\",\"pdf_filenm_noncomp_results\":\"null\",\"primary_dealer_accepted\":\"null\",\"primary_dealer_tendered\":\"null\",\"ref_cpi_on_dated_date\":\"null\",\"ref_cpi_on_issue_date\":\"null\",\"reopening\":\"Yes\",\"security_term_day_month\":\"182-Day\",\"security_term_week_year\":\"26-Week\",\"series\":\"null\",\"soma_accepted\":\"null\",\"soma_holdings\":\"15473000000\",\"soma_included\":\"No\",\"soma_tendered\":\"null"
+ ],
+ "upcoming": [
+  200,
+  "{\"data\":[{\"record_date\":\"2024-03-08\",\"security_type\":\"Bill\",\"security_term\":\"8-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JW8\",\"offering_amt\":\"90000000000\",\"announcemt_date\":\"2024-03-12\",\"auction_date\":\"2024-03-14\",\"issue_date\":\"2024-03-19\"},{\"record_date\":\"2024-03-08\",\"security_type\":\"Bill\",\"security_term\":\"4-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JN8\",\"offering_amt\":\"95000000000\",\"announcemt_date\":\"2024-03-12\",\"auction_date\":\"2024-03-14\",\"issue_date\":\"2024-03-19\"},{\"record_date\":\"2024-03-08\",\"security_type\":\"Bill\",\"security_term\":\"26-Week\",\"reopening\":\"No\",\"cusip\":\"912797KL0\",\"offering_amt\":\"70000000000\",\"announcemt_date\":\"2024-03-14\",\"auction_date\":\"2024-03-18\",\"issue_date\":\"2024-03-21\"},{\"record_date\":\"2024-03-08\",\"security_type\":\"Bill\",\"security_term\":\"13-Week\",\"reopening\":\"Yes\",\"cusip\":\"912796ZW2\",\"offering_amt\":\"76000000000\",\"announcemt_date\":\"2024-03-14\",\"auction_date\":\"2024-03-18\",\"issue_date\":\"2024-03-21\"},{\"record_date\":\"2024-03-08\",\"security_type\":\"Bill\",\"security_term\":\"52-Week\",\"reopening\":\"No\",\"cusip\":\"912797KJ5\",\"offering_amt\":\"46000000000\",\"announcemt_date\":\"2024-03-14\",\"auction_date\":\"2024-03-19\",\"issue_date\":\"2024-03-21\"},{\"record_date\":\"2024-03-08\",\"security_type\":\"Bond\",\"security_term\":\"19-Year 11-Month\",\"reopening\":\"Yes\",\"cusip\":\"912810TZ1\",\"offering_amt\":\"13000000000\",\"announcemt_date\":\"2024-03-14\",\"auction_date\":\"2024-03-19\",\"issue_date\":\"2024-04-01\"},{\"record_date\":\"2024-03-21\",\"security_type\":\"CMB\",\"security_term\":\"42-Day\",\"reopening\":\"Yes\",\"cusip\":\"912797HH3\",\"offering_amt\":\"75000000000\",\"announcemt_date\":\"2024-03-14\",\"auction_date\":\"2024-03-19\",\"issue_date\":\"2024-03-21\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Bill\",\"security_term\":\"17-Week\",\"reopening\":\"No\",\"cusip\":\"912797KQ9\",\"offering_amt\":\"60000000000\",\"announcemt_date\":\"2024-03-19\",\"auction_date\":\"2024-03-20\",\"issue_date\":\"2024-03-26\"},{\"record_date\":\"2024-03-08\",\"security_type\":\"TIPS Note\",\"security_term\":\"9-Year 10-Month\",\"reopening\":\"Yes\",\"cusip\":\"91282CJY8\",\"offering_amt\":\"16000000000\",\"announcemt_date\":\"2024-03-14\",\"auction_date\":\"2024-03-21\",\"issue_date\":\"2024-03-28\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Bill\",\"security_term\":\"8-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JX6\",\"offering_amt\":\"85000000000\",\"announcemt_date\":\"2024-03-19\",\"auction_date\":\"2024-03-21\",\"issue_date\":\"2024-03-26\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Bill\",\"security_term\":\"4-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JP3\",\"offering_amt\":\"85000000000\",\"announcemt_date\":\"2024-03-19\",\"auction_date\":\"2024-03-21\",\"issue_date\":\"2024-03-26\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Bill\",\"security_term\":\"26-Week\",\"reopening\":\"No\",\"cusip\":\"912797KM8\",\"offering_amt\":\"70000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-25\",\"issue_date\":\"2024-03-28\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Bill\",\"security_term\":\"13-Week\",\"reopening\":\"Yes\",\"cusip\":\"912796Y45\",\"offering_amt\":\"73000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-25\",\"issue_date\":\"2024-03-28\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Note\",\"security_term\":\"2-Year\",\"reopening\":\"No\",\"cusip\":\"91282CKH3\",\"offering_amt\":\"66000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-25\",\"issue_date\":\"2024-04-01\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Note\",\"security_term\":\"5-Year\",\"reopening\":\"No\",\"cusip\":\"91282CKG5\",\"offering_amt\":\"67000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-26\",\"issue_date\":\"2024-04-01\"},{\"record_date\":\"2024-03-28\",\"security_type\":\"CMB\",\"security_term\":\"42-Day\",\"reopening\":\"Yes\",\"cusip\":\"912797HQ3\",\"offering_amt\":\"70000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-26\",\"issue_date\":\"2024-03-28\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"FRN Note\",\"security_term\":\"1-Year 10-Month\",\"reopening\":\"Yes\",\"cusip\":\"91282CJU6\",\"offering_amt\":\"28000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-27\",\"issue_date\":\"2024-04-01\"},{\"record_date\":\"2024-03-15\",\"security_type\":\"Note\",\"security_term\":\"7-Year\",\"reopening\":\"No\",\"cusip\":\"91282CKF7\",\"offering_amt\":\"43000000000\",\"announcemt_date\":\"2024-03-21\",\"auction_date\":\"2024-03-27\",\"issue_date\":\"2024-04-01\"},{\"record_date\":\"2024-03-22\",\"security_type\":\"Bill\",\"security_term\":\"17-Week\",\"reopening\":\"No\",\"cusip\":\"912797KR7\",\"offering_amt\":\"60000000000\",\"announcemt_date\":\"2024-03-26\",\"auction_date\":\"2024-03-27\",\"issue_date\":\"2024-04-02\"},{\"record_date\":\"2024-03-22\",\"security_type\":\"Bill\",\"security_term\":\"4-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JQ1\",\"offering_amt\":\"75000000000\",\"announcemt_date\":\"2024-03-26\",\"auction_date\":\"2024-03-28\",\"issue_date\":\"2024-04-02\"},{\"record_date\":\"2024-03-22\",\"security_type\":\"Bill\",\"security_term\":\"8-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JY4\",\"offering_amt\":\"80000000000\",\"announcemt_date\":\"2024-03-26\",\"auction_date\":\"2024-03-28\",\"issue_date\":\"2024-04-02\"},{\"record_date\":\"2024-03-22\",\"security_type\":\"Bill\",\"security_term\":\"13-Week\",\"reopening\":\"Yes\",\"cusip\":\"912796Y52\",\"offering_amt\":\"70000000000\",\"announcemt_date\":\"2024-03-28\",\"auction_date\":\"2024-04-01\",\"issue_date\":\"2024-04-04\"},{\"record_date\":\"2024-03-22\",\"security_type\":\"Bill\",\"security_term\":\"26-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797GW1\",\"offering_amt\":\"70000000000\",\"announcemt_date\":\"2024-03-28\",\"auction_date\":\"2024-04-01\",\"issue_date\":\"2024-04-04\"},{\"record_date\":\"2024-04-04\",\"security_type\":\"CMB\",\"security_term\":\"42-Day\",\"reopening\":\"Yes\",\"cusip\":\"912797FH5\",\"offering_amt\":\"65000000000\",\"announcemt_date\":\"2024-03-28\",\"auction_date\":\"2024-04-02\",\"issue_date\":\"2024-04-04\"},{\"record_date\":\"2024-03-29\",\"security_type\":\"Bill\",\"security_term\":\"17-Week\",\"reopening\":\"No\",\"cusip\":\"912797KW6\",\"offering_amt\":\"60000000000\",\"announcemt_date\":\"2024-04-02\",\"auction_date\":\"2024-04-03\",\"issue_date\":\"2024-04-09\"},{\"record_date\":\"2024-03-29\",\"security_type\":\"Bill\",\"security_term\":\"8-Week\",\"reopening\":\"Yes\",\"cusip\":\"912797JZ1\",\"offering_amt\":\"75000000000\",\"announcemt_date\":\"2024-04-02\",\"auction_date\":\"2024-04-04\",\"issue_date\":\"2024-04-09\"},{\""
+ ],
+ "https://www.federalreserve.gov/json/calendar.json": [
+  200,
+  545341,
+  "\ufeff{\"events\":[{\"description\":\"Conversation between IMF Managing Director Georgieva and Federal Reserve Chaiman Warsh\",\"live\":\"https://www.youtube.com/watch?v=T20jWBJ66X0&list=PLGHsBhoupusk&index=31\",\"location\":\"At the Fireside Chat with International Monetary Fund (IMF) Managing Director Kristalina Georgieva, Bangkok, Thailand\",\"title\":\"Discussion - Chairman Kevin Warsh\",\"time\":\"11:30 p.m.\",\"month\":\"2026-10\",\"days\": \"15\",\"type\":\"Speeches\"},{\"description\":\"To be announced.\",\"live\":\"https://www.youtube.com/live/V7H5F2C5PNc\",\"location\":\"At the Bangkok Economic Festival 2026\",\"title\":\"Speech - Vice Chair for Supervision Michelle W. Bowman\",\"time\":\"10:55 p.m.\",\"month\":\"2026-10\",\"days\": \"14\",\"type\":\"Speeches\"},{\"description\":\"Supervision and Regulation\",\"location\":\"At the 2026 IIF Annual Membership Summit, Bangkok, Thailand\",\"title\":\"Discussion - Vice Chair for Supervision Michelle W. Bowman\",\"time\":\"5:40 a.m.\",\"month\":\"2026-10\",\"days\": \"14\",\"type\":\"Speeches\"},{\"description\":\"AI\",\"live\":\"https://www.youtube.com/@BloombergNewEconomy\",\"location\":\"At the Bloomberg New Economy Forum 2026, New Delhi, India\",\"title\":\"Discussion - Governor Christopher J. Waller\",\"time\":\"3:45 a.m.\",\"month\":\"2026-10\",\"days\": \"13\",\"type\":\"Speeches\"},{\"description\":\"Economic Outlook\",\"live\":\"https://istanbulef.org/eng/yayin/\",\"location\":\"At the Central Bank of the Republic of T\u00fcrkiye (TCMB) \u0130stanbul Economic Forum, \u00dcmraniye/\u0130stanbul, T\u00fcrkiye \",\"title\":\"Speech - Governor Christopher J. Waller\",\"time\":\"4:30 a.m.\",\"month\":\"2026-10\",\"days\": \"8\",\"type\":\"Speeches\"},{\"description\":\"Modernizing Regulation and Supervision\",\"live\":\"https://www.communitybanking.org/\",\"location\":\"At the 2026 Community Banking Research Conference, St. Louis, Missouri\",\"title\":\"Speech - Vice Chair for Supervision Michelle W. Bowman\",\"time\":\"10:45 a.m.\",\"month\":\"2026-10\",\"days\": \"6\",\"type\":\"Speeches\"},{\"description\":\"Global Central Banking\",\"location\":\"At the Central Banking Seminar (Virtual)\",\"title\":\"Discussion - Governor Lisa D. Cook \",\"time\":\"3:30 p.m.\",\"month\":\"2026-10\",\"days\": \"1\",\"type\":\"Speeches\"},{\"description\":\"Modernizing Financial Regulation: Initial Observations from eSLR\",\"live\":\"https://www.youtube.com/watch?v=UosIN7C-ZCE\",\"location\":\"At the Atlantic Council&#8217;s Conversation with Michelle W. Bowman, Washington, D.C.\",\"title\":\"Speech - Vice Chair for Supervision Michelle W. Bowman\",\"time\":\"3:00 p.m.\",\"month\":\"2026-10\",\"days\": \"1\",\"type\":\"Speeches\"},{\"description\":\"U.S. Economy and Monetary Policy\",\"live\":\"https://darden-virginia.zoom.us/j/92232791521\",\"location\":\"At a Talk and Q&amp;A with Federal Reserve Board Vice Chair Philip N. Jefferson, Charlottesville, Va.\",\"title\":\"Speech - Vice Chair Philip N. Jefferson\",\"time\":\"1:30 p.m.\",\"month\":\"2026-10\",\"days\": \"1\",\"type\":\"Speeches\"},{\"description\":\"Federal Reserve Economic Data\",\"live\":\"https://www.youtube.com/live/1fK5omRbOvM?si=9mToIa7-cn6iDC9F\",\"location\":\"At FRED Con: Navigating Trust, AI &amp; Storytelling in a World of Data, St. Louis, Mo.\",\"",
+  []
+ ],
+ "https://www.federalreserve.gov/newsevents/calendar.htm": [
+  200,
+  81760,
+  "\u00ef\u00bb\u00bf<!doctype html>\r\n<html lang=\"en\" class=\"no-js\">\r\n<head>\r\n    <meta charset=\"utf-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0 maximum-scale=1.6, user-scalable=1\">\r\n    <meta name=\"keywords\" content=\"Board of Governors of the Federal Reserve System, Federal Reserve Board of Governors, Federal Reserve Board, Federal Reserve\" />\r\n    <meta name=\"description\" content=\"The Federal Reserve Board of Governors in Washington DC.\" />\r\n    <meta property=\"og:type\" content=\"article\" /> \r\n    <meta property=\"og:title\" content=\"Calendar\"/>    \r\n    <meta property=\"og:image\" content=\"https://www.federalreserve.gov/images/social-media/social-default-image-opengraph.jpg\" />\r\n    <meta property=\"og:image:alt\" content=\"Board of Governors of the Federal Reserve System\" />\r\n    <meta property=\"og:description\" content=\"The Federal Reserve Board of Governors in Washington DC.\"/>\r\n    <meta property=\"og:url\" content=\"https://www.federalreserve.gov/newsevents/calendar.htm\" />\r\n    <meta name=\"twitter:card\" content=\"summary\" />    \r\n    <meta name=\"twitter:title\" content=\"Calendar\" />\r\n    <meta name=\"twitter:image\" content=\"https://www.federalreserve.gov/images/social-media/social-default-image-twitter.jpg\" />\r\n    <meta name=\"twitter:image:alt\" content=\"Board of Governors of the Federal Reserve System\" />\r\n    <meta name=\"twitter:description\" content=\"The Federal Reserve Board of Governors in Washington DC.\" />    \r\n    <title>Federal Reserve Board - Calendar</title>\r\n    \r\n        <link href=\"/css/bootstrap.css\" rel=\"stylesheet\" type=\"text/css\">\r\n        <link href=\"/css/bluesteel-theme.css\" rel=\"stylesheet\" type=\"text/css\">\r\n        <link rel=\"stylesheet\" href=\"/assets/main.css\">\r\n        <script src=\"/assets/main.js\" defer type=\"module\"></script>\r\n        <script src=\"/js/modernizr-latest.js\" type=\"text/javascript\"></script>\r\n        <link href=\"/css/icons.data.svg.css\" rel=\"stylesheet\">           \r\n        <script src=\"/js/angular.min.js\" type=\"text/javascript\"></script>\r\n        <script src=\"/js/app.js\" type=\"text/javascript\"></script>\r\n        \r\n        <!-- For Linear Gradients in IE9 or greater -->\r\n        <!--[if gte IE 9]>\r\n            <style type=\"text/css\">\r\n              .gradient {\r\n                 filter: none;\r\n              }\r\n            </style>\r\n        <![endif]-->\r\n\r\n \r\n</head>\r\n<body>\r\n    <a href=\"#content\" class=\"globalskip\">Skip to main content</a>\r\n<nav class=\"nav-primary-mobile\" id=\"nav-primary-mobile\"></nav>\r\n<div id='top-banner' data-hydrate='true'><link rel=\"preload\" as=\"image\" href=\"/images/icon-us-flag.svg\"/><link rel=\"preload\" as=\"image\" href=\"/images/expand_more.svg\"/><link rel=\"preload\" as=\"image\" href=\"https://designsystem.digital.gov/assets/img/icon-dot-gov.svg\"/><link rel=\"preload\" as=\"image\" href=\"https://designsystem.digital.gov/assets/img/icon-https.svg\"/><div class=\"custom-banner\"><div class=\"custom-banner__header\"",
+  []
+ ],
+ "https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting": [
+  200,
+  197340,
+  "\r\n\r\n<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n\r\n    <base href=\"https://www.clevelandfed.org/\" />\r\n<link href=\"/-/media/project/clevelandfedtenant/clevelandfedsite/cfedbootstrap-4/cfedbootstrap-4/styles/bootstrap-grid.css\" rel=\"stylesheet\">            <meta name=\"X-Akamai-Edgescape\" content=\"georegion=288,country_code=US,region_code=VA,city=BOYDTON,dma=560,areacode=804,county=MECKLENBURG,fips=51117,lat=36.6580,long=-78.3793,timezone=EST,zip=23917,continent=NA,throughput=vhigh,bw=5000,network=microsoft,asnum=8075,network_type=hosted,location_id=0\">\r\n    <link href=\"/assets/dist/cfed/clevelandfedsite.css\" rel=\"stylesheet\">\r\n    <link rel=\"icon\" href=\"/assets/dist/cfed/favicon/favicon.ico\" sizes=\"16x16 32x32 48x48\">\r\n    <link rel=\"icon\" href=\"/assets/dist/cfed/favicon/favicon.svg\" type=\"image/svg+xml\">\r\n    <link rel=\"apple-touch-icon\" href=\"/assets/dist/cfed/favicon/apple-touch-icon.png\">\r\n    <link rel=\"manifest\" href=\"/assets/dist/cfed/favicon/webmanifest.json\">   \r\n    \r\n    \r\n\r\n\r\n\r\n    <title>Inflation Nowcasting</title>\r\n\r\n\r\n<link rel=\"canonical\" href=\"https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting\">\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n<meta name=\"itemId\" content=\"0cdd4f39-2577-4f66-9b76-8da282878454\" /><meta name=\"isExcluded\" content=\"False\" /><meta name=\"contentType\" content=\"Indicators & Data\" /><meta name=\"title\" content=\"Inflation Nowcasting\" /><meta name=\"pageDescription\" content=\"The Federal Reserve Bank of Cleveland provides daily \u201cnowcasts\u201d of inflation for two popular price indexes, the price index for personal consumption expenditures (PCE) and the Consumer Price Index (CPI). These nowcasts give a sense of where inflation is today. Released each business day.\" /><meta name=\"description\" content=\"The Federal Reserve Bank of Cleveland provides daily \u201cnowcasts\u201d of inflation for two popular price indexes, the price index for personal consumption expenditures (PCE) and the Consumer Price Index (CPI). These nowcasts give a sense of where inflation is today. Released each business day.\" /><meta name=\"ancestor\" content=\"Indicators and Data\" /><meta name=\"ancestorId\" content=\"f7517f81-8ddf-40d4-a809-4a94e59a25fb\" /><meta name=\"departmentOwner\" content=\"Research\" /><meta name=\"sortDate\" content=\"2026-04-30T14:59:20Z\" />\r\n\r\n\r\n<meta name=\"citation_abstract_html_url\" content=\"https://www.clevelandfed.org/indicators-and-data/inflation-nowcasting\" /><meta name=\"citation_title\" content=\"Inflation Nowcasting\" /><meta name=\"dc.Title\" content=\"Inflation Nowcasting\" /><meta name=\"citation_doi\" content=\"10.26509/frbc-inflationnowcast\" /><meta name=\"citation_publisher\" content=\"Federal Reserve Bank of Cleveland\" /><meta name=\"citation_issue\" content=\"\" />\r\n\r\n\r\n\r\n\r\n<meta property=\"og:image\"  content=\"https://www.clevelandfed.org/-/media/project/clevelandfedtenant/clevelandfedsite/indicators-and-data/images/content-list-id-inflation-nowcasting.jpg\"><meta property=\"og:title\"  content=\"Inflation Nowcasting\"><meta property=\"og:url\"  content=\"https://www.c",
+  [
+   "/-/media/files/webcharts/inflationnowcasting/nowcast_month.json",
+   "/-/media/files/webcharts/inflationnowcasting/nowcast_quarter.json",
+   "/-/media/files/webcharts/inflationnowcasting/nowcast_year.json",
+   "/assets/dist/cfed/favicon/webmanifest.json"
+  ]
+ ],
+ "https://www.clevelandfed.org/-/media/files/webcharts/inflationnowcasting/nowcast_month.json": [
+  200,
+  7640387,
+  "[\r\n{\r\n\"chart\": {\r\n\"_comment\": \"2026-10-09 00:00\",\r\n\"caption\": \"Inflation Nowcasting\",\r\n\"subcaption\": \"2013-7\",\r\n\"yaxisname\": \"Month-over-month percent change\",\r\n\"legendnumcolumns\": \"4\",\r\n\"labelpadding\": \"10\",\r\n\"showvalues\": \"0\",\r\n\"showexportdatamenuitem\": \"1\",\r\n\"showtooltip\": \"1\",\r\n\"basefont\": \"Helvetica\",\r\n\"bgalpha\": \"0\",\r\n\"showborder\": \"0\"\r\n},\r\n\"categories\": [\r\n{\r\n\"category\": [\r\n{\"label\": \"08/20\"},\r\n{\"label\": \"08/21\"},\r\n{\"label\": \"08/22\"},\r\n{\"label\": \"08/23\"},\r\n{\"label\": \"08/26\"},\r\n{\"label\": \"08/27\"},\r\n{\"label\": \"08/28\"},\r\n{\"label\": \"08/29\"},\r\n{\"label\": \"08/30\"},\r\n{\"label\": \"PCE Jul\",\"labelposition\": \"0\",\"lineposition\": \"0\",\"color\": \"666666\",\"vline\": \"true\"}\r\n]\r\n}\r\n],\r\n\"dataset\": [\r\n{\r\n\"seriesname\": \"CPI Inflation\",\r\n\"color\": \"e03430\",\r\n\"data\": [\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/20{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/21{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/22{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/23{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/26{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/27{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/28{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/29{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"CPI Inflation{br}08/30{br}{br}PCE Jul\" }\r\n]\r\n},\r\n{\r\n\"seriesname\": \"Core CPI Inflation\",\r\n\"color\": \"478ec7\",\r\n\"data\": [\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/20{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/21{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/22{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/23{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/26{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/27{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/28{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/29{br}{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"Core CPI{br}08/30{br}{br}PCE Jul\" }\r\n]\r\n},\r\n{\r\n\"seriesname\": \"PCE Inflation\",\r\n\"color\": \"f5932a\",\r\n\"data\": [\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/20{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/21{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/22{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/23{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/26{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/27{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/28{br}0.1332665448{br}\" },\r\n{ \"value\": \"0.1332665448\", \"tooltext\": \"PCE Inflation{br}08/29{br}0.1332665448{br}\" },\r\n{ \"value\": \"\", \"tooltext\": \"PCE Inflation{br}08/30{br}{br}PCE Jul\" }\r\n]\r\n},\r\n{\r\n\"seriesname\": \"Core PCE Inflation\",\r\n\"color\": \"54a215\",\r\n\"data\": [\r\n{ \"value\": \"0.1252425572\", \"tooltext\": \"Core PCE{br}08/20{br}0.1252425572{br}\" },\r\n{ \"value\": \"0.1252425572\", \"tooltex",
+  []
+ ],
+ "https://www.clevelandfed.org/-/media/files/webcharts/inflationnowcasting/nowcast_quarter.json": [
+  200,
+  4970043,
+  "[\r\n{\r\n\"chart\": {\r\n\"_comment\": \"2026-10-09 00:00\",\r\n\"caption\": \"Inflation Nowcasting\",\r\n\"subcaption\": \"2013:Q3\",\r\n\"yaxisname\": \"Quarterly Annualized Percent Change\",\r\n\"legendnumcolumns\": \"4\",\r\n\"labelpadding\": \"10\",\r\n\"showvalues\": \"0\",\r\n\"showexportdatamenuitem\": \"1\",\r\n\"showtooltip\": \"1\",\r\n\"basefont\": \"Helvetica\",\r\n\"bgalpha\": \"0\",\r\n\"showborder\": \"0\"\r\n},\r\n\"categories\": [\r\n{\r\n\"category\": [\r\n{\"label\": \"08/20\"},\r\n{\"label\": \"08/21\"},\r\n{\"label\": \"08/22\"},\r\n{\"label\": \"08/23\"},\r\n{\"label\": \"08/26\"},\r\n{\"label\": \"08/27\"},\r\n{\"label\": \"08/28\"},\r\n{\"label\": \"08/29\"},\r\n{\"label\": \"08/30\"},\r\n{\"label\": \"PCE Jul\",\"labelposition\": \"0\",\"lineposition\": \"0\",\"color\": \"666666\",\"vline\": \"true\"},\r\n{\"label\": \"09/03\"},\r\n{\"label\": \"09/04\"},\r\n{\"label\": \"09/05\"},\r\n{\"label\": \"09/06\"},\r\n{\"label\": \"09/09\"},\r\n{\"label\": \"09/10\"},\r\n{\"label\": \"09/11\"},\r\n{\"label\": \"09/12\"},\r\n{\"label\": \"09/13\"},\r\n{\"label\": \"09/16\"},\r\n{\"label\": \"09/17\"},\r\n{\"label\": \"CPI Aug\",\"labelposition\": \"0\",\"lineposition\": \"0\",\"color\": \"666666\",\"vline\": \"true\"},\r\n{\"label\": \"09/18\"},\r\n{\"label\": \"09/19\"},\r\n{\"label\": \"09/20\"},\r\n{\"label\": \"09/23\"},\r\n{\"label\": \"09/24\"},\r\n{\"label\": \"09/25\"},\r\n{\"label\": \"09/26\"},\r\n{\"label\": \"09/27\"},\r\n{\"label\": \"PCE Aug\",\"labelposition\": \"0\",\"lineposition\": \"0\",\"color\": \"666666\",\"vline\": \"true\"},\r\n{\"label\": \"09/30\"},\r\n{\"label\": \"10/01\"},\r\n{\"label\": \"10/02\"},\r\n{\"label\": \"10/03\"},\r\n{\"label\": \"10/04\"},\r\n{\"label\": \"10/07\"},\r\n{\"label\": \"10/08\"},\r\n{\"label\": \"10/09\"},\r\n{\"label\": \"10/10\"},\r\n{\"label\": \"10/11\"},\r\n{\"label\": \"10/15\"},\r\n{\"label\": \"10/16\"},\r\n{\"label\": \"10/17\"},\r\n{\"label\": \"10/18\"},\r\n{\"label\": \"10/21\"},\r\n{\"label\": \"10/22\"},\r\n{\"label\": \"10/23\"},\r\n{\"label\": \"10/24\"},\r\n{\"label\": \"10/25\"},\r\n{\"label\": \"10/28\"},\r\n{\"label\": \"10/29\"},\r\n{\"label\": \"10/30\"},\r\n{\"label\": \"CPI Sep\",\"labelposition\": \"0\",\"lineposition\": \"0\",\"color\": \"666666\",\"vline\": \"true\"},\r\n{\"label\": \"10/31\"},\r\n{\"label\": \"11/01\"},\r\n{\"label\": \"11/04\"},\r\n{\"label\": \"11/05\"},\r\n{\"label\": \"11/06\"},\r\n{\"label\": \"11/07\"}\r\n]\r\n}\r\n],\r\n\"dataset\": [\r\n{\r\n\"seriesname\": \"CPI Inflation\",\r\n\"color\": \"e03430\",\r\n\"data\": [\r\n{ \"value\": \"2.7632677235\", \"tooltext\": \"CPI Inflation{br}08/20{br}2.7632677235{br}\" },\r\n{ \"value\": \"2.9002863244\", \"tooltext\": \"CPI Inflation{br}08/21{br}2.9002863244{br}\" },\r\n{ \"value\": \"2.8862156114\", \"tooltext\": \"CPI Inflation{br}08/22{br}2.8862156114{br}\" },\r\n{ \"value\": \"2.8818470749\", \"tooltext\": \"CPI Inflation{br}08/23{br}2.8818470749{br}\" },\r\n{ \"value\": \"2.9576210043\", \"tooltext\": \"CPI Inflation{br}08/26{br}2.9576210043{br}\" },\r\n{ \"value\": \"2.9151837709\", \"tooltext\": \"CPI Inflation{br}08/27{br}2.9151837709{br}\" },\r\n{ \"value\": \"3.0817197534\", \"tooltext\": \"CPI Inflation{br}08/28{br}3.0817197534{br}\" },\r\n{ \"value\": \"3.1201411566\", \"tooltext\": \"CPI Inflation{br}08/29{br}3.1201411566{br}\" },\r\n{ \"value\": \"3.1297184911\", \"tooltext\": \"CPI Inflation{br}08/30{br}3.1297184911{br}PCE Jul\" },\r\n{ \"value\": \"3.0189575407\", \"tooltext\": \"CPI Inflation{br}09/03{br}3.0189575407{br}\" },\r\n{ \"value\": \"2.9080658521\", \"tooltext\": \"CPI Inflation{br}09/04{br}2",
+  []
+ ]
+}
