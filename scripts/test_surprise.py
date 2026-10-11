@@ -39,6 +39,11 @@ v = [("2026-09-11", [("2026-07-01", 100.0), ("2026-08-01", 100.3)]),
      ("2026-10-14", [("2026-07-01", 100.0), ("2026-08-01", 100.2), ("2026-09-01", 100.6)])]
 r = vintage_rows("cpi_mm", "pct1", v)
 assert (r[1]["actual"], r[1]["prior"], r[1]["revised"]) == (0.4, 0.3, 0.2), r
+assert r[1]["unrounded"] == 0.399 and r[0]["unrounded"] == 0.3, r
+# unrounded：0.26 和 0.34 都公布成 0.3
+v = [("2026-09-11", [("2026-07-01", 100.0), ("2026-08-01", 100.26)])]
+assert (lambda x: (x["actual"], x["unrounded"]))(vintage_rows("core_cpi_mm", "pct1", v)[0]) == (0.3, 0.26)
+assert vintage_rows("nfp", "diff", [("2026-09-04", [("2026-07-01", 1), ("2026-08-01", 3)])])[0]["unrounded"] == ""
 # 缺一個月（2025 年 10 月 CPI 沒公布）：y/y 要用日期找 12 個月前，不能用位置
 from surprise import compute
 obs = [(f"2024-{m:02d}-01", 100.0 + m) for m in range(9, 13)] + [(f"2025-{m:02d}-01", 110.0 + m) for m in range(1, 13) if m != 10]

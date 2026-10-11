@@ -198,14 +198,28 @@
         <div class="seg" id="i-years"><button data-v="5" class="on">5Y</button><button data-v="10">10Y</button><button data-v="25">25Y</button></div>
       </div>
     </div>
-    <p class="hint">The Fed targets 2% on PCE; core strips out food and energy. m/m is the raw monthly print (what the headlines report), shown for the last 2 years; 2% a year is about 0.17% a month. CPI for Oct 2025 was never published (government shutdown), so Oct and Nov 2025 have no CPI m/m bar. Annualized rates turn earlier than YoY. Open diamonds are the Fed's own year-end projection (SEP median).</p>
+    <p class="hint">The Fed targets 2% on PCE; core strips out food and energy. m/m is the raw monthly print (what the headlines report), shown for the last 2 years; 2% a year is about 0.17% a month. CPI for Oct 2025 was never published (government shutdown), so Oct and Nov 2025 have no CPI m/m bar. Annualized rates turn earlier than YoY. Dotted lines are headline (with food and energy), shown on the YoY and annualized views. Open diamonds are the Fed's own year-end projection (SEP median).</p>
     <div class="chart" id="c-infl"></div>
+  </section>
+  <section class="panel" id="p-trend">
+    <div class="panel-head"><div><h2>Underlying inflation</h2><p class="hint">Core still swings on a few odd items (a jump in airfares, a drop in used cars). The Cleveland Fed's median CPI takes the middle item each month, and the Dallas Fed's trimmed-mean PCE drops the biggest movers at both ends, so both show the trend underneath. Fed officials quote them when core looks noisy. All YoY.</p><p class="dline" id="trend-date"></p></div></div>
+    <div class="chart" id="c-trend"></div>
   </section>
   <section class="panel">
     <div class="panel-head"><div><h2>CPI breakdown</h2><p class="hint" id="cpi-hint"></p></div>
       <div class="seg" id="cpi-views"><button data-v="time" class="on">Contributions</button><button data-v="heat">Heatmap</button></div></div>
     <div class="chart" id="c-cpi-parts"></div>
     <div id="cpi-table"></div>
+  </section>
+  <section class="panel" id="p-wedge">
+    <div class="panel-head"><div><h2>CPI vs PCE</h2><p class="hint" id="wedge-hint"></p><p class="dline" id="wedge-date"></p></div>
+      <div class="seg" id="w-views"><button data-v="gap" class="on">Core gap</button><button data-v="super">Supercore</button></div></div>
+    <div class="chart" id="c-wedge"></div>
+  </section>
+  <section class="panel" id="p-exp">
+    <div class="panel-head"><div><h2>Inflation expectations</h2><p class="hint">Market pricing (breakevens: Treasury yield minus TIPS yield) and a household survey. The 5y5y forward is the market's view of average inflation five to ten years out, past the current cycle; it is the Fed's main gauge of whether long-run expectations stay anchored, with roughly 2.2 to 2.5% counting as normal (breakevens run on CPI, which sits above the 2% PCE target). The 5y breakeven reacts to the current inflation story; UMich 1-year is what households expect over the next year; it runs well above the market measures, so it starts hidden: click it in the legend to show it.</p><p class="dline" id="exp-date"></p></div>
+      <div class="seg" id="e-range"><button data-v="1Y">1Y</button><button data-v="5Y" class="on">5Y</button><button data-v="All">All</button></div></div>
+    <div class="chart" id="c-exp"></div>
   </section>
   <section class="panel">
     <div class="panel-head"><div><h2>Inflation surprises</h2><p class="hint">Each release against what the market expected, Bloomberg ECO style: the folded table lists the latest prints and what comes next; the chart is one indicator's history as bars (actual) and ticks (forecast).</p></div></div>
@@ -271,6 +285,6 @@
 </div>
 </main>
 
-<script src="app.js?v=26"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>
