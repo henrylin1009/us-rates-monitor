@@ -440,6 +440,7 @@
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
     curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
+    bills: "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).",
   };
   // ---------- 比較日期拉桿 ----------
   // Henry：不要 Compare 按鈕，只用一條拉桿；刻度 1D / 1W / 1M… 之間等距（不是線性時間），刻度之間也能停在任何一天
@@ -530,6 +531,22 @@
         (d) => { const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
     }
 
+    if (v === "bills") {
+      ctl.append(rangeChips("range", rr), eventChips(rr));
+      const rows = inRange(D.yields, "date", S.range), start = rows.length ? rows[0].date : "";
+      const bo = (D.bills || []).filter((r) => r.date >= start), ef = new Map(D.effr.map((r) => [r.date, num(r.effr)]));
+      const spot = rows.filter((r) => num(r["1m"]) != null && ef.get(r.date) != null);
+      const tr = [{ x: spot.map((r) => r.date), y: spot.map((r) => (num(r["1m"]) * 360 / 365 - ef.get(r.date)) * 100), name: "1m bill − EFFR (spot)",
+        type: "scatter", mode: "lines", line: { color: css("--muted"), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.1f}bp" },
+        ...["1m", "3m", "6m"].map((t, i) => ({ x: bo.map((r) => r.date), y: bo.map((r) => num(r[`spread_${t}`])), name: `${t} bill − OIS`, type: "scatter", mode: "lines",
+          line: { color: P[i], width: 2 }, customdata: bo.map((r) => [num(r[`bill_${t}`]), num(r[`ois_${t}`])]),
+          hovertemplate: `%{y:.1f}bp (bill %{customdata[0]:.3f}%, OIS %{customdata[1]:.3f}%)` }))];
+      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
+      if (rows.length) addEvents(tr, L, rows[0].date);
+      plot(id, tr, L);
+      renderReactions($("#y-table"));
+    }
+
     if (v === "spread") {
       const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"] };
       ctl.append(chips("Spreads", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr), eventChips(rr));
@@ -549,7 +566,7 @@
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
     priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
-    path: "The implied policy rate after each FOMC meeting. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then.",
+    path: "The implied policy rate after each FOMC meeting. Fed funds futures (ZQ) only cover about 15 months, so past the dashed divider the line continues with 3-month SOFR futures (SR3): each step is the average rate expected over one quarter, shifted down by the SOFR–fed funds gap measured where the two overlap so the two pieces join up. Faint lines mark how far today's 1y/2y/3y/5y Treasuries reach; a yield is roughly the average of this path out to its line, plus term premium. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then. SR3 history starts 2026-10-09.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
@@ -624,19 +641,49 @@
           name: (a === last ? "Today " : "") + a + (part && rows.length ? ` (from ${md(rows[0].meeting)} on)` : ""), type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
           marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp, this meeting %{customdata[1]:+.1f}bp)" };
       };
+      // ZQ 路徑之後的 SR3 季度段（已扣 basis），從 ZQ 最後一次會議接上去
+      const extTrace = (a, c, w, dash, legend) => {
+        const ext = (D.pathSr3 || []).filter((r) => r.asof === a), zq = pathOn(a);
+        if (!ext.length || !zq.length) return null;
+        const z = zq[zq.length - 1], e0 = num(zq[0].pre), lastE = ext[ext.length - 1];
+        const x = [z.meeting, ...ext.map((r) => r.start), lastE.end], y = [num(z.post), ...ext.map((r) => num(r.rate)), num(lastE.rate)];
+        const cd = [[num(z.cum_bp), "ZQ " + md(z.meeting), "", ""], ...ext.map((r) => [(num(r.rate) - e0) * 100, `SR3 ${r.contract.slice(0, 4)}-${r.contract.slice(5)}`, `${md(r.start)} – ${md(r.end)}`, num(r.sofr).toFixed(3)]), [null, "", "", ""]];
+        return { x, y, customdata: cd, name: legend, showlegend: !!legend, legendgroup: a, type: "scatter", mode: "lines", line: { color: c, width: w, dash, shape: "hv" },
+          hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp)<br>%{customdata[1]} %{customdata[2]}, SOFR %{customdata[3]}%" };
+      };
       const part0 = (D.pathPart || []).reduce((m, r) => (r.asof < m ? r.asof : m), A[0]);
       const draw = (d) => {
         S.pathBack = d;
-        const tr = [pathTrace(last, P[0], 2.6, "solid")];
-        if (d) { const [a, part] = cmpAsof(A, shiftDays(last, -d)); if (a && a !== last) tr.push(pathTrace(a, P[1], 1.8, "dot", 1, part)); }
+        const tr = [pathTrace(last, P[0], 2.6, "solid")], extNow = extTrace(last, P[0], 2, "dash", "Today, SR3 extension (quarterly)");
+        if (extNow) tr.push(extNow);
+        if (d) {
+          const [a, part] = cmpAsof(A, shiftDays(last, -d));
+          if (a && a !== last) { tr.push(pathTrace(a, P[1], 1.8, "dot", 1, part)); const ex = part ? null : extTrace(a, P[1], 1.5, "dot"); if (ex) tr.push(ex); }
+        }
         // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
-        const lastM = pathOn(last).slice(-1)[0], dots = D.sep.filter((r) => r.fedfunds !== "" && `${r.year}-12-31` >= last && (!lastM || `${r.year}-12-31` <= shiftDays(lastM.meeting, 45)));
+        const lastM = pathOn(last).slice(-1)[0], extEnd = extNow ? extNow.x[extNow.x.length - 1] : null;
+        const xEnd = extEnd || (lastM ? shiftDays(lastM.meeting, 45) : last);
+        const dots = D.sep.filter((r) => r.fedfunds !== "" && `${r.year}-12-31` >= last && `${r.year}-12-31` <= xEnd);
         if (dots.length) tr.push({ x: dots.map((r) => `${r.year}-12-31`), y: dots.map((r) => +r.fedfunds), name: "Fed dots (SEP median)", mode: "markers",
           marker: { symbol: "diamond-open", size: 11, color: css("--ink"), line: { width: 2 } }, customdata: dots.map((r) => r.year),
           hovertemplate: "%{y:.2f}%: Fed median for end-%{customdata} (midpoint of the target range)<extra></extra>" });
-        const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
-          shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }],
-          annotations: [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] });
+        const shapes = [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }];
+        const annotations = [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }];
+        if (extNow) {
+          // 資料來源切換的地方：左邊 ZQ（每次會議），右邊 SR3（每季平均）
+          const sw = extNow.x[0];
+          shapes.push({ type: "line", x0: sw, x1: sw, yref: "paper", y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } });
+          annotations.push({ x: sw, yref: "paper", y: 1, text: "ZQ, per meeting ◂ ", showarrow: false, xanchor: "right", yanchor: "top", font: { size: 11, color: css("--ink") } },
+            { x: sw, yref: "paper", y: 1, text: " ▸ SR3, quarterly", showarrow: false, xanchor: "left", yanchor: "top", font: { size: 11, color: css("--ink") } });
+          // 今天的 1y/2y/3y/5y 公債涵蓋到哪裡
+          [1, 2, 3, 5].forEach((n) => {
+            const t = `${+last.slice(0, 4) + n}${last.slice(4)}`;
+            if (t > xEnd) return;
+            shapes.push({ type: "line", x0: t, x1: t, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" }, opacity: 0.6 });
+            annotations.push({ x: t, yref: "paper", y: 0, text: `${n}y`, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 10.5, color: css("--muted") } });
+          });
+        }
+        const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, shapes, annotations });
         plot(id, tr, L);
       };
       ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y"], part0, last), S.pathBack,
@@ -1192,6 +1239,8 @@
     [D.yields, D.effr, D.path, D.summ, D.macro, D.claims, D.be, D.sep, D.rel, D.con, D.conManual] = await Promise.all(
       ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv", "releases.csv", "consensus.csv", "consensus_manual.csv"].map(load));
     D.pathPart = await load("fed_path_partial.csv").catch(() => []);
+    D.pathSr3 = await load("fed_path_sr3.csv").catch(() => []);
+    D.bills = await load("bills_ois.csv").catch(() => []);
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }
