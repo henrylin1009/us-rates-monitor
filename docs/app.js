@@ -1559,7 +1559,8 @@
     const lc = lastV(mom(rsControl()));
     $("#growth-k").innerHTML = `<span>GDP <b class="num">${f1(lg.v)}%</b></span>` + (now ? `<span>GDPNow <b class="num">${f1(now.v)}%</b></span>` : "")
       + (lc ? `<span>Control group <b class="num">${lc.v >= 0 ? "+" : ""}${lc.v.toFixed(1)}%</b> m/m</span>` : "");
-    plot("c-growth-mini", gdpTraces(5), baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, barmode: "overlay", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
+    const tg = gdpTraces(5), x0 = tg[0].x[0], x1 = shiftDays((now || lg).date, 75);
+    plot("c-growth-mini", tg, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, barmode: "overlay", bargap: 0.25, xaxis: { ...baseLayout().xaxis, range: [shiftDays(x0, -45), x1] }, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
   }
   function renderGrowth() {
     const { lg } = gdpParts(), P = palette(), narrow = innerWidth < 600;
