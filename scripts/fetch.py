@@ -21,6 +21,7 @@ from fedpricing import implied_month_rate, partial_path, price_path
 from macro import update_macro
 from surprise import update_surprise
 from fomc import MEETINGS
+from sofrstrip import splice, sr3_contracts
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "docs" / "data"
@@ -157,6 +158,33 @@ def update_zq(backfill: bool) -> None:
     write_csv("zq.csv", rows, ["date", "contract", "price"])
 
 
+# ---------- 3b. SR3 期貨（Yahoo Finance，非官方；只給最新一天，歷史從 2026-10 開始每天累積） ----------
+
+def update_sr3(backfill: bool) -> None:
+    import yfinance as yf
+    new = []
+    for key, ticker in sr3_contracts(date.today()):
+        try:
+            h = yf.Ticker(ticker).history(period="10d", interval="1d", auto_adjust=False)
+        except Exception as e:  # noqa: BLE001
+            print(f"  {ticker} 失敗：{e}")
+            continue
+        if h is None or h.empty:
+            print(f"  {ticker}：沒有資料")
+            continue
+        for ts, r in h.iterrows():
+            px = float(r["Close"])
+            if px > 0:
+                new.append({"date": ts.date().isoformat(), "contract": key, "price": f"{px:.4f}"})
+        print(f"  {ticker}：最新 {h['Close'].iloc[-1]:.3f}")
+        time.sleep(0.5)
+    if not new:
+        print("⚠ SR3 全部抓不到，這次路徑不延伸")
+        return
+    rows = merge(read_csv("sr3.csv"), new, key=lambda r: (r["date"], r["contract"]))
+    write_csv("sr3.csv", rows, ["date", "contract", "price"])
+
+
 # ---------- 4. 算每一天的 Fed 定價 ----------
 
 def add_months(d: date, k: int) -> str:
@@ -172,7 +200,11 @@ def compute_pricing() -> None:
     for r in read_csv("zq.csv"):
         by_day.setdefault(r["date"], {})[r["contract"]] = float(r["price"])
 
-    path_rows, summ_rows, part_rows = [], [], []
+    sr3: dict[str, dict[str, float]] = {}
+    for r in read_csv("sr3.csv"):
+        sr3.setdefault(r["date"], {})[r["contract"]] = float(r["price"])
+
+    path_rows, summ_rows, part_rows, ext_rows = [], [], [], []
     for ds in sorted(by_day):
         asof = date.fromisoformat(ds)
         prices = by_day[ds]
@@ -199,6 +231,10 @@ def compute_pricing() -> None:
             path_rows.append({"asof": ds, "meeting": p.meeting.isoformat(), "pre": p.pre, "post": p.post,
                               "move_bp": p.move_bp, "cum_bp": p.cum_bp, "p_hike": p.p_hike, "p_hold": p.p_hold,
                               "p_cut": p.p_cut, "lo_bp": p.lo_bp, "p_lo": p.p_lo, "hi_bp": p.hi_bp, "p_hi": p.p_hi})
+        # ZQ 路徑之後用 SR3 接上（basis 調整到 EFFR）
+        if ds in sr3:
+            for r in splice(asof, e, [(p.meeting, p.post) for p in path], sr3[ds]):
+                ext_rows.append({"asof": ds, **r})
         # 到年底：今年最後一次會議；如果今年已經沒有會議，就看明年底
         ye = [p for p in path if p.meeting.year == asof.year] or [p for p in path if p.meeting.year == asof.year + 1]
         r6, r12 = implied_month_rate(prices, add_months(asof, 6)), implied_month_rate(prices, add_months(asof, 12))
@@ -218,6 +254,7 @@ def compute_pricing() -> None:
     write_csv("fed_summary.csv", summ_rows, ["asof", "effr", "next_meeting", "next_move_bp", "next_p_hike",
                                              "next_p_cut", "yearend_meeting", "cum_yearend_bp", "implied_6m",
                                              "cum_6m_bp", "implied_12m", "cum_12m_bp"])
+    write_csv("fed_path_sr3.csv", ext_rows, ["asof", "contract", "start", "end", "sofr", "basis_bp", "rate"])
     write_csv("fed_path_partial.csv", part_rows, ["asof", "meeting", "pre", "post", "move_bp", "cum_bp"])
     if summ_rows:
         s = summ_rows[-1]
@@ -242,7 +279,7 @@ def main() -> int:
         print(f"✗ update_calendars 失敗：{e}")
     MEETINGS = fomc.load_meetings()
     errors = 0
-    for step in (update_yields, update_effr, update_zq):
+    for step in (update_yields, update_effr, update_zq, update_sr3):
         try:
             step(args.backfill)
         except Exception as e:  # noqa: BLE001  一個來源壞掉不要拖垮全部
@@ -258,7 +295,7 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         print(f"✗ update_surprise 失敗：{e}")
     write_meta()
-    return 1 if errors == 3 else 0
+    return 1 if errors >= 3 else 0
 
 
 if __name__ == "__main__":

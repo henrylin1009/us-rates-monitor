@@ -17,7 +17,9 @@ GitHub Actions（週一到週五 23:40 UTC）
       ├ 美國財政部 Daily Par Yield Curve → docs/data/yields.csv
       ├ 紐約 Fed EFFR                    → docs/data/effr.csv
       ├ ZQ 期貨（Yahoo Finance）          → docs/data/zq.csv
+      ├ SR3 期貨（Yahoo Finance，約五年）  → docs/data/sr3.csv
       ├ scripts/fedpricing.py 算定價      → docs/data/fed_path.csv、fed_summary.csv
+      │                                    fed_path_sr3.csv（ZQ 路徑之後用 SR3 接上，scripts/sofrstrip.py）
       │                                    fed_path_partial.csv（下一次會議合約已到期的舊日子，從接得上的會議開始，只給比較用）
       ├ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
       └ scripts/surprise.py 預期值（FF）＋首次公布值（ALFRED） → docs/data/consensus.csv、releases.csv
@@ -79,6 +81,7 @@ yfinance 是非官方的，從 GitHub 的伺服器抓偶爾會失敗。這時殖
 - 多次會議用接力：上一次會議後的利率是下一次的起點
 - 機率 = 隱含變動 ÷ 25bp，拆成最接近的兩檔
 - 期貨只給平均預期，分佈形狀是假設，價格也含少量風險溢酬。可以和 CME FedWatch 對照。
+- ZQ 只看得到約 15 個月，之後用 SR3（三個月 SOFR 期貨）接：每個合約 = 兩個 IMM 日之間的 SOFR 平均。SOFR 和 EFFR 有差（加上一點 convexity），所以拿同一天、期間完全落在 ZQ 路徑裡的 SR3 合約和 ZQ 路徑同期間的平均比，平均差多少 bp 就從接上去的 SR3 扣掉。Yahoo 的 SR3 只給最新一天，歷史從 2026-10-09 開始每天累積。
 
 Fed 定價的歷史從開始跑的那天累積；回補時只抓得到 Yahoo 上還有的合約。
 - **手動補預期值**：`docs/data/consensus_manual.csv`，欄位 `date,measure,forecast,previous,source`（例如 `2026-09-11,core_cpi_mm,0.3,,bloomberg`），網站上優先用手動值。measure 的代碼見 `scripts/surprise.py` 的 `MEASURES`。
