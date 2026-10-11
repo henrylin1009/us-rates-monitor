@@ -1,163 +1,3 @@
-OK https://apps.bea.gov/national/Release/TXT/SeriesRegister.txt 960482 bytes
-%SeriesCode,SeriesLabel,MetricName,CalculationType,DefaultScale,TableId:LineNo,SeriesCodeParents
-DABDRC,"Expenditures abroad by U.S. residents","Current Dollars","Level",-6,U20405:146,DNFRRC
-DABDRG,"Expenditures abroad by U.S. residents","Fisher Price Index","Level",0,U20404:146,NONE
-DACCRC,"Accommodations (104)","Current Dollars","Level",-6,T20405:85|T20505:104|U20405:249,DFSARC
-DACCRG,"Accommodations (104)","Fisher Price Index","Level",0,T20404:85|T20504:104|U20404:249,NONE
-DADMRC,"Admissions to specified spectator amusements","Current Dollars","Level",-6,T20505:85|U20405:213,DRLSRC
-DADMRG,"Admissions to specified spectator amusements","Fisher Price Index","Level",0,T20504:85|U20404:213,NONE
-DAFTRC,"Passenger fares for foreign travel","Current Dollars","Level",-6,U20405:335,DFTRRC
-DAFTRG,"Passenger fares for foreign travel","Fisher Price Index","Level",0,U20404:335,NONE
-DAIRRC,"Pleasure aircraft","Current Dollars","Level",-6,U20405:58,DBARRC
-DAIRRG,"Pleasure aircraft","Fisher Price Index","Level",0,U20404:58,NONE
-DAITRC,"Air transportation (64)","Current Dollars","Level",-6,T20405:74|T20505:64|U20405:207,DPUBRC
-DAITRG,"Air transportation (64)","Fisher Price Index","Level",0,T20404:74|T20504:64|U20404:207,NONE
-DALERC,"Auto leasing","Current Dollars","Level",-6,U20405:195,DMVLRC
-DALERG,"Auto leasing","Fisher Price Index","Level",0,U20404:195,NONE
-DAOPRC,"Alcoholic beverages purchased for off-premises consumption (5)","Current Dollars","Level",-6,T20405:28|T20505:5|U20405:99,DFXARC
-DAOPRG,"Alcoholic beverages purchased for off-premises consumption (5)","Fisher Price Index","Level",0,T20404:28|T20504:5|U20404:99,NONE
-DAPIRC,"Repair and rental of audio-visual, photographic, and information processing equipment","Current Dollars","Level",-6,U20405:222,DAVPRC
-DAPIRG,"Repair and rental of audio-visual, photographic, and information processing equipment","Fisher Price Index","Level",0,U20404:222,NONE
-DAPMRC,"Alcohol in purchased meals","Current Dollars","Level",-6,U20405:245,DPMBRC
-DAPMRG,"Alcohol in purchased meals","Fisher Price Index","Level",0,U20404:245,NONE
-DAPPRC,"Household appliances (part of 33)","Current Dollars","Level",-6,T20405:10|U20405:29,DFDHRC
-DAPPRG,"Household appliances (part of 33)","Fisher Price Index","Level",0,T20404:10|U20404:29,NONE
-DARSRC,"Private employees' expenditures abroad","Current Dollars","Level",-6,U20405:148,DABDRC
-DARSRG,"Private employees' expenditures abroad","Fisher Price Index","Level",0,U20404:148,NONE
-DARTRC,"Government employees' expenditures abroad","Current Dollars","Level",-6,U20405:147,DABDRC
-DARTRG,"Government employees' expenditures abroad","Fisher Price Index","Level",0,U20404:147,NONE
-DAUDRC,"Audio equipment","Current Dollars","Level",-6,U20405:43,DVAARC
-DAUDRG,"Audio equipment","Fisher Price Index","Level",0,U20404:43,NONE
-DAVPRC,"Audio-video, photographic, and information processing equipment services (parts of 77 and 93)","Current Dollars","Level",-6,T20405:78|U20405:218,DRCARC
-DAVPRG,"Audio-video, photographic, and information processing equipment services (parts of 77 and 93)","Fisher Price Index","Level",0,T20404:78|U20404:218,NONE
-DAXSRC,"Professional association dues","Current Dollars","Level",-6,T20505:125|U20405:305,DPRSRC
-DAXSRG,"Professional association dues","Fisher Price Index","Level",0,T20504:125|U20404:305,NONE
-DBAKRC,"Bakery products","Current Dollars","Level",-6,U20405:78,DCBPRC
-DBAKRG,"Bakery products","Fisher Price Index","Level",0,U20404:78,NONE
-DBARRC,"Pleasure boats, aircraft, and other recreational vehicles","Current Dollars","Level",-6,U20405:56,DWHLRC
-DBARRG,"Pleasure boats, aircraft, and other recreational vehicles","Fisher Price Index","Level",0,U20404:56,NONE
-DBBBRC,"Hairdressing salons and personal grooming establishments","Current Dollars","Level",-6,U20405:309,DPCSRC
-DBBBRG,"Hairdressing salons and personal grooming establishments","Fisher Price Index","Level",0,U20404:309,NONE
-DBCYRC,"Bicycles and accessories","Current Dollars","Level",-6,U20405:55,DWHLRC
-DBCYRG,"Bicycles and accessories","Fisher Price Index","Level",0,U20404:55,NONE
-DBEERC,"Beef and veal","Current Dollars","Level",-6,U20405:80,DMAPRC
-DBEERG,"Beef and veal","Fisher Price Index","Level",0,U20404:80,NONE
-DBOARC,"Pleasure boats","Current Dollars","Level",-6,U20405:57,DBARRC
-DBOARG,"Pleasure boats","Fisher Price Index","Level",0,U20404:57,NONE
-DCAMRC,"Photographic equipment","Current Dollars","Level",-6,U20405:47,DVAPRC
-DCAMRG,"Photographic equipment","Fisher Price Index","Level",0,U20404:47,NONE
-DCASRC,"Casino gambling","Current Dollars","Level",-6,U20405:227,DGAMRC
-DCASRG,"Casino gambling","Fisher Price Index","Level",0,U20404:227,NONE
-DCBPRC,"Cereals and bakery products","Current Dollars","Level",-6,U20405:76,DFOFRC
-DCBPRG,"Cereals and bakery products","Fisher Price Index","Level",0,U20404:76,NONE
-DCELRC,"Cellular telephone services","Current Dollars","Level",-6,U20405:285,DTCSRC
-DCELRG,"Cellular telephone services","Fisher Price Index","Level",0,U20404:285,NONE
-DCFDRC,"Food supplied to civilians","Current Dollars","Level",-6,U20405:247,DFOORC
-DCFDRG,"Food supplied to civilians","Fisher Price Index","Level",0,U20404:247,NONE
-DCFORC,"Community food and housing / emergency / other relief services","Current Dollars","Level",-6,U20405:322,DSCWRC
-DCFORG,"Community food and housing / emergency / other relief services","Fisher Price Index","Level",0,U20404:322,NONE
-DCFSRC,"Clothing and footwear services","Current Dollars","Level",-6,U20405:311,DPERRC
-DCFSRG,"Clothing and footwear services","Fisher Price Index","Level",0,U20404:311,NONE
-DCGPRC,"Control group","Current Dollars","Level",-6,U20405:369,NONE
-DCGPRG,"Control group","Fisher Price Index","Level",0,U20404:369,NONE
-DCHCRC,"Child care","Current Dollars","Level",-6,U20405:316|U20405:397,DSOCRC
-DCHCRG,"Child care","Fisher Price Index","Level",0,U20404:316|U20404:397,NONE
-DCHNRC,"Dishes and flatware","Current Dollars","Level",-6,U20405:33,DUTERC
-DCHNRG,"Dishes and flatware","Fisher Price Index","Level",0,U20404:33,NONE
-DCICRC,"Children's and infants' clothing","Current Dollars","Level",-6,T20405:34|T20505:12|U20405:108,DGARRC
-DCICRG,"Children's and infants' clothing","Fisher Price Index","Level",0,T20404:34|T20504:12|U20404:108,NONE
-DCIORC,"Civic and social organizations, gross output","Current Dollars","Level",-6,U20405:354,DNPERC
-DCIORG,"Civic and social organizations, gross output","Fisher Price Index","Level",0,U20404:354,NONE
-DCISRC,"Civic and social organizations' services to households","Current Dollars","Level",-6,U20405:367,DNPSRC
-DCISRG,"Civic and social organizations' services to households","Fisher Price Index","Level",0,U20404:367,NONE
-DCLERC,"Household cleaning products","Current Dollars","Level",-6,U20405:132,DHOURC
-DCLERG,"Household cleaning products","Fisher Price Index","Level",0,U20404:132,NONE
-DCLFRC,"Clocks, lamps, lighting fixtures, and other household decorative items","Current Dollars","Level",-6,U20405:26,DFFFRC
-DCLFRG,"Clocks, lamps, lighting fixtures, and other household decorative items","Fisher Price Index","Level",0,U20404:26,NONE
-DCLMRC,"Market-based PCE clothing and footwear","Current Dollars","Level",-6,U20405:381,NONE
-DCLMRG,"Market-based PCE clothing and footwear","Fisher Price Index","Level",0,U20404:381,NONE
-DCLORC,"Clothing and footwear","Current Dollars","Level",-6,T10505:11|T20305:10|T20405:30|T20805:10|U20305:10|U20405:104,DNDGRC
-DCLORG,"Clothing and footwear","Fisher Price Index","Level",0,T10504:11|T10604:11|T20304:10|T20404:30|T20804:10|U20304:10|U20404:104,NONE
-DCOMRC,"Communication","Current Dollars","Level",-6,T20405:96|U20405:281|U20405:393,DOTSRC
-DCOMRG,"Communication","Fisher Price Index","Level",0,T20404:96|U20404:281|U20404:393,NONE
-DCOSRC,"Cosmetic / perfumes / bath / nail preparations and implements","Current Dollars","Level",-6,U20405:139,DOPCRC
-DCOSRG,"Cosmetic / perfumes / bath / nail preparations and implements","Fisher Price Index","Level",0,U20404:139,NONE
-DCPPRC,"Personal computers/tablets and peripheral equipment","Current Dollars","Level",-6,U20405:49,BB01RC|DIPERC
-DCPPRG,"Personal computers/tablets and peripheral equipment","Fisher Price Index","Level",0,U20404:49,NONE
-DCPSRC,"Computer software and accessories","Current Dollars","Level",-6,U20405:50,DIPERC|SWFSTC
-DCPSRG,"Computer software and accessories","Fisher Price Index","Level",0,U20404:50,NONE
-DCSMRC,"Clothing materials","Current Dollars","Level",-6,U20405:110,DOCCRC
-DCSMRG,"Clothing materials","Fisher Price Index","Level",0,U20404:110,NONE
-DCTMRC,"Coffee, tea, and other beverage materials","Current Dollars","Level",-6,U20405:97,DNBVRC
-DCTMRG,"Coffee, tea, and other beverage materials","Fisher Price Index","Level",0,U20404:97,NONE
-DCTVRC,"Cable, satellite, and other live television services","Current Dollars","Level",-6,U20405:219,DAVPRC
-DCTVRG,"Cable, satellite, and other live television services","Fisher Price Index","Level",0,U20404:219,NONE
-DDAIRC,"Processed dairy products","Current Dollars","Level",-6,U20405:87,DMDERC
-DDAIRG,"Processed dairy products","Fisher Price Index","Level",0,U20404:87,NONE
-DDCERC,"Exchange-listed equities","Current Dollars","Level",-6,U20405:262,DDCTRC
-DDCERG,"Exchange-listed equities","Fisher Price Index","Level",0,U20404:262,NONE
-DDCORC,"Other direct commissions","Current Dollars","Level",-6,U20405:263,DDCTRC
-DDCORG,"Other direct commissions","Fisher Price Index","Level",0,U20404:263,NONE
-DDCTRC,"Direct commissions","Current Dollars","Level",-6,U20405:261,DEQTRC
-DDCTRG,"Direct commissions","Fisher Price Index","Level",0,U20404:261,NONE
-DDENRC,"Dental services (45)","Current Dollars","Level",-6,T20405:63|T20505:45|U20405:175,DOUTRC
-DDENRG,"Dental services (45)","Fisher Price Index","Level",0,T20404:63|T20504:45|U20404:175,NONE
-DDMSRC,"Domestic services","Current Dollars","Level",-6,U20405:328,DHHMRC
-DDMSRG,"Domestic services","Fisher Price Index","Level",0,U20404:328,NONE
-DDOLRC,"Games, toys, and hobbies","Current Dollars","Level",-6,U20405:127,DREIRC
-DDOLRG,"Games, toys, and hobbies","Fisher Price Index","Level",0,U20404:127,NONE
-DDRYRC,"Laundry and drycleaning services","Current Dollars","Level",-6,T20505:15|U20405:312,DCFSRC|DCRCRC
-DDRYRG,"Laundry and drycleaning services","Fisher Price Index","Level",0,T20504:15|U20404:312,NONE
-DDUMRC,"Market-based PCE durable goods other than motor vehicles and parts","Current Dollars","Level",-6,U20405:379,NONE
-DDUMRG,"Market-based PCE durable goods other than motor vehicles and parts","Fisher Price Index","Level",0,U20404:379,NONE
-DDURRC,"Durable goods","Current Dollars","Level",-6,T10105:4|T10505:4|T20305:3|T20405:3|T20805:3|U20305:3|U20405:3,DGDSRC
-DDURRG,"Durable goods","Fisher Price Index","Level",0,T10104:4|T10504:4|T10604:4|T20304:3|T20404:3|T20804:3|U20304:3|U20404:3,NONE
-DEAPRC,"Electric appliances for personal care","Current Dollars","Level",-6,U20405:140,DOPCRC
-DEAPRG,"Electric appliances for personal care","Fisher Price Index","Level",0,U20404:140,NONE
-DEBKRC,"Educational books (96)","Current Dollars","Level",-6,T20405:22|T20505:96|U20405:69,DEDURC|DODGRC
-DEBKRG,"Educational books (96)","Fisher Price Index","Level",0,T20404:22|T20504:96|U20404:69,NONE
-DEDGRC,"Education services, gross output","Current Dollars","Level",-6,U20405:349,DNPERC
-DEDGRG,"Education services, gross output","Fisher Price Index","Level",0,U20404:349,NONE
-DEDRRC,"Education services to households","Current Dollars","Level",-6,U20405:362,DNPSRC
-DEDRRG,"Education services to households","Fisher Price Index","Level",0,U20404:362,NONE
-DEFSRC,"Expenditures of foreign students in the United States","Current Dollars","Level",-6,U20405:341,DEXFRC
-DEFSRG,"Expenditures of foreign students in the United States","Fisher Price Index","Level",0,U20404:341,NONE
-DELCRC,"Electricity (27)","Current Dollars","Level",-6,T20405:58|T20505:27|U20405:170,DEGFRC|DELGRC
-DELCRG,"Electricity (27)","Fisher Price Index","Level",0,T20404:58|T20504:27|U20404:170,NONE
-DELDRC,"Homes for the elderly","Current Dollars","Level",-6,U20405:318,DSCWRC
-DELDRG,"Homes for the elderly","Fisher Price Index","Level",0,U20404:318,NONE
-DELGRC,"Electricity and gas","Current Dollars","Level",-6,T20405:57|U20405:169,DUTLRC
-DELGRG,"Electricity and gas","Fisher Price Index","Level",0,T20404:57|U20404:169,NONE
-DEQTRC,"Securities commissions","Current Dollars","Level",-6,U20405:260,DOFIRC
-DEQTRG,"Securities commissions","Fisher Price Index","Level",0,U20404:260,NONE
-DERERC,"Repair of household appliances","Current Dollars","Level",-6,U20405:331,DHHMRC
-DERERG,"Repair of household appliances","Fisher Price Index","Level",0,U20404:331,NONE
-DESCRC,"Elementary and secondary schools","Current Dollars","Level",-6,U20405:295,DNEHRC
-DESCRG,"Elementary and secondary schools","Fisher Price Index","Level",0,U20404:295,NONE
-DESLRC,"Elementary and secondary school lunches","Current Dollars","Level",-6,U20405:239,DMSLRC
-DESLRG,"Elementary and secondary school lunches","Fisher Price Index","Level",0,U20404:239,NONE
-DEXFRC,"Less: Expenditures in the United States by nonresidents (130)","Current Dollars","Level",-6,T20405:110|T20505:130|U20405:338,DFORRC|DNFTRC
-DEXFRG,"Less: Expenditures in the United States by nonresidents (130)","Fisher Price Index","Level",0,T20404:110|T20504:130|U20404:338,NONE
-DEYERC,"Corrective eyeglasses and contact lenses","Current Dollars","Level",-6,U20405:68,DTAERC
-DEYERG,"Corrective eyeglasses and contact lenses","Fisher Price Index","Level",0,U20404:68,NONE
-DFAMRC,"Individual and family services","Current Dollars","Level",-6,U20405:320,DSCWRC
-DFAMRG,"Individual and family services","Fisher Price Index","Level",0,U20404:320,NONE
-DFARRC,"Rental value of farm dwellings (22)","Current Dollars","Level",-6,T20405:53|T20505:22|T70405:5|U20405:163,A2007C|DHSGRC
-DFARRG,"Rental value of farm dwellings (22)","Fisher Price Index","Level",0,T20404:53|T20504:22|T70404:5|U20404:163,NONE
-DFATRC,"Fats and oils","Current Dollars","Level",-6,U20405:89,DFOFRC
-DFATRG,"Fats and oils","Fisher Price Index","Level",0,U20404:89,NONE
-DFAVRC,"Fresh fruits and vegetables","Current Dollars","Level",-6,U20405:90,DFOFRC
-DFAVRG,"Fresh fruits and vegetables","Fisher Price Index","Level",0,U20404:90,NONE
-DFDHRC,"Furnishings and durable household equipment","Current Dollars","Level",-6,T10505:6|T20305:5|T20405:8|T20805:5|U20305:5|U20405:23,DDURRC
-DFDHRG,"Furnishings and durable household equipment","Fisher Price Index","Level",0,T10504:6|T10604:6|T20304:5|T20404:8|T20804:5|U20304:5|U20404:23,NONE
-DFDVRC,"Photo processing","Current Dollars","Level",-6,U20405:220,DAVPRC
-DFDVRG,"Photo processing","Fisher Price Index","Level",0,U20404:220,NONE
-DFEERC,"Financial service charges and fees","Current Dollars","Level",-6,U20405:259,DOFIRC
-DFEERG,"Financial service charges and fees","Fisher Price Index","Level",0,U20404:259,NONE
-DFFDRC,"Food produced and consumed on farms (6)","Current Dollars","Level",-6,T20405:29|T20505:6|U20405:103,DFXARC
-DFFDRG,"Food produced and consumed on farms (6)","Fisher Price Index","Level",0,T20404:29|T20504:6|U20404:103,NONE
-DFFFRC,"Furniture and furnishings (parts of 31 and 32)","Current Dollars","Level",-6,T20405:9|U20405:24,DFDHRC
-DFFFRG,"Furniture and furnishings (parts of 31 and 32)","Fisher Price Index","Level",0,T20404:9|U20404:24,NONE
 DFIBRC,"Less: Household insurance normal losses","Current Dollars","Level",-6,U20405:274,DFINRC
 DFIBRG,"Less: Household insurance normal losses","Fisher Price Index","Level",0,U20404:274,NONE
 DFIMRC,"Market-based PCE financial services and insurance","Current Dollars","Level",-6,U20405:391,NONE
@@ -166,247 +6,100 @@ DFINRC,"Net household insurance (111)","Current Dollars","Level",-6,T20405:92|T2
 DFINRG,"Net household insurance (111)","Fisher Price Index","Level",0,T20404:92|T20504:111|U20404:272,NONE
 DFIPRC,"Household insurance premiums and premium supplements","Current Dollars","Level",-6,U20405:273,DFINRC
 DFIPRG,"Household insurance premiums and premium supplements","Fisher Price Index","Level",0,U20404:273,NONE
-DFISRC,"Fish and seafood","Current Dollars","Level",-6,U20405:84,DFOFRC
-DFISRG,"Fish and seafood","Fisher Price Index","Level",0,U20404:84,NONE
-DFLMRC,"Film and photographic supplies","Current Dollars","Level",-6,U20405:130,DREIRC
-DFLMRG,"Film and photographic supplies","Fisher Price Index","Level",0,U20404:130,NONE
-DFLORC,"Flowers, seeds, and potted plants","Current Dollars","Level",-6,U20405:129,DREIRC
-DFLORG,"Flowers, seeds, and potted plants","Fisher Price Index","Level",0,U20404:129,NONE
-DFLRRC,"Carpets and other floor coverings","Current Dollars","Level",-6,U20405:27,DFFFRC
-DFLRRG,"Carpets and other floor coverings","Fisher Price Index","Level",0,U20404:27,NONE
 DFNLRC,"Financial services","Current Dollars","Level",-6,T20405:87|T20505:106|U20405:253,DIFSRC
 DFNLRG,"Financial services","Fisher Price Index","Level",0,T20404:87|T20504:106|U20404:253,NONE
-DFNRRC,"Furniture","Current Dollars","Level",-6,U20405:25,DFFFRC
-DFNRRG,"Furniture","Fisher Price Index","Level",0,U20404:25,NONE
-DFOFRC,"Food purchased for off-premises consumption","Current Dollars","Level",-6,U20405:75,DTFDRC
-DFOFRG,"Food purchased for off-premises consumption","Fisher Price Index","Level",0,U20404:75,NONE
-DFOORC,"Food furnished to employees (including military) (103)","Current Dollars","Level",-6,T20405:84|T20505:103|U20405:246,A2099C|A2106C|DFSERC
-DFOORG,"Food furnished to employees (including military) (103)","Fisher Price Index","Level",0,T20404:84|T20504:103|U20404:246,NONE
-DFORRC,"Net foreign travel","Current Dollars","Level",-6,T20405:108|U20405:333,DOTSRC
 DFPHRC,"Proprietary hospitals","Current Dollars","Level",-6,U20405:185,DHSPRC
 DFPHRG,"Proprietary hospitals","Fisher Price Index","Level",0,U20404:185,NONE
-DFPNRC,"Proprietary and government nursing homes","Current Dollars","Level",-6,U20405:189,DNRSRC
-DFPNRG,"Proprietary and government nursing homes","Fisher Price Index","Level",0,U20404:189,NONE
-DFRERC,"Repair of furniture, furnishings, and floor coverings","Current Dollars","Level",-6,U20405:330,DHHMRC
-DFRERG,"Repair of furniture, furnishings, and floor coverings","Fisher Price Index","Level",0,U20404:330,NONE
-DFRURC,"Fruit (fresh)","Current Dollars","Level",-6,U20405:91,DFAVRC
-DFRURG,"Fruit (fresh)","Fisher Price Index","Level",0,U20404:91,NONE
-DFSARC,"Food services and accommodations","Current Dollars","Level",-6,T10505:20|T20305:19|T20405:81|T20505:100|T20805:19|U20305:19|U20305:40|U20405:234,DHCERC|DPHCRC
-DFSARG,"Food services and accommodations","Fisher Price Index","Level",0,T10504:20|T10604:20|T20304:19|T20404:81|T20504:100|T20804:19|U20304:19|U20304:40|U20404:234,NONE
-DFSERC,"Food services","Current Dollars","Level",-6,T20405:82|T20505:101|U20405:235,DFSARC
-DFSERG,"Food services","Fisher Price Index","Level",0,T20404:82|T20504:101|U20404:235,NONE
-DFSMRC,"Market-based PCE food services and accommodations","Current Dollars","Level",-6,U20405:390,NONE
-DFSMRG,"Market-based PCE food services and accommodations","Fisher Price Index","Level",0,U20404:390,NONE
-DFTRRC,"Foreign travel by U.S. residents (129)","Current Dollars","Level",-6,T20405:109|T20505:129|U20405:334,DFORRC|DNFTRC
-DFTRRG,"Foreign travel by U.S. residents (129)","Fisher Price Index","Level",0,T20404:109|T20504:129|U20404:334,NONE
-DFTURC,"Foreign travel in the United States","Current Dollars","Level",-6,U20405:339,DEXFRC
-DFTURG,"Foreign travel in the United States","Fisher Price Index","Level",0,U20404:339,NONE
-DFULRC,"Fuel oil and other fuels","Current Dollars","Level",-6,T20405:38|T20505:29|U20405:117,DEGFRC|DGOERC
-DFULRG,"Fuel oil and other fuels","Fisher Price Index","Level",0,T20404:38|T20504:29|U20404:117,NONE
-DFUNRC,"Funeral and burial services","Current Dollars","Level",-6,T20505:126|U20405:306,DPRSRC
-DFUNRG,"Funeral and burial services","Fisher Price Index","Level",0,T20504:126|U20404:306,NONE
 DFXARC,"Food and beverages purchased for off-premises consumption","Current Dollars","Level",-6,T10505:10|T20305:9|T20405:26|T20505:3|T20805:9|U20305:31|U20305:9|U20405:73,DNDGRC|DPHCRC
 DFXARG,"Food and beverages purchased for off-premises consumption","Fisher Price Index","Level",0,T10504:10|T10604:10|T20304:9|T20404:26|T20504:3|T20804:9|U20304:31|U20304:9|U20404:73,NONE
-DFXORC,"Foundations and grantmaking and giving establishments, gross output","Current Dollars","Level",-6,U20405:352,DNPERC
-DFXORG,"Foundations and grantmaking and giving establishments, gross output","Fisher Price Index","Level",0,U20404:352,NONE
-DGALRC,"Legal services","Current Dollars","Level",-6,T20505:122|U20405:299,DPRSRC
-DGALRG,"Legal services","Fisher Price Index","Level",0,T20504:122|U20404:299,NONE
-DGAMRC,"Gambling (91)","Current Dollars","Level",-6,T20405:79|T20505:91|U20405:226,DRCARC|DRRLRC
-DGAMRG,"Gambling (91)","Fisher Price Index","Level",0,T20404:79|T20504:91|U20404:226,NONE
-DGARRC,"Garments","Current Dollars","Level",-6,T20405:31|T20505:9|U20405:105,DCLORC|DCLTRC
-DGARRG,"Garments","Fisher Price Index","Level",0,T20404:31|T20504:9|U20404:105,NONE
-DGASRC,"Gasoline and other motor fuel","Current Dollars","Level",-6,U20405:115,DMFLRC
-DGASRG,"Gasoline and other motor fuel","Fisher Price Index","Level",0,U20404:115,NONE
 DGDSRC,"Goods","Current Dollars","Level",-6,T10105:3|T10505:3|T20305:2|T20405:2|T20805:2|U20305:2|U20405:2,DPCERC
 DGDSRG,"Goods","Fisher Price Index","Level",0,T10104:3|T10504:3|T10604:3|T20304:2|T20404:2|T20804:2|U20304:2|U20404:2,NONE
-DGEDRC,"Proprietary and public higher education","Current Dollars","Level",-6,U20405:292,DHEDRC
-DGEDRG,"Proprietary and public higher education","Fisher Price Index","Level",0,U20404:292,NONE
-DGENRC,"Employment agency services","Current Dollars","Level",-6,U20405:302,DPRORC
-DGENRG,"Employment agency services","Fisher Price Index","Level",0,U20404:302,NONE
-DGGSRC,"Eggs","Current Dollars","Level",-6,U20405:88,DMDERC
-DGGSRG,"Eggs","Fisher Price Index","Level",0,U20404:88,NONE
-DGHERC,"Natural gas (28)","Current Dollars","Level",-6,T20405:59|T20505:28|U20405:171,DEGFRC|DELGRC
-DGHERG,"Natural gas (28)","Fisher Price Index","Level",0,T20404:59|T20504:28|U20404:171,NONE
-DGIVRC,"Foundations and grantmaking and giving services to households","Current Dollars","Level",-6,U20405:326|U20405:365,DNPSRC|DSOCRC
-DGIVRG,"Foundations and grantmaking and giving services to households","Fisher Price Index","Level",0,U20404:326|U20404:365,NONE
 DGOERC,"Gasoline and other energy goods","Current Dollars","Level",-6,T10505:12|T20305:11|T20405:36|T20805:11|U20305:11|U20405:113|U20405:382,DNDGRC
 DGOERG,"Gasoline and other energy goods","Fisher Price Index","Level",0,T10504:12|T10604:12|T20304:11|T20404:36|T20804:11|U20304:11|U20404:113|U20404:382,NONE
-DGRARC,"Cereals","Current Dollars","Level",-6,U20405:77,DCBPRC
-DGRARG,"Cereals","Fisher Price Index","Level",0,U20404:77,NONE
-DGRDRC,"Ground transportation (63)","Current Dollars","Level",-6,T20405:73|T20505:63|U20405:200,DPUBRC
-DGRDRG,"Ground transportation (63)","Fisher Price Index","Level",0,T20404:73|T20504:63|U20404:200,NONE
-DGRHRC,"Group housing (23)","Current Dollars","Level",-6,T20405:54|T20505:23|U20405:164,DHSGRC
-DGRHRG,"Group housing (23)","Fisher Price Index","Level",0,T20404:54|T20504:23|U20404:164,NONE
 DGVHRC,"Government hospitals","Current Dollars","Level",-6,U20405:186,DHSPRC
 DGVHRG,"Government hospitals","Fisher Price Index","Level",0,U20404:186,NONE
-DHCERC,"Household consumption expenditures (for services)","Current Dollars","Level",-6,T10505:15|T20305:14|T20405:48|T20805:14|U20305:14|U20405:151,DSERRC
-DHCERG,"Household consumption expenditures","Fisher Price Index","Level",0,T10504:15|T10604:15|T20304:14|T20404:48|T20804:14|U20304:14|U20404:151,NONE
-DHDWRC,"Tools, hardware, and supplies","Current Dollars","Level",-6,U20405:36,DTOORC
-DHDWRG,"Tools, hardware, and supplies","Fisher Price Index","Level",0,U20404:36,NONE
-DHEDRC,"Higher education (97)","Current Dollars","Level",-6,T20405:101|T20505:97|U20405:291,DEDURC|DTEDRC
-DHEDRG,"Higher education (97)","Fisher Price Index","Level",0,T20404:101|T20504:97|U20404:291,NONE
-DHHCRC,"Home health care","Current Dollars","Level",-6,T20505:47|U20405:177,DPMSRC
-DHHCRG,"Home health care","Fisher Price Index","Level",0,T20504:47|U20404:177,NONE
-DHHMRC,"Household maintenance (parts of 31, 33, and 36)","Current Dollars","Level",-6,T20405:107|U20405:327,DOTSRC
-DHHMRG,"Household maintenance (parts of 31, 33, and 36)","Fisher Price Index","Level",0,T20404:107|U20404:327,NONE
 DHINRC,"Net health insurance (112)","Current Dollars","Level",-6,T20405:93|T20505:112|U20405:275,DINSRC
 DHINRG,"Net health insurance (112)","Fisher Price Index","Level",0,T20404:93|T20504:112|U20404:275,NONE
 DHLCRC,"Health care","Current Dollars","Level",-6,T10505:17|T20305:16|T20405:60|T20805:16|U20305:16|U20405:172|U20405:387,DHCERC
 DHLCRG,"Health care","Fisher Price Index","Level",0,T10504:17|T10604:17|T20304:16|T20404:60|T20804:16|U20304:16|U20404:172|U20404:387,NONE
-DHLGRC,"Health, gross output","Current Dollars","Level",-6,U20405:344,DNPERC
-DHLGRG,"Health, gross output","Fisher Price Index","Level",0,U20404:344,NONE
-DHLRRC,"Health services to households","Current Dollars","Level",-6,U20405:357,DNPSRC
-DHLRRG,"Health services to households","Fisher Price Index","Level",0,U20404:357,NONE
-DHMMRC,"Market-based PCE household maintenance","Current Dollars","Level",-6,U20405:398,NONE
-DHMMRG,"Market-based PCE household maintenance","Fisher Price Index","Level",0,U20404:398,NONE
-DHOLRC,"Package tours","Current Dollars","Level",-6,U20405:232,DOTRRC
-DHOLRG,"Package tours","Fisher Price Index","Level",0,U20404:232,NONE
-DHOTRC,"Hotels and motels","Current Dollars","Level",-6,U20405:250,DACCRC
-DHOTRG,"Hotels and motels","Fisher Price Index","Level",0,U20404:250,NONE
-DHOURC,"Household supplies (parts of 32 and 36)","Current Dollars","Level",-6,T20405:42|U20405:131,DONGRC
-DHOURG,"Household supplies (parts of 32 and 36)","Fisher Price Index","Level",0,T20404:42|U20404:131,NONE
 DHPNRC,"Hospital and nursing home services","Current Dollars","Level",-6,T20405:65|T20505:50|U20405:182,DHLCRC|DHLTRC
 DHPNRG,"Hospital and nursing home services","Fisher Price Index","Level",0,T20404:65|T20504:50|U20404:182,NONE
 DHSGRC,"Housing","Current Dollars","Level",-6,T20305:29|T20405:50|T20505:19|T20805:29|U20405:153,DHUFRC|DHUTRC
 DHSGRG,"Housing","Fisher Price Index","Level",0,T20304:29|T20404:50|T20504:19|T20804:29|U20404:153,NONE
-DHSLRC,"Higher education school lunches","Current Dollars","Level",-6,U20405:240,DMSLRC
-DHSLRG,"Higher education school lunches","Fisher Price Index","Level",0,U20404:240,NONE
-DHSMRC,"Market-based PCE housing services","Current Dollars","Level",-6,U20405:385,NONE
-DHSMRG,"Market-based PCE housing services","Fisher Price Index","Level",0,U20404:385,NONE
 DHSORC,"Nonprofit hospitals, gross output","Current Dollars","Level",-6,U20405:346,DHLGRC
 DHSORG,"Nonprofit hospitals, gross output","Fisher Price Index","Level",0,U20404:346,NONE
 DHSPRC,"Hospitals (51)","Current Dollars","Level",-6,T20405:66|T20505:51|U20405:183,DHPNRC
 DHSPRG,"Hospitals (51)","Fisher Price Index","Level",0,T20404:66|T20504:51|U20404:183,NONE
-DHUTRC,"Housing and utilities","Current Dollars","Level",-6,T10505:16|T20305:15|T20405:49|T20805:15|U20305:15|U20405:152,DHCERC
-DHUTRG,"Housing and utilities","Fisher Price Index","Level",0,T10504:16|T10604:16|T20304:15|T20404:49|T20804:15|U20304:15|U20404:152,NONE
-DIBURC,"Intercity buses","Current Dollars","Level",-6,U20405:203,DROTRC
-DIBURG,"Intercity buses","Fisher Price Index","Level",0,U20404:203,NONE
-DICORC,"Other imputed commissions","Current Dollars","Level",-6,U20405:266,DICTRC
-DICORG,"Other imputed commissions","Fisher Price Index","Level",0,U20404:266,NONE
-DICTRC,"Indirect commissions","Current Dollars","Level",-6,U20405:264,DEQTRC
-DICTRG,"Indirect commissions","Fisher Price Index","Level",0,U20404:264,NONE
-DICVRC,"Over-the-counter equity securities","Current Dollars","Level",-6,U20405:265,DICTRC
-DICVRG,"Over-the-counter equity securities","Fisher Price Index","Level",0,U20404:265,NONE
 DIFSRC,"Financial services and insurance","Current Dollars","Level",-6,T10505:21|T20305:20|T20405:86|T20505:105|T20805:20|U20305:20|U20305:41|U20405:252,DHCERC|DPHCRC
 DIFSRG,"Financial services and insurance","Fisher Price Index","Level",0,T10504:21|T10604:21|T20304:20|T20404:86|T20504:105|T20804:20|U20304:20|U20304:41|U20404:252,NONE
-DIINRC,"Income loss","Current Dollars","Level",-6,T20505:114|U20405:277,DHINRC
-DIINRG,"Income loss","Fisher Price Index","Level",0,T20504:114|U20404:277,NONE
-DIMCRC,"Commercial banks","Current Dollars","Level",-6,U20405:255,DIMPRC
-DIMCRG,"Commercial banks","Fisher Price Index","Level",0,U20404:255,NONE
-DIMNRC,"Other depository institutions and regulated investment companies","Current Dollars","Level",-6,U20405:256,DIMPRC
-DIMNRG,"Other depository institutions and regulated investment companies","Fisher Price Index","Level",0,U20404:256,NONE
-DIMPRC,"Financial services furnished without payment (107)","Current Dollars","Level",-6,T20405:88|T20505:107|U20405:254,DFNLRC
-DIMPRG,"Financial services furnished without payment (107)","Fisher Price Index","Level",0,T20404:88|T20504:107|U20404:254,NONE
-DIMTRC,"Intracity mass transit","Current Dollars","Level",-6,U20405:205,DROTRC
-DIMTRG,"Intracity mass transit","Fisher Price Index","Level",0,U20404:205,NONE
 DINSRC,"Insurance","Current Dollars","Level",-6,T20405:90|T20505:109|U20405:270,DIFSRC
 DINSRG,"Insurance","Fisher Price Index","Level",0,T20404:90|T20504:109|U20404:270,NONE
-DINTRC,"Internet access (72)","Current Dollars","Level",-6,T20405:99|T20505:72|U20405:289,DCMCRC|DCOMRC
-DINTRG,"Internet access (72)","Fisher Price Index","Level",0,T20404:99|T20504:72|U20404:289,NONE
-DIPERC,"Information processing equipment","Current Dollars","Level",-6,T20505:76|U20405:48,DVAPRC|DVPIRC
-DIPERG,"Information processing equipment","Fisher Price Index","Level",0,T20504:76|U20404:48,NONE
-DIRRRC,"Railway transportation","Current Dollars","Level",-6,U20405:201,DGRDRC
-DIRRRG,"Railway transportation","Fisher Price Index","Level",0,U20404:201,NONE
-DJLYRC,"Jewelry","Current Dollars","Level",-6,U20405:64,DJRYRC
-DJLYRG,"Jewelry","Fisher Price Index","Level",0,U20404:64,NONE
-DJNBRC,"Mineral waters, soft drinks, and vegetable juices","Current Dollars","Level",-6,U20405:98,DNBVRC
-DJNBRG,"Mineral waters, soft drinks, and vegetable juices","Fisher Price Index","Level",0,U20404:98,NONE
-DJRYRC,"Jewelry and watches (part of 119)","Current Dollars","Level",-6,T20405:20|U20405:63,DODGRC
-DJRYRG,"Jewelry and watches (part of 119)","Fisher Price Index","Level",0,T20404:20|U20404:63,NONE
-DLDTRC,"Land-line telephone services, long-distance charges","Current Dollars","Level",-6,U20405:284,DTCSRC
-DLDTRG,"Land-line telephone services, long-distance charges","Fisher Price Index","Level",0,U20404:284,NONE
-DLGRRC,"Clothing repair, rental, and alterations","Current Dollars","Level",-6,T20505:16|U20405:313,DCFSRC|DCRCRC
-DLGRRG,"Clothing repair, rental, and alterations","Fisher Price Index","Level",0,T20504:16|U20404:313,NONE
 DLIFRC,"Life insurance (110)","Current Dollars","Level",-6,T20405:91|T20505:110|U20405:271,DINSRC
 DLIFRG,"Life insurance (110)","Fisher Price Index","Level",0,T20404:91|T20504:110|U20404:271,NONE
 DLIGRC,"Live entertainment, excluding sports","Current Dollars","Level",-6,T20505:87|U20405:215,DADMRC
 DLIGRG,"Live entertainment, excluding sports","Fisher Price Index","Level",0,T20504:87|U20404:215,NONE
-DLINRC,"Household linens","Current Dollars","Level",-6,U20405:134,DHOURC
-DLINRG,"Household linens","Fisher Price Index","Level",0,U20404:134,NONE
-DLIQRC,"Spirits","Current Dollars","Level",-6,U20405:100,DAOPRC
-DLIQRG,"Spirits","Fisher Price Index","Level",0,U20404:100,NONE
-DLOCRC,"Land-line telephone services, local charges","Current Dollars","Level",-6,U20405:283,DTCSRC
-DLOCRG,"Land-line telephone services, local charges","Fisher Price Index","Level",0,U20404:283,NONE
-DLOTRC,"Lotteries","Current Dollars","Level",-6,U20405:228,DGAMRC
-DLOTRG,"Lotteries","Fisher Price Index","Level",0,U20404:228,NONE
-DLPFRC,"Other fuels","Current Dollars","Level",-6,U20405:119,DFULRC
-DLPFRG,"Other fuels","Fisher Price Index","Level",0,U20404:119,NONE
-DLUBRC,"Lubricants and fluids","Current Dollars","Level",-6,U20405:116,DMFLRC
-DLUBRG,"Lubricants and fluids","Fisher Price Index","Level",0,U20404:116,NONE
-DLUGRC,"Luggage and similar personal items (part of 119)","Current Dollars","Level",-6,T20405:23|U20405:70,DODGRC
-DLUGRG,"Luggage and similar personal items (part of 119)","Fisher Price Index","Level",0,T20404:23|U20404:70,NONE
-DLWNRC,"Outdoor equipment and supplies","Current Dollars","Level",-6,U20405:37,DTOORC
-DLWNRG,"Outdoor equipment and supplies","Fisher Price Index","Level",0,U20404:37,NONE
-DMABRC,"Meals and nonalcoholic beverages","Current Dollars","Level",-6,U20405:237,DPMBRC
-DMABRG,"Meals and nonalcoholic beverages","Fisher Price Index","Level",0,U20404:237,NONE
-DMAGRC,"Newspapers and periodicals","Current Dollars","Level",-6,U20405:143,DNEWRC
-DMAGRG,"Newspapers and periodicals","Fisher Price Index","Level",0,U20404:143,NONE
-DMAPRC,"Meats and poultry","Current Dollars","Level",-6,U20405:79,DFOFRC
-DMAPRG,"Meats and poultry","Fisher Price Index","Level",0,U20404:79,NONE
-DMARRC,"Used auto margin","Current Dollars","Level",-6,U20405:15,DNPURC
-DMARRG,"Used auto margin","Fisher Price Index","Level",0,U20404:15,NONE
-DMBCRC,"Men's and boys' clothing","Current Dollars","Level",-6,T20405:33|T20505:11|U20405:107,DGARRC
-DMBCRG,"Men's and boys' clothing","Fisher Price Index","Level",0,T20404:33|T20504:11|U20404:107,NONE
-DMCYRC,"Motorcycles","Current Dollars","Level",-6,U20405:54,DWHLRC
-DMCYRG,"Motorcycles","Fisher Price Index","Level",0,U20404:54,NONE
-DMDERC,"Milk, dairy products, and eggs","Current Dollars","Level",-6,U20405:85,DFOFRC
-DMDERG,"Milk, dairy products, and eggs","Fisher Price Index","Level",0,U20404:85,NONE
-DMDFRC,"Membership clubs and participant sports centers","Current Dollars","Level",-6,T20505:83|U20405:211,DRLSRC
-DMDFRG,"Membership clubs and participant sports centers","Fisher Price Index","Level",0,T20504:83|U20404:211,NONE
-DMDPRC,"Meals at drinking places","Current Dollars","Level",-6,U20405:244,DOPMRC
-DMDPRG,"Meals at drinking places","Fisher Price Index","Level",0,U20404:244,NONE
-DMEARC,"Other meats","Current Dollars","Level",-6,U20405:82,DMAPRC
-DMEARG,"Other meats","Fisher Price Index","Level",0,U20404:82,NONE
 DMEFRC,"Medical expenditures of foreigners","Current Dollars","Level",-6,U20405:340,DEXFRC
 DMEFRG,"Medical expenditures of foreigners","Fisher Price Index","Level",0,U20404:340,NONE
-DMENRC,"Residential mental health and substance abuse","Current Dollars","Level",-6,U20405:319,DSCWRC
-DMENRG,"Residential mental health and substance abuse","Fisher Price Index","Level",0,U20404:319,NONE
-DMFDRC,"Food supplied to military","Current Dollars","Level",-6,U20405:248,DFOORC
-DMFDRG,"Food supplied to military","Fisher Price Index","Level",0,U20404:248,NONE
-DMFLRC,"Motor vehicle fuels, lubricants, and fluids","Current Dollars","Level",-6,T20405:37|T20505:59|U20405:114,DGOERC|DMVORC
-DMFLRG,"Motor vehicle fuels, lubricants, and fluids","Fisher Price Index","Level",0,T20404:37|T20504:59|U20404:114,NONE
-DMFXRC,"Market-based PCE food and beverages purchased for off-premises consumption","Current Dollars","Level",-6,U20405:380,NONE
-DMFXRG,"Market-based PCE food and beverages purchased for off-premises consumption","Fisher Price Index","Level",0,U20404:380,NONE
-DMHARC,"Major household appliances","Current Dollars","Level",-6,U20405:30,DAPPRC
-DMHARG,"Major household appliances","Fisher Price Index","Level",0,U20404:30,NONE
-DMHPRC,"Miscellaneous household products","Current Dollars","Level",-6,U20405:136,DHOURC
-DMHPRG,"Miscellaneous household products","Fisher Price Index","Level",0,U20404:136,NONE
-DMHSRC,"Other household services","Current Dollars","Level",-6,U20405:332,DHHMRC
-DMHSRG,"Other household services","Fisher Price Index","Level",0,U20404:332,NONE
-DMICRC,"Standard clothing issued to military personnel","Current Dollars","Level",-6,U20405:111,A2099C|A2106C|DOCCRC
-DMICRG,"Standard clothing issued to military personnel","Fisher Price Index","Level",0,U20404:111,NONE
-DMILRC,"Fresh milk","Current Dollars","Level",-6,U20405:86,DMDERC
-DMILRG,"Fresh milk","Fisher Price Index","Level",0,U20404:86,NONE
 DMINRC,"Medical care and hospitalization","Current Dollars","Level",-6,T20505:113|U20405:276,DHINRC
 DMINRG,"Medical care and hospitalization","Fisher Price Index","Level",0,T20504:113|U20404:276,NONE
 DMLBRC,"Medical laboratories","Current Dollars","Level",-6,T20505:48|U20405:178,DPMSRC
 DMLBRG,"Medical laboratories","Fisher Price Index","Level",0,T20504:48|U20404:178,NONE
-DMLSRC,"Meals at limited service eating places","Current Dollars","Level",-6,U20405:242,DOPMRC
-DMLSRG,"Meals at limited service eating places","Fisher Price Index","Level",0,U20404:242,NONE
-DMLTRC,"Beer","Current Dollars","Level",-6,U20405:102,DAOPRC
-DMLTRG,"Beer","Fisher Price Index","Level",0,U20404:102,NONE
-DMOERC,"Meals at other eating places","Current Dollars","Level",-6,U20405:243,DOPMRC
-DMOERG,"Meals at other eating places","Fisher Price Index","Level",0,U20404:243,NONE
-DMOMRC,"Market-based PCE motor vehicles and parts","Current Dollars","Level",-6,U20405:378,NONE
-DMOMRG,"Market-based PCE motor vehicles and parts","Fisher Price Index","Level",0,U20404:378,NONE
-DMOTRC,"Motor vehicles and parts","Current Dollars","Level",-6,T10505:5|T20305:4|T20405:4|T20805:4|U20305:4|U20405:4,DDURRC
-DMOTRG,"Motor vehicles and parts","Fisher Price Index","Level",0,T10504:5|T10604:5|T20304:4|T20404:4|T20804:4|U20304:4|U20404:4,NONE
-DMOVRC,"Motion picture theaters","Current Dollars","Level",-6,T20505:86|U20405:214,DADMRC
-DMOVRG,"Motion picture theaters","Fisher Price Index","Level",0,T20504:86|U20404:214,NONE
-DMPCRC,"Miscellaneous personal care services","Current Dollars","Level",-6,U20405:310,DPCSRC
-DMPCRG,"Miscellaneous personal care services","Fisher Price Index","Level",0,U20404:310,NONE
-DMSCRC,"Musical instruments (part of 80)","Current Dollars","Level",-6,T20405:18|U20405:61,DREQRC
-DMSCRG,"Musical instruments (part of 80)","Fisher Price Index","Level",0,T20404:18|U20404:61,NONE
-DMSERC,"Moving, storage, and freight services","Current Dollars","Level",-6,U20405:329,DHHMRC
-DMSERG,"Moving, storage, and freight services","Fisher Price Index","Level",0,U20404:329,NONE
-DMSLRC,"Meals at schools","Current Dollars","Level",-6,U20405:238,DMABRC
-OK https://apps.bea.gov/national/Release/TXT/NipaDataM.txt 36806318 bytes
-%SeriesCode,Period,Value
-A015RC,1967M01,"22,068"
-A015RC,1967M02,"9,288"
-A015RC,1967M03,"9,672"
-OK https://apps.bea.gov/national/Release/TXT/TablesRegister.txt 29770 bytes
-U20403,"Table 2.4.3U. Real Personal Consumption Expenditures by Type of Product, Quantity Indexes"
-U20404,"Table 2.4.4U. Price Indexes for Personal Consumption Expenditures by Type of Product"
-U20405,"Table 2.4.5U. Personal Consumption Expenditures by Type of Product"
-U20406,"Table 2.4.6U. Real Personal Consumption Expenditures by Type of Product, Chained Dollars"
+DMXFRC,"Market-based PCE excluding food","Current Dollars","Level",-6,U20405:400,NONE
+DMXFRG,"Market-based PCE excluding food","Fisher Price Index","Level",0,U20404:400,NONE
+DNPHRC,"Nonprofit hospitals' services to households","Current Dollars","Level",-6,U20405:184|U20405:359,DHLRRC|DHSPRC
+DNPHRG,"Nonprofit hospitals' services to households","Fisher Price Index","Level",0,U20404:184|U20404:359,NONE
+DNRGRC,"Energy goods and services","Current Dollars","Level",-6,T20305:27|T20805:27|U20305:26|U20405:371,NONE
+DNRGRG,"Energy goods and services","Fisher Price Index","Level",0,T20304:27|T20804:27|U20304:26|U20404:371,NONE
+DOMDRC,"Other professional medical services","Current Dollars","Level",-6,T20505:49|U20405:179,DPMSRC
+DOMDRG,"Other professional medical services","Fisher Price Index","Level",0,T20504:49|U20404:179,NONE
+DOMORC,"All other professional medical services","Current Dollars","Level",-6,U20405:181,DOMDRC
+DOMORG,"All other professional medical services","Fisher Price Index","Level",0,U20404:181,NONE
+DOMPRC,"Other medical products","Current Dollars","Level",-6,T20505:41|U20405:125,DPHMRC
+DOMPRG,"Other medical products","Fisher Price Index","Level",0,T20504:41|U20404:125,NONE
+DOWNRC,"Imputed rental of owner-occupied nonfarm housing (21)","Current Dollars","Level",-6,T20405:52|T20505:21|T70405:3|U20405:160,A2008C|DHSGRC
+DOWNRG,"Imputed rental of owner-occupied nonfarm housing (21)","Fisher Price Index","Level",0,T20404:52|T20504:21|T70404:3|U20404:160,NONE
+DPCCRC,"PCE excluding food and energy","Current Dollars","Level",-6,T20305:25|T20805:25|U20305:25|U20405:374,NONE
+DPCCRG,"PCE excluding food and energy","Fisher Price Index","Level",0,T20304:25|T20804:25|U20304:25|U20404:374,NONE
+DPCERC,"Personal consumption expenditures","Current Dollars","Level",-6,OECD10205:3|T10105:2|T10505:2|T20100:29|T20305:1|T20405:1|T20505:1|T20600:29|T20805:1|U20305:1|U20305:29|U20405:1,A068RC|A191RC|LA000385|LA000409
+DPCERG,"Personal consumption expenditures","Fisher Price Index","Level",0,T10104:2|T10504:2|T10604:2|T20304:1|T20404:1|T20504:1|T20804:1|U20304:1|U20304:29|U20404:1,NONE
+DPCXRC,"Market-based PCE excluding food and energy","Current Dollars","Level",-6,T20305:31|T20805:31|U20305:28|U20405:402,NONE
+DPCXRG,"Market-based PCE excluding food and energy","Fisher Price Index","Level",0,T20304:31|T20804:31|U20304:28|U20404:402,NONE
+DPHMRC,"Pharmaceutical and other medical products (40 and 41)","Current Dollars","Level",-6,T20405:40|T20505:39|U20405:121,DMPARC|DONGRC
+DPHMRG,"Pharmaceutical and other medical products (40 and 41)","Fisher Price Index","Level",0,T20404:40|T20504:39|U20404:121,NONE
+DPHYRC,"Physician services (44)","Current Dollars","Level",-6,T20405:62|T20505:44|U20405:174,DOUTRC
+DPHYRG,"Physician services (44)","Fisher Price Index","Level",0,T20404:62|T20504:44|U20404:174,NONE
+DPMERC,"Market-based PCE excluding energy","Current Dollars","Level",-6,U20405:401,NONE
+DPMERG,"Market-based PCE excluding energy","Fisher Price Index","Level",0,U20404:401,NONE
+DPMIRC,"Portfolio management and investment advice services","Current Dollars","Level",-6,U20405:268,DOFIRC
+DPMIRG,"Portfolio management and investment advice services","Fisher Price Index","Level",0,U20404:268,NONE
+DPMSRC,"Paramedical services (46)","Current Dollars","Level",-6,T20405:64|T20505:46|U20405:176,DOUTRC
+DPMSRG,"Paramedical services (46)","Fisher Price Index","Level",0,T20404:64|T20504:46|U20404:176,NONE
+DPXERC,"PCE excluding energy","Current Dollars","Level",-6,U20405:373,NONE
+DPXERG,"PCE excluding energy","Fisher Price Index","Level",0,U20404:373,NONE
+DPXFRC,"PCE excluding food","Current Dollars","Level",-6,U20405:372,NONE
+DPXFRG,"PCE excluding food","Fisher Price Index","Level",0,U20404:372,NONE
+DSERRC,"Services","Current Dollars","Level",-6,T10105:6|T10505:14|T20305:13|T20405:47|T20805:13|U20305:13|U20405:150,DPCERC
+DSERRG,"Services","Fisher Price Index","Level",0,T10104:6|T10504:14|T10604:14|T20304:13|T20404:47|T20804:13|U20304:13|U20404:150,NONE
+DTENRC,"Rental of tenant-occupied nonfarm housing (20)","Current Dollars","Level",-6,T20405:51|T20505:20|T70405:4|U20405:154,A2008C|DHSGRC
+DTENRG,"Rental of tenant-occupied nonfarm housing (20)","Fisher Price Index","Level",0,T20404:51|T20504:20|T70404:4|U20404:154,NONE
+DTINRC,"Net motor vehicle and other transportation insurance (116)","Current Dollars","Level",-6,T20405:94|T20505:116|U20405:279,DINSRC
+DTINRG,"Net motor vehicle and other transportation insurance (116)","Fisher Price Index","Level",0,T20404:94|T20504:116|U20404:279,NONE
+DTMERC,"Therapeutic medical equipment","Current Dollars","Level",-6,U20405:67,DTAERC
+DTMERG,"Therapeutic medical equipment","Fisher Price Index","Level",0,U20404:67,NONE
+IA000062,"PCE goods excluding food and energy","Fisher Price Index","Level",0,U20404:375,NONE
+IA000063,"PCE services excluding energy","Fisher Price Index","Level",0,U20404:376,NONE
+LA000062,"PCE goods excluding food and energy","Current Dollars","Level",-6,U20405:375,NONE
+LA000063,"PCE services excluding energy","Current Dollars","Level",-6,U20405:376,NONE
+datarows 4060
+DSERRG,2025M09,"133.249"
+DSERRG,2025M10,"133.583"
+DSERRG,2025M11,"133.898"
+DSERRG,2025M12,"134.322"
+DSERRG,2026M01,"134.890"
+DSERRG,2026M02,"135.205"
+DSERRG,2026M03,"135.598"
+DSERRG,2026M04,"136.068"
+DSERRG,2026M05,"136.645"
+DSERRG,2026M06,"136.843"
+DSERRG,2026M07,"137.002"
+DSERRG,2026M08,"137.415"
