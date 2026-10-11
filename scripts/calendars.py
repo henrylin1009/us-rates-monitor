@@ -222,7 +222,10 @@ def update_calendars(get) -> None:
         except Exception as e:  # noqa: BLE001
             print(f"⚠ FRED {name} 抓不到，保留原本的日期：{e}")
 
-    fresh.update(ism_events(SINCE, (today.year - SINCE.year) * 12 + today.month - SINCE.month + 13))
+    # ISM 是自己算的，不要比其他數據排得更遠（行事曆最後會只剩 ISM）：排到 FRED 上最後一個 CPI 日期為止
+    cap = max((e["date"] for e in fresh.get("cpi", [])), default=(today + timedelta(days=92)).isoformat())
+    ism = ism_events(SINCE, (today.year - SINCE.year) * 12 + today.month - SINCE.month + 13)
+    fresh.update({t: [e for e in v if e["date"] <= cap] for t, v in ism.items()})
     try:
         fed = parse_fed_calendar(json.loads(get(FED_CAL_URL).content.decode("utf-8-sig")))
         fresh.update(fed)

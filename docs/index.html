@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -32,6 +32,7 @@
     <a href="#rates" data-page="rates">Rates</a>
     <a href="#inflation" data-page="inflation">Inflation</a>
     <a href="#jobs" data-page="jobs">Jobs</a>
+    <a href="#growth" data-page="growth">Growth</a>
     <a href="#calendar" data-page="calendar">Calendar</a>
   </div>
 </nav>
@@ -67,7 +68,7 @@
       </div>
     </div>
   </section>
-  <div class="duo">
+  <div class="duo trio">
     <section class="panel card go" id="p-infl-card" data-href="#inflation" tabindex="0" role="link" aria-label="Open Inflation">
       <div class="panel-head">
         <div class="hero-title">
@@ -92,6 +93,18 @@
       <h3>Unemployment rate, last 5 years</h3>
       <div class="mini" id="c-jobs-mini"></div>
     </section>
+    <section class="panel card go" id="p-growth-card" data-href="#growth" tabindex="0" role="link" aria-label="Open Growth">
+      <div class="panel-head">
+        <div class="hero-title">
+          <h2>Growth</h2>
+          <p class="takeaway" id="growth-take"></p>
+          <p class="dline" id="growth-date"></p>
+        </div>
+      </div>
+      <div class="kline" id="growth-k"></div>
+      <h3>Real GDP, q/q annualized, last 5 years</h3>
+      <div class="mini" id="c-growth-mini"></div>
+    </section>
   </div>
 </div>
 
@@ -107,7 +120,6 @@
         <button data-v="curve" class="on">Curve</button>
         <button data-v="tenor">Trend</button>
         <button data-v="spread">Spreads</button>
-        <button data-v="bills">Bills–OIS</button>
       </div>
     </div>
     <div class="controls" id="y-controls"></div>
@@ -133,13 +145,46 @@
     <div class="table-wrap" id="f-table"></div>
   </section>
 
+  <section class="panel" id="p-auct">
+    <div class="panel-head">
+      <div>
+        <h2>Treasury auctions <span class="tag">coupons</span></h2>
+        <p class="hint">How each note and bond auction went, the way sell-side auction recaps score it. Bid-to-cover is bids divided by the amount sold. Indirect bidders are mostly foreign central banks and funds bidding through dealers; direct bidders bid for themselves; primary dealers are obliged to bid and take whatever is left, so a high dealer share means weak demand. Each number is compared with the average of the previous 6 auctions of the same tenor: orange = weaker than usual (more for dealers, lower cover), which tends to push yields up; teal = stronger. The real tail (high yield versus the 1pm when-issued yield) needs WI quotes that aren't free, so it isn't shown. Upcoming rows appear once Treasury announces the auction, usually a week before.</p>
+        <p class="dline" id="auct-date"></p>
+      </div>
+    </div>
+    <div class="controls" id="auct-controls"></div>
+    <div class="chart short" id="c-auct"></div>
+    <div id="auct-table"></div>
+  </section>
+
+  <section class="panel" id="p-fund">
+    <div class="panel-head">
+      <div>
+        <h2>Funding and liquidity</h2>
+        <p class="hint" id="fund-hint"></p>
+        <p class="dline" id="fund-date"></p>
+      </div>
+      <div class="seg" role="tablist" id="fund-views">
+        <button data-v="repo" class="on">Repo vs IORB</button>
+        <button data-v="liq">Reserves, RRP, TGA</button>
+        <button data-v="bills">Bills–OIS</button>
+      </div>
+    </div>
+    <div class="controls" id="fund-controls"></div>
+    <div class="chart" id="c-fund"></div>
+  </section>
+
   <section class="panel" id="p-decomp">
     <div class="panel-head">
       <div>
-        <h2>10y breakdown: real yield + inflation expectations</h2>
-        <p class="hint">The 10y yield splits into the real yield (TIPS) and breakeven inflation. When the long end moves, this shows whether it is the market's inflation expectations or the real rate doing the work.</p>
+        <h2>10y breakdown</h2>
+        <p class="hint" id="decomp-hint"></p>
       </div>
-      <div class="seg" id="d-range"><button data-v="3M">3M</button><button data-v="1Y" class="on">1Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+      <div class="seg-col">
+        <div class="seg" id="d-views"><button data-v="be" class="on">Real + breakeven</button><button data-v="tp">Path + term premium</button></div>
+        <div class="seg" id="d-range"><button data-v="3M">3M</button><button data-v="1Y" class="on">1Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+      </div>
     </div>
     <div class="chart" id="c-decomp"></div>
     <div id="decomp-table"></div>
@@ -196,6 +241,7 @@
     </div>
     <p class="hint">The Fed targets 2% on PCE; core strips out food and energy. m/m is the raw monthly print (what the headlines report), shown for the last 2 years; 2% a year is about 0.17% a month. CPI for Oct 2025 was never published (government shutdown), so Oct and Nov 2025 have no CPI m/m bar. Annualized rates turn earlier than YoY. Dotted lines are headline (with food and energy), shown on the YoY and annualized views. Open diamonds are the Fed's own year-end projection (SEP median).</p>
     <div class="chart" id="c-infl"></div>
+    <div id="nowcast"></div>
   </section>
   <section class="panel" id="p-trend">
     <div class="panel-head"><div><h2>Underlying inflation</h2><p class="hint">Core still swings on a few odd items (a jump in airfares, a drop in used cars). The Cleveland Fed's median CPI takes the middle item each month, and the Dallas Fed's trimmed-mean PCE drops the biggest movers at both ends, so both show the trend underneath. Fed officials quote them when core looks noisy. All YoY.</p><p class="dline" id="trend-date"></p></div></div>
@@ -240,13 +286,14 @@
         <p class="takeaway" id="jobs-take2"></p>
         <p class="dline" id="jobs-date2"></p>
       </div>
+      <div class="seg" id="u-views"><button data-v="part" class="on">Participation</button><button data-v="prime">Prime-age employment</button></div>
     </div>
-    <p class="hint">Unemployment is the Fed's employment target. Participation tells you the quality of a move: unemployment falling because people leave the labor force is weaker than it looks. Open diamonds are the Fed's year-end projection (SEP median).</p>
+    <p class="hint">Unemployment is the Fed's employment target. The right-hand line tells you the quality of a move. Participation: unemployment falling because people leave the labor force is weaker than it looks. Prime-age employment (share of 25 to 54 year olds with a job) is the measure many Fed officials and economists trust most, because it isn't dragged down by an ageing population or moved by who counts as looking for work. Open diamonds are the Fed's year-end projection (SEP median).</p>
     <div class="chart" id="c-jobs"></div>
     <p class="sahm" id="sahm"></p>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Nonfarm payrolls</h2><p class="hint">Jobs added each month (thousands), last 2 years, with the 3-month average to smooth the noise.</p></div></div>
+    <div class="panel-head"><div><h2>Nonfarm payrolls</h2><p class="hint">Jobs added each month (thousands), last 2 years, with the 3-month average to smooth the noise. Each report also revises the two previous months, and the net revision often moves markets as much as the new month; hover a bar to see it. What counts as a good number has changed: with much lower immigration, the labor force barely grows, so payroll gains of roughly 0 to 50k a month are enough to keep unemployment steady (the breakeven pace, down from 150k or more in 2022-24). Judge a print against that, not against old norms.</p><p class="dline" id="nfp-date"></p></div></div>
     <div class="chart short" id="c-nfp"></div>
   </section>
   <section class="panel">
@@ -254,7 +301,7 @@
     <div class="chart" id="c-ahe"></div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Initial jobless claims</h2><p class="hint">The most timely labor signal: weekly, out every Thursday.</p><p class="dline" id="claims-date"></p></div></div>
+    <div class="panel-head"><div><h2>Jobless claims</h2><p class="hint">The most timely labor signal: weekly, out every Thursday. Initial claims are new layoffs; continuing claims are people still drawing benefits, so they rise when the unemployed take longer to find work. Low initial claims with high continuing claims is the "low hire, low fire" pattern: few layoffs, but hard to get hired.</p><p class="dline" id="claims-date"></p></div></div>
     <div class="chart short" id="c-claims"></div>
   </section>
   <section class="panel">
@@ -269,12 +316,34 @@
   </details>
 </div>
 
+<div class="page" id="pg-growth" data-page="growth">
+  <section class="panel">
+    <div class="panel-head">
+      <div class="hero-title">
+        <h2>GDP and GDPNow</h2>
+        <p class="takeaway" id="growth-take2"></p>
+        <p class="dline" id="gdp-date"></p>
+      </div>
+    </div>
+    <p class="hint">Real GDP growth, quarter on quarter at an annual rate (the headline number). The open bar is the Atlanta Fed's GDPNow model estimate for the quarter not yet published; it updates after each data release and is the number desks quote between GDP reports. Roughly 1.5 to 2% is the economy's trend pace now; sustained growth above that tends to push unemployment down and keeps the Fed wary. Open diamonds are the Fed's projection for growth over each year (Q4 over Q4), not a quarterly number.</p>
+    <div class="chart" id="c-gdp"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>Retail sales</h2><p class="hint">Monthly change in retail sales, the first hard read on consumer spending (about two thirds of GDP). Desks focus on the control group: retail sales excluding autos, gas stations, building materials and restaurants, because that is the part that feeds straight into the GDP estimate. Headline swings with car sales and gasoline prices. Values are nominal, so part of each gain is just inflation.</p><p class="dline" id="rs-date"></p></div></div>
+    <div class="chart short" id="c-rs"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>Industrial production and factory surveys</h2><p class="hint">Industrial production (Fed, monthly) measures factory, mining and utility output, YoY. The Philadelphia and New York Fed surveys ask manufacturers whether activity is rising or falling (above 0 = more say rising); they come out mid-month, before ISM, so desks use them to preview it. ISM itself is not free to redistribute, so it is only listed on the Calendar.</p><p class="dline" id="ip-date"></p></div></div>
+    <div class="chart short" id="c-ip"></div>
+  </section>
+</div>
+
 <div class="page" id="pg-calendar" data-page="calendar">
   <section class="panel" id="p-cal">
     <div class="panel-head">
       <div>
         <h2>Calendar</h2>
-        <p class="hint">FOMC meetings, minutes and the data releases that move rates, month by month. FOMC rows show what futures price for that meeting; SEP marks meetings with new projections and the dot plot.</p>
+        <p class="hint">FOMC meetings, minutes, the Chair's speeches and testimony, the data releases that move rates, and Treasury coupon auctions, month by month. Bold rows are the top-tier releases. FOMC rows show what futures price for that meeting; SEP marks meetings with new projections and the dot plot. Grey "blackout" rows mark when Fed officials stop talking about policy before each meeting (from the second Saturday before it until the day after). Auctions appear once Treasury announces them, about a week ahead. ISM dates follow ISM's rule (1st and 3rd business day) rather than an official list.</p>
       </div>
       <div class="seg"><button id="cal-all" type="button" class="on">Show all</button></div>
     </div>
@@ -284,6 +353,6 @@
 </div>
 </main>
 
-<script src="app.js?v=28"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>

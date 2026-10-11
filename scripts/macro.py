@@ -44,12 +44,12 @@ MONTHLY = {
 }
 WEEKLY = {"icsa": "ICSA", "ccsa": "CCSA"}
 # Kim-Wright 模型（Fed 理事會）：10y 擬合殖利率和 term premium，相減 = 預期短率平均
-DAILY = {"be10": "T10YIE", "real10": "DFII10", "be5": "T5YIE", "be5y5y": "T5YIFR", "kw_fit10": "THREEFF10", "kw_tp10": "THREEFYTP10"}
+DAILY = {"be10": "T10YIE", "real10": "DFII10", "be5": "T5YIE", "be5y5y": "T5YIFR", "kw_fit10": "THREEFY10", "kw_tp10": "THREEFYTP10"}
 # 季資料：實質 GDP（q/q 年化 %），Atlanta Fed GDPNow（FRED 上一季一個值 = 該季最新的 nowcast）
 QUARTERLY = {"gdp": "A191RL1Q225SBEA", "gdpnow": "GDPNOW"}
 # 資金面：SOFR、IORB（%，日）、ON RRP（十億美元，日）、準備金、TGA、Fed 總資產（百萬美元，週三）
 FUNDING = {"sofr": "SOFR", "iorb": "IORB", "rrp": "RRPONTSYD", "reserves": "WRESBAL", "tga": "WTREGEN", "walcl": "WALCL"}
-SEP = {"core_pce": "JCXFEMD", "unrate": "UNRATEMD", "fedfunds": "FEDTARMD"}
+SEP = {"core_pce": "JCXFEMD", "unrate": "UNRATEMD", "fedfunds": "FEDTARMD", "gdp": "GDPC1MD"}
 
 MONTHLY_FROM, WEEKLY_FROM, DAILY_FROM, FUNDING_FROM = "2000-01-01", "2015-01-01", "2015-01-01", "2021-08-01"
 
