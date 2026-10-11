@@ -1,26 +1,91 @@
-## D*RG3M086SBEA
-DDURRG3M086SBEA | Personal consumption expenditures: Durable goods (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DFXARG3M086SBEA | Personal consumption expenditures: Food (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DGDSRG3M086SBEA | Personal consumption expenditures: Goods (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DNDGRG3M086SBEA | Personal consumption expenditures: Nondurable goods (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DNRGRG3M086SBEA | Personal consumption expenditures: Energy goods and services (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DPCMRG3M086SBEA | Personal consumption expenditures: Market-based (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DPCXRG3M086SBEA | Personal consumption expenditures: Market-based PCE excluding food and energy (chain-type price index) | M | Index 2017=100 | 2026-08-01
-DSERRG3M086SBEA | Personal consumption expenditures: Services (chain-type price index) | M | Index 2017=100 | 2026-08-01
-## D*RC1M027SBEA
-DFXARC1M027SBEA | Personal consumption expenditures: Food | M | Bil. of $ | 2026-08-01
-DNRGRC1M027SBEA | Personal consumption expenditures: Energy goods and services | M | Bil. of $ | 2026-08-01
-DPCCRC1M027SBEA | Personal consumption expenditures excluding food and energy | M | Bil. of $ | 2026-08-01
-DPCMRC1M027SBEA | Personal consumption expenditures: Market-based | M | Bil. of $ | 2026-08-01
-DPCXRC1M027SBEA | Personal consumption expenditures: Market-based PCE excluding food and energy | M | Bil. of $ | 2026-08-01
-## D*RC1
-DGDSRC1 | Personal Consumption Expenditures: Goods | M | Bil. of $ | 2026-08-01
-## IA00*M
-IA001176M | Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Price Index) | M | Index 2017=100 | 2026-08-01
-IA001260M | Personal Consumption Expenditures: Services Excluding Energy and Housing (Chain-Type Price Index) | M | Index 2017=100 | 2026-08-01
-## CUSR0000SEG*
-CUSR0000SEGA | Consumer Price Index for All Urban Consumers: Tobacco and Smoking Products in U.S. City Average | M | Index Dec 2024=100 | 2026-08-01
-CUSR0000SEGD | Consumer Price Index for All Urban Consumers: Miscellaneous Personal Services in U.S. City Average | M | Index 1982-1984=100 | 2026-08-01
-CUSR0000SEGD03 | Consumer Price Index for All Urban Consumers: Laundry and Dry Cleaning Services in U.S. City Average | M | Index Dec 1997=100 | 2026-08-01
-## CUSR0000SAG*
-CUSR0000SAG1 | Consumer Price Index for All Urban Consumers: Personal Care in U.S. City Average | M | Index 1982-1984=100 | 2026-08-01
+-- DHLCRG3M086SBEA
+-- DHLCRC1M027SBEA
+OK DHLCRG3Q086SBEA | Personal consumption expenditures: Services: Health care (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DHUTRG3M086SBEA
+-- DHUTRC1M027SBEA
+OK DHUTRG3Q086SBEA | Personal consumption expenditures: Services: Housing and utilities (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DHSGRG3M086SBEA
+-- DHSGRC1M027SBEA
+-- DHSGRG3Q086SBEA
+-- DIFSRG3M086SBEA
+-- DIFSRC1M027SBEA
+OK DIFSRG3Q086SBEA | Personal consumption expenditures: Financial services and insurance (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DFSARG3M086SBEA
+-- DFSARC1M027SBEA
+OK DFSARG3Q086SBEA | Personal consumption expenditures: Services: Food services and accommodations (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DFSIRG3M086SBEA
+-- DFSIRC1M027SBEA
+-- DFSIRG3Q086SBEA
+-- DTRSRG3M086SBEA
+-- DTRSRC1M027SBEA
+OK DTRSRG3Q086SBEA | Personal consumption expenditures: Transportation services (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DRCARG3M086SBEA
+-- DRCARC1M027SBEA
+OK DRCARG3Q086SBEA | Personal consumption expenditures: Recreation services (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DOTSRG3M086SBEA
+-- DOTSRC1M027SBEA
+OK DOTSRG3Q086SBEA | Personal consumption expenditures: Other services (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DFDSRG3M086SBEA
+-- DFDSRC1M027SBEA
+-- DFDSRG3Q086SBEA
+-- DHCERG3M086SBEA
+-- DHCERC1M027SBEA
+OK DHCERG3Q086SBEA | Personal consumption expenditures: Services: Household consumption expenditures (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DGOERG3M086SBEA
+-- DGOERC1M027SBEA
+OK DGOERG3Q086SBEA | Personal consumption expenditures: Nondurable goods: Gasoline and other energy goods (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DMOTRG3M086SBEA
+-- DMOTRC1M027SBEA
+OK DMOTRG3Q086SBEA | Personal consumption expenditures: Durable goods: Motor vehicles and parts (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DFURRG3M086SBEA
+-- DFURRC1M027SBEA
+-- DFURRG3Q086SBEA
+-- DRECRG3M086SBEA
+-- DRECRC1M027SBEA
+-- DRECRG3Q086SBEA
+-- DCLORG3M086SBEA
+-- DCLORC1M027SBEA
+OK DCLORG3Q086SBEA | Personal consumption expenditures: Nondurable goods: Clothing and footwear (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DGASRG3M086SBEA
+-- DGASRC1M027SBEA
+-- DGASRG3Q086SBEA
+-- DOTHRG3M086SBEA
+-- DOTHRC1M027SBEA
+-- DOTHRG3Q086SBEA
+-- DNPIRG3M086SBEA
+-- DNPIRC1M027SBEA
+OK DNPIRG3Q086SBEA | Personal consumption expenditures: Services: Final consumption expenditures of nonprofit institutions serving households (NPISHs) (chain-type price index) | Q | Index 2017=100 | 2026-04-01
+-- DPCCRG3M086SBEA
+OK DPCCRC1M027SBEA | Personal consumption expenditures excluding food and energy | M | Bil. of $ | 2026-08-01
+-- DPCCRG3Q086SBEA
+-- DPCERG3M086SBEA
+-- DPCERC1M027SBEA
+-- DPCERG3Q086SBEA
+-- DTRNRG3M086SBEA
+-- DTRNRC1M027SBEA
+-- DTRNRG3Q086SBEA
+-- DFNSRG3M086SBEA
+-- DFNSRC1M027SBEA
+-- DFNSRG3Q086SBEA
+-- DMDCRG3M086SBEA
+-- DMDCRC1M027SBEA
+-- DMDCRG3Q086SBEA
+OK PCE | Personal Consumption Expenditures | M | Bil. of $ | 2026-08-01
+OK PCES | Personal Consumption Expenditures: Services | M | Bil. of $ | 2026-08-01
+OK PCEDG | Personal Consumption Expenditures: Durable Goods | M | Bil. of $ | 2026-08-01
+OK PCEND | Personal Consumption Expenditures: Nondurable Goods | M | Bil. of $ | 2026-08-01
+-- DSERRC1
+-- DHLCRC1
+-- DHUTRC1
+-- DHSGRC1
+-- DIFSRC1
+OK PCEPILFE | Personal Consumption Expenditures Excluding Food and Energy (Chain-Type Price Index) | M | Index 2017=100 | 2026-08-01
+OK IA001176M | Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Price Index) | M | Index 2017=100 | 2026-08-01
+T 155443 | Table 2.6. Personal Income and Its Disposition, Monthly | children []
+T 3151 | Table 2.7B. Wages and Salaries by Industry, Billions of dollars | children []
+T 3160 | Table 2.8.1. Percent Change From Preceding Period in Real Personal Consumption Expenditures by Major Type of Product | children []
+T 3196 | Table 2.8.3. Real Personal Consumption Expenditures by Major Type of Product, Quantity Indexes | children []
+T 3208 | Table 2.8.4. Price Indexes for Personal Consumption Expenditures by Major Type of Product | children []
+T 3220 | Table 2.8.5. Personal Consumption Expenditures by Major Type of Product, Billions of Dollars | children []
+T 3232 | Table 2.8.6. Real Personal Consumption Expenditures by Major Type of Product, Chained Dollars | children []
+T 3172 | Table 2.8.7. Percent Change from Preceding Period in Prices for Personal Consumption Expenditures by Major Type of Product | children []
