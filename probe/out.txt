@@ -1,0 +1,62 @@
+## personal consumption expenditures goods excluding food and energy
+PCEPILFE | Personal Consumption Expenditures Excluding Food and Energy (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+## personal consumption expenditures housing
+IA001260M | Personal Consumption Expenditures: Services Excluding Energy and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+IA001176M | Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+PP001260M | Prices for Personal Consumption Expenditures: Chained Price Index: PCE: Services Excluding Energy and Housing | % Chg. from Preceding Period | 2026-08-01
+PQ001260M | Real Personal Consumption Expenditures: PCE: Services Excluding Energy and Housing | % Chg. from Preceding Period | 2026-08-01
+PQ001176M | Real Personal Consumption Expenditures: PCE Excluding Food, Energy, and Housing | % Chg. from Preceding Period | 2026-08-01
+## personal consumption expenditures health care
+## personal consumption expenditures financial services and insurance
+## personal consumption expenditures food and beverages purchased for off-premises consumption
+## personal consumption expenditures energy goods and services
+PCEPILFE | Personal Consumption Expenditures Excluding Food and Energy (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+DNRGRG3M086SBEA | Personal consumption expenditures: Energy goods and services (chain-type price index) | Index 2017=100 | 2026-08-01
+DNRGRAM1M225NBEA | Real Personal Consumption Expenditures: Energy goods and services | % Chg. from Preceding Period | 2026-08-01
+DNRGRGM1M225SBEA | Prices for Personal Consumption Expenditures: Chained Price Index: Energy goods and services | % Chg. from Preceding Period | 2026-08-01
+DNRGRA3M086SBEA | Real personal consumption expenditures: Energy goods and services (chain-type quantity index) | Index 2017=100 | 2026-08-01
+## personal consumption expenditures services excluding energy and housing
+IA001260M | Personal Consumption Expenditures: Services Excluding Energy and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+IA001176M | Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+PP001260M | Prices for Personal Consumption Expenditures: Chained Price Index: PCE: Services Excluding Energy and Housing | % Chg. from Preceding Period | 2026-08-01
+PQ001260M | Real Personal Consumption Expenditures: PCE: Services Excluding Energy and Housing | % Chg. from Preceding Period | 2026-08-01
+PQ001176M | Real Personal Consumption Expenditures: PCE Excluding Food, Energy, and Housing | % Chg. from Preceding Period | 2026-08-01
+PP001176M | Prices for Personal Consumption Expenditures: Chained Price Index: PCE Excluding Food, Energy, and Housing | % Chg. from Preceding Period | 2026-08-01
+IB001176M | Real Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Quantity Index) | Index 2017=100 | 2026-08-01
+IB001260M | Real Personal Consumption Expenditures: Services Excluding Energy and Housing (Chain-Type Quantity Index) | Index 2017=100 | 2026-08-01
+## personal consumption expenditures excluding food and energy
+PCEPILFE | Personal Consumption Expenditures Excluding Food and Energy (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+PCETRIM12M159SFRBDAL | Trimmed Mean PCE Inflation Rate | % Chg. from Yr. Ago | 2026-08-01
+PCETRIM1M158SFRBDAL | Trimmed Mean PCE Inflation Rate | % Chg. at Annual Rate | 2026-08-01
+PCETRIM6M680SFRBDAL | Trimmed Mean PCE Inflation Rate | 6-Month Annualized % Chg. | 2026-08-01
+IA001260M | Personal Consumption Expenditures: Services Excluding Energy and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+IA001176M | Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+DPCXRG3M086SBEA | Personal consumption expenditures: Market-based PCE excluding food and energy (chain-type price index) | Index 2017=100 | 2026-08-01
+DPCCRAM1M225NBEA | Real Personal Consumption Expenditures: PCE excluding food and energy | % Chg. from Preceding Period | 2026-08-01
+DPCCRGM1M225SBEA | Prices for Personal Consumption Expenditures: Chained Price Index: PCE excluding food and energy | % Chg. from Preceding Period | 2026-08-01
+PP001260M | Prices for Personal Consumption Expenditures: Chained Price Index: PCE: Services Excluding Energy and Housing | % Chg. from Preceding Period | 2026-08-01
+PQ001260M | Real Personal Consumption Expenditures: PCE: Services Excluding Energy and Housing | % Chg. from Preceding Period | 2026-08-01
+PQ001176M | Real Personal Consumption Expenditures: PCE Excluding Food, Energy, and Housing | % Chg. from Preceding Period | 2026-08-01
+DPCXRGM1M225SBEA | Prices for Personal Consumption Expenditures: Chained Price Index: Market-based PCE excluding food and energy | % Chg. from Preceding Period | 2026-08-01
+## personal consumption expenditures goods
+PCEPI | Personal Consumption Expenditures: Chain-type Price Index | Index 2017=100 | 2026-08-01
+PCEPILFE | Personal Consumption Expenditures Excluding Food and Energy (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+DGDSRAM1M225NBEA | Real Personal Consumption Expenditures: Goods | % Chg. from Preceding Period | 2026-08-01
+## personal consumption expenditures services
+PCEPI | Personal Consumption Expenditures: Chain-type Price Index | Index 2017=100 | 2026-08-01
+PCEPILFE | Personal Consumption Expenditures Excluding Food and Energy (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+IA001260M | Personal Consumption Expenditures: Services Excluding Energy and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+DSERRAM1M225NBEA | Real Personal Consumption Expenditures: Services | % Chg. from Preceding Period | 2026-08-01
+DSERRG3M086SBEA | Personal consumption expenditures: Services (chain-type price index) | Index 2017=100 | 2026-08-01
+IA001176M | Personal Consumption Expenditures Excluding Food, Energy, and Housing (Chain-Type Price Index) | Index 2017=100 | 2026-08-01
+## consumer price index medical care
+CPIMEDSL | Consumer Price Index for All Urban Consumers: Medical Care in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CUSR0000SAM2 | Consumer Price Index for All Urban Consumers: Medical Care Services in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CUSR0000SAM1 | Consumer Price Index for All Urban Consumers: Medical Care Commodities in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CPIEMEDCARE | Research Consumer Price Index: Medical Care | Index 1982=100 | 2026-08-01
+CUSR0000SA0L5 | Consumer Price Index for All Urban Consumers: All Items Less Medical Care in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CWSR0000SA0L5 | Consumer Price Index for All Urban Wage Earners and Clerical Workers: All Items Less Medical Care in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CWSR0000SAM2 | Consumer Price Index for All Urban Wage Earners and Clerical Workers: Medical Care Services in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CUSR0000SASL5 | Consumer Price Index for All Urban Consumers: Services Less Medical Care Services in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+CWSR0000SAM | Consumer Price Index for All Urban Wage Earners and Clerical Workers: Medical Care in U.S. City Average | Index 1982-1984=100 | 2026-08-01
+## consumer price index financial services
