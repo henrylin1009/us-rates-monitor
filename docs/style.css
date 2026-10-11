@@ -212,6 +212,8 @@ a.more:hover { text-decoration: underline; }
 /* 通膨、就業卡片和頁面 */
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .duo > .panel { min-width: 0; }
+.duo.trio { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 1100px) { .duo.trio { grid-template-columns: 1fr 1fr; } }
 .panel.card h3 { font-size: 13.5px; margin: 10px 0 2px; }
 .dline { flex-basis: 100%; margin: 0; font-size: 12.5px; }
 .kline { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 10px; }
@@ -257,3 +259,8 @@ details.panel.more > summary::-webkit-details-marker { display: none; }
 details.panel.more > summary::before { content: "▸"; color: var(--muted); font-size: 12px; }
 details.panel.more[open] > summary::before { content: "▾"; }
 details.panel.more > summary h2 { font-size: 15px; }
+[hidden] { display: none !important; }
+@media (max-width: 860px) { .duo.trio { grid-template-columns: 1fr; } }
+.cal-ev.tier1 .cal-l { font-weight: 600; }
+.cal-ev.blk .cal-l { color: var(--muted); font-style: italic; }
+.subhead { margin: 16px 0 6px; font-size: 14px; }

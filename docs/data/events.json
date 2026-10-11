@@ -1,7 +1,37 @@
 {
- "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar, CPI/NFP/PPI/PCE from FRED. Past events keep their existing labels.",
+ "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar; data releases from FRED; ISM computed (1st / 3rd business day); Chair speeches, testimony and Beige Book from the Fed's calendar; coupon auctions from Treasury once announced. Past events keep their existing labels.",
  "updated": "2026-10-11",
  "events": [
+  {
+   "date": "2025-01-03",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Dec 2024)"
+  },
+  {
+   "date": "2025-01-06",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-01-07",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
+   "date": "2025-01-07",
+   "type": "ism_s",
+   "label": "ISM services (Dec 2024)"
+  },
+  {
+   "date": "2025-01-07",
+   "type": "jolts",
+   "label": "JOLTS (Nov 2024)"
+  },
+  {
+   "date": "2025-01-08",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
   {
    "date": "2025-01-10",
    "type": "nfp",
@@ -14,8 +44,48 @@
   },
   {
    "date": "2025-01-15",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-01-15",
    "type": "cpi",
    "label": "CPI (Dec 2024)"
+  },
+  {
+   "date": "2025-01-16",
+   "type": "retail",
+   "label": "Retail sales (Dec 2024)"
+  },
+  {
+   "date": "2025-01-17",
+   "type": "ip",
+   "label": "Industrial production (Dec 2024)"
+  },
+  {
+   "date": "2025-01-22",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-01-23",
+   "type": "auction",
+   "label": "10y TIPS auction ($20bn)"
+  },
+  {
+   "date": "2025-01-24",
+   "type": "umich",
+   "label": "UMich sentiment (Jan 2025)"
+  },
+  {
+   "date": "2025-01-27",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-01-28",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2025-01-29",
@@ -23,14 +93,49 @@
    "label": "FOMC decision"
   },
   {
+   "date": "2025-01-30",
+   "type": "gdp",
+   "label": "GDP Q4 2024, advance"
+  },
+  {
+   "date": "2025-01-31",
+   "type": "eci",
+   "label": "ECI Q4 2024"
+  },
+  {
    "date": "2025-01-31",
    "type": "pce",
    "label": "PCE (Dec 2024)"
   },
   {
+   "date": "2025-02-03",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Jan 2025)"
+  },
+  {
+   "date": "2025-02-04",
+   "type": "jolts",
+   "label": "JOLTS (Dec 2024)"
+  },
+  {
+   "date": "2025-02-05",
+   "type": "ism_s",
+   "label": "ISM services (Jan 2025)"
+  },
+  {
    "date": "2025-02-07",
    "type": "nfp",
    "label": "NFP (Jan 2025)"
+  },
+  {
+   "date": "2025-02-11",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-02-12",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
   },
   {
    "date": "2025-02-12",
@@ -39,8 +144,28 @@
   },
   {
    "date": "2025-02-13",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
+  },
+  {
+   "date": "2025-02-13",
    "type": "ppi",
    "label": "PPI (Jan 2025)"
+  },
+  {
+   "date": "2025-02-14",
+   "type": "ip",
+   "label": "Industrial production (Jan 2025)"
+  },
+  {
+   "date": "2025-02-14",
+   "type": "retail",
+   "label": "Retail sales (Jan 2025)"
+  },
+  {
+   "date": "2025-02-19",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
   },
   {
    "date": "2025-02-19",
@@ -48,14 +173,74 @@
    "label": "FOMC minutes (Jan meeting)"
   },
   {
+   "date": "2025-02-20",
+   "type": "auction",
+   "label": "30y TIPS auction ($9bn)"
+  },
+  {
+   "date": "2025-02-21",
+   "type": "umich",
+   "label": "UMich sentiment (Feb 2025)"
+  },
+  {
+   "date": "2025-02-24",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-02-25",
+   "type": "auction",
+   "label": "7y auction ($70bn, reopening)"
+  },
+  {
+   "date": "2025-02-26",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-02-27",
+   "type": "gdp",
+   "label": "GDP Q4 2024, second"
+  },
+  {
    "date": "2025-02-28",
    "type": "pce",
    "label": "PCE (Jan 2025)"
   },
   {
+   "date": "2025-03-03",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Feb 2025)"
+  },
+  {
+   "date": "2025-03-05",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-03-05",
+   "type": "ism_s",
+   "label": "ISM services (Feb 2025)"
+  },
+  {
    "date": "2025-03-07",
    "type": "nfp",
    "label": "NFP (Feb 2025)"
+  },
+  {
+   "date": "2025-03-11",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-03-11",
+   "type": "jolts",
+   "label": "JOLTS (Jan 2025)"
+  },
+  {
+   "date": "2025-03-12",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
   },
   {
    "date": "2025-03-12",
@@ -64,8 +249,28 @@
   },
   {
    "date": "2025-03-13",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2025-03-13",
    "type": "ppi",
    "label": "PPI (Feb 2025)"
+  },
+  {
+   "date": "2025-03-17",
+   "type": "retail",
+   "label": "Retail sales (Feb 2025)"
+  },
+  {
+   "date": "2025-03-18",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-03-18",
+   "type": "ip",
+   "label": "Industrial production (Feb 2025)"
   },
   {
    "date": "2025-03-19",
@@ -73,9 +278,59 @@
    "label": "FOMC decision"
   },
   {
+   "date": "2025-03-20",
+   "type": "auction",
+   "label": "10y TIPS auction ($18bn, reopening)"
+  },
+  {
+   "date": "2025-03-25",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-03-26",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2025-03-27",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-03-27",
+   "type": "gdp",
+   "label": "GDP Q4 2024, third"
+  },
+  {
    "date": "2025-03-28",
    "type": "pce",
    "label": "PCE (Feb 2025)"
+  },
+  {
+   "date": "2025-03-28",
+   "type": "umich",
+   "label": "UMich sentiment (Mar 2025)"
+  },
+  {
+   "date": "2025-04-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Mar 2025)"
+  },
+  {
+   "date": "2025-04-01",
+   "type": "jolts",
+   "label": "JOLTS (Feb 2025)"
+  },
+  {
+   "date": "2025-04-03",
+   "type": "ism_s",
+   "label": "ISM services (Mar 2025)"
+  },
+  {
+   "date": "2025-04-04",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
   },
   {
    "date": "2025-04-04",
@@ -83,9 +338,24 @@
    "label": "NFP (Mar 2025)"
   },
   {
+   "date": "2025-04-08",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-04-09",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
    "date": "2025-04-09",
    "type": "minutes",
    "label": "FOMC minutes (Mar meeting)"
+  },
+  {
+   "date": "2025-04-10",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
   },
   {
    "date": "2025-04-10",
@@ -98,9 +368,74 @@
    "label": "PPI (Mar 2025)"
   },
   {
+   "date": "2025-04-16",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-04-16",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-04-16",
+   "type": "ip",
+   "label": "Industrial production (Mar 2025)"
+  },
+  {
+   "date": "2025-04-16",
+   "type": "retail",
+   "label": "Retail sales (Mar 2025)"
+  },
+  {
+   "date": "2025-04-17",
+   "type": "auction",
+   "label": "5y TIPS auction ($25bn)"
+  },
+  {
+   "date": "2025-04-22",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-04-23",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2025-04-23",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-04-24",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-04-25",
+   "type": "umich",
+   "label": "UMich sentiment (Apr 2025)"
+  },
+  {
+   "date": "2025-04-30",
+   "type": "eci",
+   "label": "ECI Q1 2025"
+  },
+  {
+   "date": "2025-04-30",
+   "type": "gdp",
+   "label": "GDP Q1 2025, advance"
+  },
+  {
    "date": "2025-04-30",
    "type": "pce",
    "label": "PCE (Mar 2025)"
+  },
+  {
+   "date": "2025-05-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Apr 2025)"
   },
   {
    "date": "2025-05-02",
@@ -108,9 +443,29 @@
    "label": "NFP (Apr 2025)"
   },
   {
+   "date": "2025-05-05",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-05-05",
+   "type": "ism_s",
+   "label": "ISM services (Apr 2025)"
+  },
+  {
+   "date": "2025-05-06",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
+  },
+  {
    "date": "2025-05-07",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2025-05-08",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
   },
   {
    "date": "2025-05-13",
@@ -119,8 +474,48 @@
   },
   {
    "date": "2025-05-15",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-05-15",
+   "type": "ip",
+   "label": "Industrial production (Apr 2025)"
+  },
+  {
+   "date": "2025-05-15",
    "type": "ppi",
    "label": "PPI (Apr 2025)"
+  },
+  {
+   "date": "2025-05-15",
+   "type": "retail",
+   "label": "Retail sales (Apr 2025)"
+  },
+  {
+   "date": "2025-05-21",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
+  },
+  {
+   "date": "2025-05-22",
+   "type": "auction",
+   "label": "10y TIPS auction ($18bn, reopening)"
+  },
+  {
+   "date": "2025-05-25",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-05-27",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-05-28",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
   },
   {
    "date": "2025-05-28",
@@ -128,14 +523,64 @@
    "label": "FOMC minutes (May meeting)"
   },
   {
+   "date": "2025-05-29",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-05-29",
+   "type": "gdp",
+   "label": "GDP Q1 2025, second"
+  },
+  {
    "date": "2025-05-30",
    "type": "pce",
    "label": "PCE (Apr 2025)"
   },
   {
+   "date": "2025-05-30",
+   "type": "umich",
+   "label": "UMich sentiment (May 2025)"
+  },
+  {
+   "date": "2025-06-02",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-06-02",
+   "type": "ism_m",
+   "label": "ISM manufacturing (May 2025)"
+  },
+  {
+   "date": "2025-06-03",
+   "type": "jolts",
+   "label": "JOLTS (Apr 2025)"
+  },
+  {
+   "date": "2025-06-04",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-06-04",
+   "type": "ism_s",
+   "label": "ISM services (May 2025)"
+  },
+  {
    "date": "2025-06-06",
    "type": "nfp",
    "label": "NFP (May 2025)"
+  },
+  {
+   "date": "2025-06-10",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-06-11",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
   },
   {
    "date": "2025-06-11",
@@ -144,8 +589,33 @@
   },
   {
    "date": "2025-06-12",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2025-06-12",
    "type": "ppi",
    "label": "PPI (May 2025)"
+  },
+  {
+   "date": "2025-06-16",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-06-17",
+   "type": "auction",
+   "label": "5y TIPS auction ($23bn, reopening)"
+  },
+  {
+   "date": "2025-06-17",
+   "type": "ip",
+   "label": "Industrial production (May 2025)"
+  },
+  {
+   "date": "2025-06-17",
+   "type": "retail",
+   "label": "Retail sales (May 2025)"
   },
   {
    "date": "2025-06-18",
@@ -153,9 +623,64 @@
    "label": "FOMC decision"
   },
   {
+   "date": "2025-06-24",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-06-24",
+   "type": "chair",
+   "label": "Fed Chair Powell testimony (House)"
+  },
+  {
+   "date": "2025-06-25",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2025-06-25",
+   "type": "chair",
+   "label": "Fed Chair Powell testimony (Senate)"
+  },
+  {
+   "date": "2025-06-26",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-06-26",
+   "type": "gdp",
+   "label": "GDP Q1 2025, third"
+  },
+  {
    "date": "2025-06-27",
    "type": "pce",
    "label": "PCE (May 2025)"
+  },
+  {
+   "date": "2025-06-27",
+   "type": "umich",
+   "label": "UMich sentiment (Jun 2025)"
+  },
+  {
+   "date": "2025-07-01",
+   "type": "chair",
+   "label": "Fed Chair Powell speaks"
+  },
+  {
+   "date": "2025-07-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Jun 2025)"
+  },
+  {
+   "date": "2025-07-01",
+   "type": "jolts",
+   "label": "JOLTS (May 2025)"
+  },
+  {
+   "date": "2025-07-03",
+   "type": "ism_s",
+   "label": "ISM services (Jun 2025)"
   },
   {
    "date": "2025-07-03",
@@ -163,9 +688,24 @@
    "label": "NFP (Jun 2025)"
   },
   {
+   "date": "2025-07-08",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-07-09",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
    "date": "2025-07-09",
    "type": "minutes",
    "label": "FOMC minutes (Jun meeting)"
+  },
+  {
+   "date": "2025-07-10",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
   },
   {
    "date": "2025-07-15",
@@ -174,13 +714,63 @@
   },
   {
    "date": "2025-07-16",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-07-16",
+   "type": "ip",
+   "label": "Industrial production (Jun 2025)"
+  },
+  {
+   "date": "2025-07-16",
    "type": "ppi",
    "label": "PPI (Jun 2025)"
+  },
+  {
+   "date": "2025-07-17",
+   "type": "retail",
+   "label": "Retail sales (Jun 2025)"
+  },
+  {
+   "date": "2025-07-22",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-07-23",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-07-24",
+   "type": "auction",
+   "label": "10y TIPS auction ($21bn)"
+  },
+  {
+   "date": "2025-07-28",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-07-29",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2025-07-30",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2025-07-30",
+   "type": "gdp",
+   "label": "GDP Q2 2025, advance"
+  },
+  {
+   "date": "2025-07-31",
+   "type": "eci",
+   "label": "ECI Q2 2025"
   },
   {
    "date": "2025-07-31",
@@ -189,8 +779,38 @@
   },
   {
    "date": "2025-08-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Jul 2025)"
+  },
+  {
+   "date": "2025-08-01",
    "type": "nfp",
    "label": "NFP (Jul 2025)"
+  },
+  {
+   "date": "2025-08-01",
+   "type": "umich",
+   "label": "UMich sentiment (Aug 2025)"
+  },
+  {
+   "date": "2025-08-05",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-08-05",
+   "type": "ism_s",
+   "label": "ISM services (Jul 2025)"
+  },
+  {
+   "date": "2025-08-06",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
+  },
+  {
+   "date": "2025-08-07",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
   },
   {
    "date": "2025-08-12",
@@ -203,9 +823,54 @@
    "label": "PPI (Jul 2025)"
   },
   {
+   "date": "2025-08-15",
+   "type": "ip",
+   "label": "Industrial production (Jul 2025)"
+  },
+  {
+   "date": "2025-08-15",
+   "type": "retail",
+   "label": "Retail sales (Jul 2025)"
+  },
+  {
+   "date": "2025-08-20",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
+  },
+  {
    "date": "2025-08-20",
    "type": "minutes",
    "label": "FOMC minutes (Jul meeting)"
+  },
+  {
+   "date": "2025-08-21",
+   "type": "auction",
+   "label": "30y TIPS auction ($8bn, reopening)"
+  },
+  {
+   "date": "2025-08-22",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-08-26",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-08-27",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2025-08-28",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-08-28",
+   "type": "gdp",
+   "label": "GDP Q2 2025, second"
   },
   {
    "date": "2025-08-29",
@@ -213,9 +878,39 @@
    "label": "PCE (Jul 2025)"
   },
   {
+   "date": "2025-09-02",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Aug 2025)"
+  },
+  {
+   "date": "2025-09-03",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-09-03",
+   "type": "jolts",
+   "label": "JOLTS (Jul 2025)"
+  },
+  {
+   "date": "2025-09-04",
+   "type": "ism_s",
+   "label": "ISM services (Aug 2025)"
+  },
+  {
    "date": "2025-09-05",
    "type": "nfp",
    "label": "NFP (Aug 2025)"
+  },
+  {
+   "date": "2025-09-09",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-09-10",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
   },
   {
    "date": "2025-09-10",
@@ -224,8 +919,28 @@
   },
   {
    "date": "2025-09-11",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2025-09-11",
    "type": "cpi",
    "label": "CPI (Aug 2025)"
+  },
+  {
+   "date": "2025-09-16",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-09-16",
+   "type": "ip",
+   "label": "Industrial production (Aug 2025)"
+  },
+  {
+   "date": "2025-09-16",
+   "type": "retail",
+   "label": "Retail sales (Aug 2025)"
   },
   {
    "date": "2025-09-17",
@@ -233,9 +948,64 @@
    "label": "FOMC decision"
   },
   {
+   "date": "2025-09-18",
+   "type": "auction",
+   "label": "10y TIPS auction ($19bn, reopening)"
+  },
+  {
+   "date": "2025-09-23",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-09-23",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-09-24",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2025-09-25",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-09-25",
+   "type": "gdp",
+   "label": "GDP Q2 2025, third"
+  },
+  {
    "date": "2025-09-26",
    "type": "pce",
    "label": "PCE (Aug 2025)"
+  },
+  {
+   "date": "2025-09-26",
+   "type": "umich",
+   "label": "UMich sentiment (Sep 2025)"
+  },
+  {
+   "date": "2025-10-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Sep 2025)"
+  },
+  {
+   "date": "2025-10-03",
+   "type": "ism_s",
+   "label": "ISM services (Sep 2025)"
+  },
+  {
+   "date": "2025-10-07",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-10-08",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
   },
   {
    "date": "2025-10-08",
@@ -243,14 +1013,89 @@
    "label": "FOMC minutes (Sep meeting)"
   },
   {
+   "date": "2025-10-09",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2025-10-09",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-10-14",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-10-15",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-10-22",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-10-23",
+   "type": "auction",
+   "label": "5y TIPS auction ($26bn)"
+  },
+  {
    "date": "2025-10-24",
    "type": "cpi",
    "label": "CPI (Sep 2025)"
   },
   {
+   "date": "2025-10-24",
+   "type": "umich",
+   "label": "UMich sentiment (Oct 2025)"
+  },
+  {
+   "date": "2025-10-27",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-10-28",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
    "date": "2025-10-29",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2025-11-03",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Oct 2025)"
+  },
+  {
+   "date": "2025-11-05",
+   "type": "ism_s",
+   "label": "ISM services (Oct 2025)"
+  },
+  {
+   "date": "2025-11-10",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-11-12",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
+  },
+  {
+   "date": "2025-11-13",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
+  },
+  {
+   "date": "2025-11-19",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
   },
   {
    "date": "2025-11-19",
@@ -259,8 +1104,33 @@
   },
   {
    "date": "2025-11-20",
+   "type": "auction",
+   "label": "10y TIPS auction ($19bn, reopening)"
+  },
+  {
+   "date": "2025-11-20",
    "type": "nfp",
    "label": "NFP (Sep 2025)"
+  },
+  {
+   "date": "2025-11-21",
+   "type": "umich",
+   "label": "UMich sentiment (Nov 2025)"
+  },
+  {
+   "date": "2025-11-24",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-11-24",
+   "type": "ip",
+   "label": "Industrial production (Oct 2025)"
+  },
+  {
+   "date": "2025-11-25",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
   },
   {
    "date": "2025-11-25",
@@ -268,9 +1138,64 @@
    "label": "PPI (Sep 2025)"
   },
   {
+   "date": "2025-11-25",
+   "type": "retail",
+   "label": "Retail sales (Oct 2025)"
+  },
+  {
+   "date": "2025-11-26",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2025-11-26",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2025-12-01",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2025-12-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Nov 2025)"
+  },
+  {
+   "date": "2025-12-03",
+   "type": "ip",
+   "label": "Industrial production (Nov 2025)"
+  },
+  {
+   "date": "2025-12-03",
+   "type": "ism_s",
+   "label": "ISM services (Nov 2025)"
+  },
+  {
    "date": "2025-12-05",
    "type": "pce",
    "label": "PCE (Sep 2025)"
+  },
+  {
+   "date": "2025-12-08",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2025-12-09",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
+   "date": "2025-12-09",
+   "type": "jolts",
+   "label": "JOLTS (Oct 2025)"
+  },
+  {
+   "date": "2025-12-10",
+   "type": "eci",
+   "label": "ECI Q3 2025"
   },
   {
    "date": "2025-12-10",
@@ -278,9 +1203,29 @@
    "label": "FOMC decision"
   },
   {
+   "date": "2025-12-11",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
    "date": "2025-12-16",
    "type": "nfp",
    "label": "NFP (Oct–Nov 2025)"
+  },
+  {
+   "date": "2025-12-16",
+   "type": "retail",
+   "label": "Retail sales (Nov 2025)"
+  },
+  {
+   "date": "2025-12-17",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2025-12-18",
+   "type": "auction",
+   "label": "5y TIPS auction ($24bn, reopening)"
   },
   {
    "date": "2025-12-18",
@@ -288,9 +1233,34 @@
    "label": "CPI (Nov 2025)"
   },
   {
+   "date": "2025-12-19",
+   "type": "umich",
+   "label": "UMich sentiment (Dec 2025)"
+  },
+  {
+   "date": "2025-12-22",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2025-12-23",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2025-12-23",
+   "type": "gdp",
+   "label": "GDP Q3 2025, third"
+  },
+  {
    "date": "2025-12-23",
    "type": "pce",
    "label": "PCE (Nov 2025)"
+  },
+  {
+   "date": "2025-12-24",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2025-12-30",
@@ -303,9 +1273,34 @@
    "label": "FOMC minutes (Dec meeting)"
   },
   {
+   "date": "2026-01-05",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Dec 2025)"
+  },
+  {
+   "date": "2026-01-07",
+   "type": "ism_s",
+   "label": "ISM services (Dec 2025)"
+  },
+  {
+   "date": "2026-01-07",
+   "type": "jolts",
+   "label": "JOLTS (Nov 2025)"
+  },
+  {
    "date": "2026-01-09",
    "type": "nfp",
    "label": "NFP (Dec 2025)"
+  },
+  {
+   "date": "2026-01-12",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
+   "date": "2026-01-13",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
   },
   {
    "date": "2026-01-13",
@@ -314,8 +1309,38 @@
   },
   {
    "date": "2026-01-14",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-01-14",
    "type": "ppi",
    "label": "PPI (Nov 2025)"
+  },
+  {
+   "date": "2026-01-14",
+   "type": "retail",
+   "label": "Retail sales (Dec 2025)"
+  },
+  {
+   "date": "2026-01-16",
+   "type": "ip",
+   "label": "Industrial production (Dec 2025)"
+  },
+  {
+   "date": "2026-01-21",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2026-01-22",
+   "type": "auction",
+   "label": "10y TIPS auction ($21bn)"
+  },
+  {
+   "date": "2026-01-22",
+   "type": "gdp",
+   "label": "GDP Q4 2025, advance"
   },
   {
    "date": "2026-01-22",
@@ -323,9 +1348,29 @@
    "label": "PCE (Oct–Nov 2025)"
   },
   {
+   "date": "2026-01-23",
+   "type": "umich",
+   "label": "UMich sentiment (Jan 2026)"
+  },
+  {
+   "date": "2026-01-26",
+   "type": "auction",
+   "label": "5y auction ($69bn, reopening)"
+  },
+  {
+   "date": "2026-01-27",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
    "date": "2026-01-28",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2026-01-29",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2026-01-30",
@@ -333,9 +1378,49 @@
    "label": "PPI (Dec 2025)"
   },
   {
+   "date": "2026-02-02",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Jan 2026)"
+  },
+  {
+   "date": "2026-02-04",
+   "type": "ism_s",
+   "label": "ISM services (Jan 2026)"
+  },
+  {
+   "date": "2026-02-05",
+   "type": "jolts",
+   "label": "JOLTS (Dec 2025)"
+  },
+  {
+   "date": "2026-02-10",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-02-10",
+   "type": "eci",
+   "label": "ECI Q4 2025"
+  },
+  {
+   "date": "2026-02-10",
+   "type": "retail",
+   "label": "Retail sales (Jan 2026)"
+  },
+  {
+   "date": "2026-02-11",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
+  },
+  {
    "date": "2026-02-11",
    "type": "nfp",
    "label": "NFP (Jan 2026)"
+  },
+  {
+   "date": "2026-02-12",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
   },
   {
    "date": "2026-02-13",
@@ -344,8 +1429,28 @@
   },
   {
    "date": "2026-02-18",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
+  },
+  {
+   "date": "2026-02-18",
+   "type": "ip",
+   "label": "Industrial production (Jan 2026)"
+  },
+  {
+   "date": "2026-02-18",
    "type": "minutes",
    "label": "FOMC minutes (Jan meeting)"
+  },
+  {
+   "date": "2026-02-19",
+   "type": "auction",
+   "label": "30y TIPS auction ($9bn)"
+  },
+  {
+   "date": "2026-02-20",
+   "type": "gdp",
+   "label": "GDP Q4 2025, second"
   },
   {
    "date": "2026-02-20",
@@ -353,9 +1458,44 @@
    "label": "PCE (Dec 2025)"
   },
   {
+   "date": "2026-02-20",
+   "type": "umich",
+   "label": "UMich sentiment (Feb 2026)"
+  },
+  {
+   "date": "2026-02-24",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-02-25",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-02-26",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
    "date": "2026-02-27",
    "type": "ppi",
    "label": "PPI (Jan 2026)"
+  },
+  {
+   "date": "2026-03-02",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Feb 2026)"
+  },
+  {
+   "date": "2026-03-04",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-03-04",
+   "type": "ism_s",
+   "label": "ISM services (Feb 2026)"
   },
   {
    "date": "2026-03-06",
@@ -363,14 +1503,54 @@
    "label": "NFP (Feb 2026)"
   },
   {
+   "date": "2026-03-06",
+   "type": "retail",
+   "label": "Retail sales (Feb 2026)"
+  },
+  {
+   "date": "2026-03-10",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-03-11",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
    "date": "2026-03-11",
    "type": "cpi",
    "label": "CPI (Feb 2026)"
   },
   {
+   "date": "2026-03-12",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2026-03-13",
+   "type": "gdp",
+   "label": "GDP Q4 2025, third"
+  },
+  {
+   "date": "2026-03-13",
+   "type": "jolts",
+   "label": "JOLTS (Jan 2026)"
+  },
+  {
    "date": "2026-03-13",
    "type": "pce",
    "label": "PCE (Jan 2026)"
+  },
+  {
+   "date": "2026-03-16",
+   "type": "ip",
+   "label": "Industrial production (Feb 2026)"
+  },
+  {
+   "date": "2026-03-17",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
   },
   {
    "date": "2026-03-18",
@@ -383,14 +1563,84 @@
    "label": "PPI (Feb 2026)"
   },
   {
+   "date": "2026-03-19",
+   "type": "auction",
+   "label": "10y TIPS auction ($19bn, reopening)"
+  },
+  {
+   "date": "2026-03-21",
+   "type": "chair",
+   "label": "Fed Chair Powell speech"
+  },
+  {
+   "date": "2026-03-24",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-03-25",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-03-26",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2026-03-27",
+   "type": "umich",
+   "label": "UMich sentiment (Mar 2026)"
+  },
+  {
+   "date": "2026-03-30",
+   "type": "chair",
+   "label": "Fed Chair Powell speaks"
+  },
+  {
+   "date": "2026-04-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Mar 2026)"
+  },
+  {
+   "date": "2026-04-01",
+   "type": "retail",
+   "label": "Retail sales (Mar 2026)"
+  },
+  {
+   "date": "2026-04-03",
+   "type": "ism_s",
+   "label": "ISM services (Mar 2026)"
+  },
+  {
    "date": "2026-04-03",
    "type": "nfp",
    "label": "NFP (Mar 2026)"
   },
   {
+   "date": "2026-04-07",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-04-08",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
    "date": "2026-04-08",
    "type": "minutes",
    "label": "FOMC minutes (Mar meeting)"
+  },
+  {
+   "date": "2026-04-09",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2026-04-09",
+   "type": "gdp",
+   "label": "GDP Q1 2026, advance"
   },
   {
    "date": "2026-04-09",
@@ -408,9 +1658,49 @@
    "label": "PPI (Mar 2026)"
   },
   {
+   "date": "2026-04-15",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-04-16",
+   "type": "ip",
+   "label": "Industrial production (Mar 2026)"
+  },
+  {
+   "date": "2026-04-22",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2026-04-23",
+   "type": "auction",
+   "label": "5y TIPS auction ($26bn)"
+  },
+  {
+   "date": "2026-04-24",
+   "type": "umich",
+   "label": "UMich sentiment (Apr 2026)"
+  },
+  {
+   "date": "2026-04-27",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-04-28",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
    "date": "2026-04-29",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2026-04-30",
+   "type": "eci",
+   "label": "ECI Q1 2026"
   },
   {
    "date": "2026-04-30",
@@ -418,9 +1708,34 @@
    "label": "PCE (Mar 2026)"
   },
   {
+   "date": "2026-05-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Apr 2026)"
+  },
+  {
+   "date": "2026-05-05",
+   "type": "ism_s",
+   "label": "ISM services (Apr 2026)"
+  },
+  {
+   "date": "2026-05-05",
+   "type": "jolts",
+   "label": "JOLTS (Mar 2026)"
+  },
+  {
    "date": "2026-05-08",
    "type": "nfp",
    "label": "NFP (Apr 2026)"
+  },
+  {
+   "date": "2026-05-11",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-05-12",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
   },
   {
    "date": "2026-05-12",
@@ -429,8 +1744,28 @@
   },
   {
    "date": "2026-05-13",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
+  },
+  {
+   "date": "2026-05-13",
    "type": "ppi",
    "label": "PPI (Apr 2026)"
+  },
+  {
+   "date": "2026-05-14",
+   "type": "retail",
+   "label": "Retail sales (Apr 2026)"
+  },
+  {
+   "date": "2026-05-15",
+   "type": "ip",
+   "label": "Industrial production (Apr 2026)"
+  },
+  {
+   "date": "2026-05-20",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
   },
   {
    "date": "2026-05-20",
@@ -438,14 +1773,74 @@
    "label": "FOMC minutes (Apr meeting)"
   },
   {
+   "date": "2026-05-21",
+   "type": "auction",
+   "label": "10y TIPS auction ($19bn, reopening)"
+  },
+  {
+   "date": "2026-05-22",
+   "type": "umich",
+   "label": "UMich sentiment (May 2026)"
+  },
+  {
+   "date": "2026-05-26",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-05-27",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-05-28",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2026-05-28",
+   "type": "gdp",
+   "label": "GDP Q1 2026, second"
+  },
+  {
    "date": "2026-05-28",
    "type": "pce",
    "label": "PCE (Apr 2026)"
   },
   {
+   "date": "2026-06-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (May 2026)"
+  },
+  {
+   "date": "2026-06-02",
+   "type": "jolts",
+   "label": "JOLTS (Apr 2026)"
+  },
+  {
+   "date": "2026-06-03",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-06-03",
+   "type": "ism_s",
+   "label": "ISM services (May 2026)"
+  },
+  {
    "date": "2026-06-05",
    "type": "nfp",
    "label": "NFP (May 2026)"
+  },
+  {
+   "date": "2026-06-09",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-06-10",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
   },
   {
    "date": "2026-06-10",
@@ -454,8 +1849,23 @@
   },
   {
    "date": "2026-06-11",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2026-06-11",
    "type": "ppi",
    "label": "PPI (May 2026)"
+  },
+  {
+   "date": "2026-06-15",
+   "type": "ip",
+   "label": "Industrial production (May 2026)"
+  },
+  {
+   "date": "2026-06-16",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
   },
   {
    "date": "2026-06-17",
@@ -463,9 +1873,54 @@
    "label": "FOMC decision"
   },
   {
+   "date": "2026-06-17",
+   "type": "retail",
+   "label": "Retail sales (May 2026)"
+  },
+  {
+   "date": "2026-06-18",
+   "type": "auction",
+   "label": "5y TIPS auction ($24bn, reopening)"
+  },
+  {
+   "date": "2026-06-23",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-06-24",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-06-25",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2026-06-25",
+   "type": "gdp",
+   "label": "GDP Q1 2026, third"
+  },
+  {
    "date": "2026-06-25",
    "type": "pce",
    "label": "PCE (May 2026)"
+  },
+  {
+   "date": "2026-06-26",
+   "type": "umich",
+   "label": "UMich sentiment (Jun 2026)"
+  },
+  {
+   "date": "2026-07-01",
+   "type": "chair",
+   "label": "Fed Chair Warsh speaks"
+  },
+  {
+   "date": "2026-07-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Jun 2026)"
   },
   {
    "date": "2026-07-02",
@@ -473,9 +1928,34 @@
    "label": "NFP (Jun 2026)"
   },
   {
+   "date": "2026-07-06",
+   "type": "ism_s",
+   "label": "ISM services (Jun 2026)"
+  },
+  {
+   "date": "2026-07-07",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-07-08",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
    "date": "2026-07-08",
    "type": "minutes",
    "label": "FOMC minutes (Jun meeting)"
+  },
+  {
+   "date": "2026-07-09",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2026-07-14",
+   "type": "chair",
+   "label": "Fed Chair Warsh testimony (House)"
   },
   {
    "date": "2026-07-14",
@@ -484,8 +1964,48 @@
   },
   {
    "date": "2026-07-15",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-07-15",
+   "type": "chair",
+   "label": "Fed Chair Warsh testimony (Senate)"
+  },
+  {
+   "date": "2026-07-15",
    "type": "ppi",
    "label": "PPI (Jun 2026)"
+  },
+  {
+   "date": "2026-07-16",
+   "type": "retail",
+   "label": "Retail sales (Jun 2026)"
+  },
+  {
+   "date": "2026-07-17",
+   "type": "ip",
+   "label": "Industrial production (Jun 2026)"
+  },
+  {
+   "date": "2026-07-22",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2026-07-23",
+   "type": "auction",
+   "label": "10y TIPS auction ($21bn)"
+  },
+  {
+   "date": "2026-07-27",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-07-28",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2026-07-29",
@@ -494,13 +2014,53 @@
   },
   {
    "date": "2026-07-30",
+   "type": "gdp",
+   "label": "GDP Q2 2026, advance"
+  },
+  {
+   "date": "2026-07-30",
    "type": "pce",
    "label": "PCE (Jun 2026)"
+  },
+  {
+   "date": "2026-07-31",
+   "type": "eci",
+   "label": "ECI Q2 2026"
+  },
+  {
+   "date": "2026-07-31",
+   "type": "umich",
+   "label": "UMich sentiment (Jul 2026)"
+  },
+  {
+   "date": "2026-08-03",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Jul 2026)"
+  },
+  {
+   "date": "2026-08-04",
+   "type": "jolts",
+   "label": "JOLTS (Jun 2026)"
+  },
+  {
+   "date": "2026-08-05",
+   "type": "ism_s",
+   "label": "ISM services (Jul 2026)"
   },
   {
    "date": "2026-08-07",
    "type": "nfp",
    "label": "NFP (Jul 2026)"
+  },
+  {
+   "date": "2026-08-11",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-08-12",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
   },
   {
    "date": "2026-08-12",
@@ -509,8 +2069,28 @@
   },
   {
    "date": "2026-08-13",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
+  },
+  {
+   "date": "2026-08-13",
    "type": "ppi",
    "label": "PPI (Jul 2026)"
+  },
+  {
+   "date": "2026-08-14",
+   "type": "retail",
+   "label": "Retail sales (Jul 2026)"
+  },
+  {
+   "date": "2026-08-18",
+   "type": "ip",
+   "label": "Industrial production (Jul 2026)"
+  },
+  {
+   "date": "2026-08-19",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
   },
   {
    "date": "2026-08-19",
@@ -518,14 +2098,84 @@
    "label": "FOMC minutes (Jul meeting)"
   },
   {
+   "date": "2026-08-20",
+   "type": "auction",
+   "label": "30y TIPS auction ($8bn, reopening)"
+  },
+  {
+   "date": "2026-08-25",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-08-26",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-08-26",
+   "type": "gdp",
+   "label": "GDP Q2 2026, second"
+  },
+  {
    "date": "2026-08-26",
    "type": "pce",
    "label": "PCE (Jul 2026)"
   },
   {
+   "date": "2026-08-27",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2026-08-28",
+   "type": "chair",
+   "label": "Fed Chair Warsh speech"
+  },
+  {
+   "date": "2026-08-28",
+   "type": "umich",
+   "label": "UMich sentiment (Aug 2026)"
+  },
+  {
+   "date": "2026-09-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Aug 2026)"
+  },
+  {
+   "date": "2026-09-01",
+   "type": "jolts",
+   "label": "JOLTS (Jul 2026)"
+  },
+  {
+   "date": "2026-09-02",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-09-03",
+   "type": "ism_s",
+   "label": "ISM services (Aug 2026)"
+  },
+  {
    "date": "2026-09-04",
    "type": "nfp",
    "label": "NFP (Aug 2026)"
+  },
+  {
+   "date": "2026-09-08",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-09-09",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
+   "date": "2026-09-10",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
   },
   {
    "date": "2026-09-10",
@@ -538,9 +2188,54 @@
    "label": "CPI (Aug 2026)"
   },
   {
+   "date": "2026-09-15",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
    "date": "2026-09-16",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2026-09-16",
+   "type": "retail",
+   "label": "Retail sales (Aug 2026)"
+  },
+  {
+   "date": "2026-09-17",
+   "type": "auction",
+   "label": "10y TIPS auction ($19bn, reopening)"
+  },
+  {
+   "date": "2026-09-18",
+   "type": "ip",
+   "label": "Industrial production (Aug 2026)"
+  },
+  {
+   "date": "2026-09-22",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-09-23",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-09-24",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
+  },
+  {
+   "date": "2026-09-25",
+   "type": "umich",
+   "label": "UMich sentiment (Sep 2026)"
+  },
+  {
+   "date": "2026-09-30",
+   "type": "gdp",
+   "label": "GDP Q2 2026, third"
   },
   {
    "date": "2026-09-30",
@@ -548,14 +2243,44 @@
    "label": "PCE (Aug 2026)"
   },
   {
+   "date": "2026-10-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Sep 2026)"
+  },
+  {
    "date": "2026-10-02",
    "type": "nfp",
    "label": "NFP (Sep 2026)"
   },
   {
+   "date": "2026-10-05",
+   "type": "ism_s",
+   "label": "ISM services (Sep 2026)"
+  },
+  {
+   "date": "2026-10-06",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-10-07",
+   "type": "auction",
+   "label": "10y auction ($39bn, reopening)"
+  },
+  {
    "date": "2026-10-07",
    "type": "minutes",
    "label": "FOMC minutes (Sep meeting)"
+  },
+  {
+   "date": "2026-10-08",
+   "type": "auction",
+   "label": "30y auction ($22bn, reopening)"
+  },
+  {
+   "date": "2026-10-14",
+   "type": "beige",
+   "label": "Beige Book"
   },
   {
    "date": "2026-10-14",
@@ -564,8 +2289,28 @@
   },
   {
    "date": "2026-10-15",
+   "type": "chair",
+   "label": "Fed Chair Warsh speaks"
+  },
+  {
+   "date": "2026-10-15",
    "type": "ppi",
    "label": "PPI (Sep 2026)"
+  },
+  {
+   "date": "2026-10-15",
+   "type": "retail",
+   "label": "Retail sales (Sep 2026)"
+  },
+  {
+   "date": "2026-10-16",
+   "type": "ip",
+   "label": "Industrial production (Sep 2026)"
+  },
+  {
+   "date": "2026-10-23",
+   "type": "umich",
+   "label": "UMich sentiment (Oct 2026)"
   },
   {
    "date": "2026-10-28",
@@ -574,8 +2319,33 @@
   },
   {
    "date": "2026-10-29",
+   "type": "gdp",
+   "label": "GDP Q3 2026, advance"
+  },
+  {
+   "date": "2026-10-29",
    "type": "pce",
    "label": "PCE (Sep 2026)"
+  },
+  {
+   "date": "2026-10-30",
+   "type": "eci",
+   "label": "ECI Q3 2026"
+  },
+  {
+   "date": "2026-11-02",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Oct 2026)"
+  },
+  {
+   "date": "2026-11-03",
+   "type": "jolts",
+   "label": "JOLTS (Sep 2026)"
+  },
+  {
+   "date": "2026-11-04",
+   "type": "ism_s",
+   "label": "ISM services (Oct 2026)"
   },
   {
    "date": "2026-11-06",
@@ -593,14 +2363,54 @@
    "label": "PPI (Oct 2026)"
   },
   {
+   "date": "2026-11-17",
+   "type": "ip",
+   "label": "Industrial production (Oct 2026)"
+  },
+  {
+   "date": "2026-11-17",
+   "type": "retail",
+   "label": "Retail sales (Oct 2026)"
+  },
+  {
    "date": "2026-11-18",
    "type": "minutes",
    "label": "FOMC minutes (Oct meeting)"
   },
   {
+   "date": "2026-11-20",
+   "type": "umich",
+   "label": "UMich sentiment (Nov 2026)"
+  },
+  {
+   "date": "2026-11-25",
+   "type": "beige",
+   "label": "Beige Book"
+  },
+  {
+   "date": "2026-11-25",
+   "type": "gdp",
+   "label": "GDP Q3 2026, second"
+  },
+  {
    "date": "2026-11-25",
    "type": "pce",
    "label": "PCE (Oct 2026)"
+  },
+  {
+   "date": "2026-12-01",
+   "type": "ism_m",
+   "label": "ISM manufacturing (Nov 2026)"
+  },
+  {
+   "date": "2026-12-01",
+   "type": "jolts",
+   "label": "JOLTS (Oct 2026)"
+  },
+  {
+   "date": "2026-12-03",
+   "type": "ism_s",
+   "label": "ISM services (Nov 2026)"
   },
   {
    "date": "2026-12-04",
@@ -621,6 +2431,26 @@
    "date": "2026-12-15",
    "type": "ppi",
    "label": "PPI (Nov 2026)"
+  },
+  {
+   "date": "2026-12-16",
+   "type": "ip",
+   "label": "Industrial production (Nov 2026)"
+  },
+  {
+   "date": "2026-12-16",
+   "type": "retail",
+   "label": "Retail sales (Nov 2026)"
+  },
+  {
+   "date": "2026-12-18",
+   "type": "umich",
+   "label": "UMich sentiment (Dec 2026)"
+  },
+  {
+   "date": "2026-12-23",
+   "type": "gdp",
+   "label": "GDP Q3 2026, third"
   },
   {
    "date": "2026-12-23",

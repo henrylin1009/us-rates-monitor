@@ -6,12 +6,12 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", pceView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", bdIdx: "cpi", bdView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathBack: 7, pricedCmp: ["1W"], histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pricedCmp: ["1W"], fundView: "repo", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -103,10 +103,19 @@
     pce: { glyph: "▲", name: "PCE", symbol: "triangle-up" },
     ppi: { glyph: "▼", name: "PPI", symbol: "triangle-down" },
     minutes: { glyph: "★", name: "Minutes", symbol: "star" },
+    // 下面這些只在行事曆和 Next 2 weeks 出現，圖上的事件記號仍然只有上面六種
+    retail: { glyph: "◆", name: "Retail sales", tier: 1 }, ism_m: { glyph: "◇", name: "ISM mfg", tier: 1 }, ism_s: { glyph: "◇", name: "ISM services", tier: 1 },
+    gdp: { glyph: "◆", name: "GDP", tier: 1 }, jolts: { glyph: "■", name: "JOLTS" }, eci: { glyph: "■", name: "ECI" }, umich: { glyph: "○", name: "UMich" },
+    ip: { glyph: "◇", name: "Industrial production" }, chair: { glyph: "✦", name: "Fed Chair", tier: 1 }, beige: { glyph: "☆", name: "Beige Book" },
+    auction: { glyph: "▣", name: "Auction" }, blackout: { glyph: "◌", name: "Blackout" },
   };
   const EVT_ORDER = ["fomc", "cpi", "nfp", "pce", "ppi", "minutes"];
   const LOOKAHEAD = 14; // 往後標幾天
-  const evtColor = (t) => ({ fomc: css("--ink"), cpi: css("--s4"), nfp: css("--s5"), pce: css("--s3"), ppi: css("--s2"), minutes: css("--muted") }[t]);
+  const evtColor = (t) => ({ fomc: css("--ink"), cpi: css("--s4"), nfp: css("--s5"), pce: css("--s3"), ppi: css("--s2"), minutes: css("--muted"),
+    retail: css("--s1"), gdp: css("--s1"), ism_m: css("--s1"), ism_s: css("--s1"), ip: css("--s1"), jolts: css("--s5"), eci: css("--s5"), umich: css("--s3"),
+    chair: css("--ink"), beige: css("--muted"), auction: css("--s2"), blackout: css("--muted") }[t] || css("--muted"));
+  // 一級數據（desk 的 ECO 上標成最重要的）在行事曆粗體
+  const TOP = new Set(["fomc", "cpi", "nfp", "pce", "retail", "gdp", "ism_m", "ism_s", "chair"]);
   const lastYieldDate = () => (D.yields.length ? D.yields[D.yields.length - 1].date : "");
 
   // FOMC 決議：用 EFFR 目標區間上緣的變化判斷
@@ -282,6 +291,13 @@
     // 關鍵數字
     const row = (k, lv, d1, d7, unit) => `<tr><td>${k}</td><td class="n">${lv}</td><td class="n ${cls(d1)}">${bp(d1, 1)}</td><td class="n ${cls(d7)}">${bp(d7, 1)}</td></tr>`;
     let h = `<table class="ktab"><thead><tr><th></th><th>Level</th><th>1D bp</th><th>1W bp</th></tr></thead><tbody>`;
+    // 最上面一列放 Fed 在哪：EFFR 和目標區間（desk 早報第一行）
+    const ef = D.effr.filter((r) => r.effr !== ""), e0 = ef[ef.length - 1];
+    if (e0) {
+      const e1 = ef[ef.length - 2], e7 = atOrBefore(ef, "date", shiftDays(e0.date, -7)), d = (x) => (x ? (num(e0.effr) - num(x.effr)) * 100 : null);
+      const tgt = e0.target_low !== "" ? ` <small class="muted">${(+e0.target_low).toFixed(2)}–${(+e0.target_high).toFixed(2)}</small>` : "";
+      h += row(`EFFR${tgt}`, num(e0.effr).toFixed(2) + "%", d(e1), d(e7));
+    }
     ["2y", "5y", "10y", "30y"].forEach((t) => { h += row(t, num(a[t]) == null ? "–" : num(a[t]).toFixed(2) + "%", chg(a, b, t), chg(a, w, t)); });
     [["2s10s", "2y", "10y"], ["5s30s", "5y", "30y"]].forEach(([k, x, z]) => {
       const s0 = sprd(a, x, z), s1 = sprd(b, x, z), s7 = sprd(w, x, z);
@@ -302,8 +318,8 @@
     let fh = `<div>By year-end: <b class="num">${bp(num(f.cum_yearend_bp), 0)}bp</b> · ${moves(num(f.cum_yearend_bp))}`
       + (dYe == null ? "" : ` · <span class="${cls(dYe)}">${bp(dYe, 0)}bp vs 1W</span>`) + "</div>";
     const s = fomcSurprises().filter((x) => x.surprise != null).pop();
-    fh += s ? `<div class="sur">● Last FOMC surprise (${md(s.date)}): <b class="num ${cls(s.surprise)}">${bp(s.surprise, 1)}bp</b> · 2y ${bp(s.d2, 1)}bp</div>`
-      : `<div class="sur muted">● Last FOMC surprise: not enough pricing history yet</div>`;
+    // 還沒有會前定價的會議就不顯示這行（第一次是 2026-10-28 會議之後）
+    if (s) fh += `<div class="sur">● Last FOMC surprise (${md(s.date)}): <b class="num ${cls(s.surprise)}">${bp(s.surprise, 1)}bp</b> · 2y ${bp(s.d2, 1)}bp</div>`;
     $("#hero-fed").innerHTML = fh;
   }
 
@@ -362,12 +378,14 @@
     const rows = fomcSurprises().slice(-12).reverse();
     if (!rows.length) { el.innerHTML = `<p class="hint">No meetings yet.</p>`; return; }
     const decTxt = (d) => (d == null ? "–" : d > 0 ? `Hike ${d}bp` : d < 0 ? `Cut ${-d}bp` : "Hold");
-    let h = "<table><thead><tr><th>Meeting</th><th>Decision</th><th>Priced day before (bp)</th><th>Surprise (bp)</th><th>2y (bp)</th><th>Year-end pricing (bp)</th></tr></thead><tbody>";
-    rows.forEach((r) => {
-      h += `<tr><td class="n">${r.date}</td><td>${decTxt(r.dec)}</td><td class="n">${r.priced == null ? "–" : bp(r.priced, 1)}</td>`
-        + `<td class="n ${cls(r.surprise)}"><b>${r.surprise == null ? "–" : bp(r.surprise, 1)}</b></td>`
-        + `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td><td class="n ${cls(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
-    });
+    // 整欄都沒有值的欄位（定價歷史還不夠）先不顯示，有第一筆就自動出現
+    const has = (k) => rows.some((r) => r[k] != null);
+    const cols = [["Priced day before (bp)", "priced", (r) => `<td class="n">${bp(r.priced, 1)}</td>`],
+      ["Surprise (bp)", "surprise", (r) => `<td class="n ${cls(r.surprise)}"><b>${bp(r.surprise, 1)}</b></td>`],
+      ["2y (bp)", "d2", (r) => `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td>`],
+      ["Year-end pricing (bp)", "fed", (r) => `<td class="n ${cls(r.fed)}">${bp(r.fed, 1)}</td>`]].filter(([, k]) => has(k));
+    let h = "<table><thead><tr><th>Meeting</th><th>Decision</th>" + cols.map(([n]) => `<th>${n}</th>`).join("") + "</tr></thead><tbody>";
+    rows.forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${decTxt(r.dec)}</td>` + cols.map(([, , f]) => f(r)).join("") + "</tr>"; });
     const first = D.summ.length ? D.summ[0].asof : null;
     const note = `<p class="hint note">Pricing history starts on ${first || "–"}, so meetings before that have no diamond and no surprise yet. Both fill in from each new meeting.</p>`;
     el.innerHTML = note + fold("fomc", "Meeting-by-meeting numbers", `<div class="table-wrap">${h}</tbody></table></div>`);
@@ -434,9 +452,9 @@
   const Y_HINT = {
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
     curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them.",
-    spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
-    bills: "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).",
+    spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted. 2s5s10s is a butterfly (2 × 5y − 2y − 10y): it rises when the 5y cheapens against the two wings, usually when the market prices more Fed hikes (or fewer cuts) over the next few years, since the belly carries most of that.",
   };
+  const BILLS_HINT = "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).";
   // ---------- 比較日期拉桿 ----------
   // Henry：不要 Compare 按鈕，只用一條拉桿；刻度 1D / 1W / 1M… 之間等距（不是線性時間），刻度之間也能停在任何一天
   // ticks：[[標籤, 往回幾天]]，由遠到近，最後一個是 ["Today", 0]；back = 現在往回幾天；show(back) 給右邊顯示的字；onChange(back) 重畫圖
@@ -526,28 +544,16 @@
         (d) => { const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
     }
 
-    if (v === "bills") {
-      ctl.append(rangeChips("range", rr), eventChips(rr));
-      const rows = inRange(D.yields, "date", S.range), start = rows.length ? rows[0].date : "";
-      const bo = (D.bills || []).filter((r) => r.date >= start), ef = new Map(D.effr.map((r) => [r.date, num(r.effr)]));
-      const spot = rows.filter((r) => num(r["1m"]) != null && ef.get(r.date) != null);
-      const tr = [{ x: spot.map((r) => r.date), y: spot.map((r) => (num(r["1m"]) * 360 / 365 - ef.get(r.date)) * 100), name: "1m bill − EFFR (spot)",
-        type: "scatter", mode: "lines", line: { color: css("--muted"), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.1f}bp" },
-        ...["1m", "3m", "6m"].map((t, i) => ({ x: bo.map((r) => r.date), y: bo.map((r) => num(r[`spread_${t}`])), name: `${t} bill − OIS`, type: "scatter", mode: "lines",
-          line: { color: P[i], width: 2 }, customdata: bo.map((r) => [num(r[`bill_${t}`]), num(r[`ois_${t}`])]),
-          hovertemplate: `%{y:.1f}bp (bill %{customdata[0]:.3f}%, OIS %{customdata[1]:.3f}%)` }))];
-      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
-      if (rows.length) addEvents(tr, L, rows[0].date);
-      plot(id, tr, L);
-      renderReactions($("#y-table"));
-    }
-
     if (v === "spread") {
-      const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"] };
+      // 三個天期的是 butterfly：2 × 中間 − 兩翼，正 = 中間（5y）相對兩翼便宜
+      const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"], "2s5s10s": ["2y", "5y", "10y"] };
       ctl.append(chips("Spreads", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = Object.keys(defs).filter((k) => S.spreads.includes(k)).map((k, i) => ({
-        x: rows.map((r) => r.date), y: rows.map((r) => { const a = num(r[defs[k][0]]), b = num(r[defs[k][1]]); return a == null || b == null ? null : (b - a) * 100; }),
+        x: rows.map((r) => r.date), y: rows.map((r) => {
+          const v = defs[k].map((t) => num(r[t])); if (v.some((z) => z == null)) return null;
+          return (v.length === 3 ? 2 * v[1] - v[0] - v[2] : v[1] - v[0]) * 100;
+        }),
         name: k, type: "scatter", mode: "lines", line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.0f}bp",
       }));
       const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
@@ -556,6 +562,102 @@
       renderReactions($("#y-table"));
     }
 
+  }
+
+  // ---------- 資金面：repo 利率 vs IORB、準備金 / RRP / TGA、bill − OIS ----------
+  const FUND_HINT = {
+    repo: "Where overnight money trades against the rate the Fed pays banks on reserves (IORB, the ceiling it wants to hold). SOFR is the Treasury repo rate; EFFR is unsecured bank lending. When reserves are plentiful both sit a few bp below IORB. SOFR pushing up to or above IORB means cash is getting scarce (heavy Treasury settlements, month and quarter ends, falling reserves): the signal that ended QT in late 2025 and that desks watch for funding stress. Month-end and tax-date spikes are normal; a rising baseline is what matters.",
+    liq: "The plumbing behind those rates, in $ trillions. Reserves are the cash banks hold at the Fed; the overnight reverse repo (RRP) is money funds parking cash at the Fed; the Treasury General Account (TGA) is the government's cash at the Fed. A rising TGA (after debt issuance or tax dates) or a growing Fed balance sheet runoff drains reserves; once the RRP is near zero, every drain comes straight out of reserves, which is when repo rates start to climb. Fed total assets (dotted) shows QT or balance sheet growth.",
+    bills: BILLS_HINT,
+  };
+  function renderFunding() {
+    const id = "c-fund", ctl = $("#fund-controls"); if (!ctl) return;
+    ctl.innerHTML = ""; $("#fund-hint").textContent = FUND_HINT[S.fundView];
+    const P = palette(), rr = () => renderFunding(), F = D.fund || [];
+    const v = S.fundView;
+    if (v !== "bills" && !F.length) { $("#fund-date").innerHTML = ""; return empty(id, "Funding data load after the next daily update."); }
+    clearEmpty(id);
+    if (v === "repo") {
+      ctl.append(rangeChips("fundRange", rr));
+      const ef = new Map(D.effr.map((r) => [r.date, num(r.effr)]));
+      const rows = inRange(F.filter((r) => r.iorb !== "" && r.sofr !== ""), "date", S.fundRange);
+      const tr = [{ x: rows.map((r) => r.date), y: rows.map((r) => (num(r.sofr) - num(r.iorb)) * 100), name: "SOFR − IORB", line: { color: P[0], width: 1.8 }, hovertemplate: "SOFR − IORB %{y:.0f}bp<extra></extra>" },
+        { x: rows.map((r) => r.date), y: rows.map((r) => (ef.has(r.date) ? (ef.get(r.date) - num(r.iorb)) * 100 : null)), name: "EFFR − IORB", line: { color: P[2], width: 1.6 }, connectgaps: true, hovertemplate: "EFFR − IORB %{y:.0f}bp<extra></extra>" }];
+      plot(id, tr, baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1.5 } }));
+      const l = rows[rows.length - 1];
+      $("#fund-date").innerHTML = l ? `<span class="muted">${l.date}: SOFR ${num(l.sofr).toFixed(2)}%, IORB ${num(l.iorb).toFixed(2)}%${ef.has(l.date) ? `, EFFR ${ef.get(l.date).toFixed(2)}%` : ""} · FRED SOFR, IORB · NY Fed EFFR</span>` : "";
+    }
+    if (v === "liq") {
+      ctl.append(rangeChips("fundRange", rr));
+      // 週資料是週三，RRP 是每天：各自畫，不對齊
+      const col = (c, k) => F.filter((r) => r[c] !== "").map((r) => ({ date: r.date, v: num(r[c]) / k }));
+      const end = F.length ? F[F.length - 1].date : "", start = shiftDays(end, -RANGES[S.fundRange]), cut = (x) => x.filter((p) => p.date >= start);
+      const res = cut(col("reserves", 1e6)), rrp = cut(col("rrp", 1e3)), tga = cut(col("tga", 1e6)), wal = cut(col("walcl", 1e6));
+      plot(id, [{ ...xy(res), name: "Bank reserves", line: { color: P[0], width: 2.2 }, hovertemplate: "Reserves $%{y:.2f}tn<extra></extra>" },
+        { ...xy(tga), name: "TGA", line: { color: P[2], width: 1.8 }, hovertemplate: "TGA $%{y:.2f}tn<extra></extra>" },
+        { ...xy(rrp), name: "ON RRP", line: { color: P[4], width: 1.6 }, hovertemplate: "RRP $%{y:.2f}tn<extra></extra>" },
+        { ...xy(wal), name: "Fed total assets (right)", yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "Fed assets $%{y:.2f}tn<extra></extra>" }],
+        baseLayout({ margin: { l: 52, r: 52, t: 10, b: 40 }, yaxis: { ...baseLayout().yaxis, tickprefix: "$", ticksuffix: "tn" }, yaxis2: { ...baseLayout().yaxis, tickprefix: "$", ticksuffix: "tn", overlaying: "y", side: "right", showgrid: false } }));
+      const lr = lastV(res), lt = lastV(tga), lq = lastV(rrp);
+      $("#fund-date").innerHTML = lr ? `<span class="muted">Reserves $${lr.v.toFixed(2)}tn (${md(lr.date)})${lt ? ` · TGA $${lt.v.toFixed(2)}tn` : ""}${lq ? ` · RRP $${(lq.v * 1000).toFixed(lq.v < 0.01 ? 1 : 0)}bn (${md(lq.date)})` : ""} · FRED WRESBAL, WTREGEN, RRPONTSYD, WALCL</span>` : "";
+    }
+    if (v === "bills") {
+      ctl.append(rangeChips("fundRange", rr), eventChips(rr));
+      $("#fund-date").innerHTML = "";
+      const rows = inRange(D.yields, "date", S.fundRange), start = rows.length ? rows[0].date : "";
+      const bo = (D.bills || []).filter((r) => r.date >= start), ef = new Map(D.effr.map((r) => [r.date, num(r.effr)]));
+      const spot = rows.filter((r) => num(r["1m"]) != null && ef.get(r.date) != null);
+      const tr = [{ x: spot.map((r) => r.date), y: spot.map((r) => (num(r["1m"]) * 360 / 365 - ef.get(r.date)) * 100), name: "1m bill − EFFR (spot)",
+        type: "scatter", mode: "lines", line: { color: css("--muted"), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.1f}bp" },
+        ...["1m", "3m", "6m"].map((t, i) => ({ x: bo.map((r) => r.date), y: bo.map((r) => num(r[`spread_${t}`])), name: `${t} bill − OIS`, type: "scatter", mode: "lines",
+          line: { color: P[i], width: 2 }, customdata: bo.map((r) => [num(r[`bill_${t}`]), num(r[`ois_${t}`])]),
+          hovertemplate: `%{y:.1f}bp (bill %{customdata[0]:.3f}%, OIS %{customdata[1]:.3f}%)` }))];
+      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
+      if (rows.length && !["5Y", "All"].includes(S.fundRange)) addEvents(tr, L, rows[0].date);
+      plot(id, tr, L);
+    }
+
+  }
+
+  // ---------- 國債標售：每個天期最近一次 vs 前 6 次平均（sell-side auction recap 的打分法） ----------
+  const AUCT_TERMS = ["2y", "3y", "5y", "7y", "10y", "20y", "30y", "5y TIPS", "10y TIPS", "30y TIPS"];
+  function renderAuctions() {
+    const el = $("#auct-table"); if (!el) return;
+    const A = D.auct || [], ctl = $("#auct-controls"); ctl.innerHTML = "";
+    const done = A.filter((r) => r.btc !== "");
+    if (!done.length) { el.innerHTML = ""; $("#auct-date").innerHTML = ""; return empty("c-auct", "Auction results load after the next daily update."); }
+    clearEmpty("c-auct");
+    const P = palette(), terms = AUCT_TERMS.filter((t) => done.some((r) => r.term === t));
+    if (!terms.includes(S.auctTerm)) S.auctTerm = terms[0];
+    // 每一筆：和同天期前 6 次的平均比
+    const scored = (r) => {
+      const prev = done.filter((x) => x.term === r.term && x.auction_date < r.auction_date).slice(-6);
+      const avg = (k) => (prev.length ? prev.reduce((a, x) => a + num(x[k]), 0) / prev.length : null);
+      return { ...r, avg: { btc: avg("btc"), indirect_pct: avg("indirect_pct"), direct_pct: avg("direct_pct"), dealer_pct: avg("dealer_pct") } };
+    };
+    // 顏色：需求弱（dealer 多、cover 低、indirect 少）= 橘（殖利率偏上），強 = 青
+    const tone = (k, x, a) => { if (a == null || x == null) return ""; const d = x - a, th = k === "btc" ? 0.05 : 1.5; if (Math.abs(d) < th) return ""; const weak = k === "dealer_pct" ? d > 0 : d < 0; return weak ? "up" : "down"; };
+    const cell = (r, k, dec, unit) => { const x = num(r[k]), a = r.avg[k]; return `<td class="n ${tone(k, x, a)}">${x == null ? "–" : x.toFixed(dec) + unit}<small class="muted"> ${a == null ? "" : a.toFixed(dec)}</small></td>`; };
+    const today = localToday();
+    const up = A.filter((r) => r.btc === "" && r.auction_date >= today).sort((a, b) => (a.auction_date < b.auction_date ? -1 : 1));
+    const latest = terms.map((t) => done.filter((r) => r.term === t).pop()).filter(Boolean).sort((a, b) => (a.auction_date < b.auction_date ? 1 : -1)).map(scored);
+    let h = "<table><thead><tr><th>Date</th><th>Auction</th><th>Size</th><th>High yield</th><th title='Bids ÷ amount sold. Small grey number = average of the previous 6 auctions of this tenor'>Bid-to-cover</th><th>Indirect</th><th>Direct</th><th>Dealers</th></tr></thead><tbody>";
+    up.forEach((r) => { h += `<tr class="upcoming"><td class="n">${md(r.auction_date)}</td><td>${r.term}${r.reopening ? " <small class=\"muted\">reopening</small>" : ""}</td><td class="n">$${num(r.offering_bn).toFixed(0)}bn</td><td class="n muted" colspan="5">announced, not yet held</td></tr>`; });
+    latest.forEach((r) => { h += `<tr><td class="n">${md(r.auction_date)}</td><td>${r.term}${r.reopening ? " <small class=\"muted\">reopening</small>" : ""}</td><td class="n">$${num(r.offering_bn).toFixed(0)}bn</td><td class="n">${num(r.high_yield) == null ? "–" : num(r.high_yield).toFixed(3) + "%"}</td>`
+      + cell(r, "btc", 2, "") + cell(r, "indirect_pct", 1, "%") + cell(r, "direct_pct", 1, "%") + cell(r, "dealer_pct", 1, "%") + "</tr>"; });
+    el.innerHTML = `<div class="table-wrap">${h}</tbody></table></div><p class="hint note">Latest auction of each tenor; the small grey number is the average of the previous 6 auctions of the same tenor. Shares are of competitive bids accepted (excluding the Fed's own SOMA rollovers). Source: Treasury Fiscal Data, auctions_query.</p>`;
+    const L = latest[0];
+    $("#auct-date").innerHTML = L ? `<span class="muted">Latest: ${L.term} on ${md(L.auction_date)}${up.length ? ` · next announced: ${up[0].term} on ${md(up[0].auction_date)}` : ""}</span>` : "";
+    // 圖：選一個天期，最近 24 次的 dealer 比例（柱）和 bid-to-cover（線，右軸）
+    ctl.append(chips("Tenor", terms.map((t) => [t, t]), S.auctTerm, false, (v) => { S.auctTerm = v; renderAuctions(); }));
+    const rs = done.filter((r) => r.term === S.auctTerm).slice(-24).map(scored);
+    plot("c-auct", [{ x: rs.map((r) => r.auction_date), y: rs.map((r) => num(r.dealer_pct)), name: "Dealer share", type: "bar",
+        marker: { color: rs.map((r) => (tone("dealer_pct", num(r.dealer_pct), r.avg.dealer_pct) === "up" ? rgba(css("--up"), 0.7) : tone("dealer_pct", num(r.dealer_pct), r.avg.dealer_pct) === "down" ? rgba(css("--down"), 0.7) : rgba(css("--muted"), 0.45))) },
+        customdata: rs.map((r) => [num(r.high_yield), num(r.indirect_pct), r.reopening ? " (reopening)" : ""]),
+        hovertemplate: "Dealers %{y:.1f}% · indirect %{customdata[1]:.1f}% · high yield %{customdata[0]:.3f}%%{customdata[2]}<extra></extra>" },
+      { x: rs.map((r) => r.auction_date), y: rs.map((r) => num(r.btc)), name: "Bid-to-cover (right)", yaxis: "y2", mode: "lines+markers", line: { color: css("--ink"), width: 1.6 }, marker: { size: 5 }, hovertemplate: "Bid-to-cover %{y:.2f}<extra></extra>" }],
+      baseLayout({ hovermode: "x unified", margin: { l: 44, r: 44, t: 10, b: 40 }, bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
+        yaxis2: { ...baseLayout().yaxis, overlaying: "y", side: "right", showgrid: false, tickformat: ".1f" } }));
   }
 
   // ---------- 圖二：Fed 定價 ----------
@@ -801,7 +903,7 @@
           const r = priced.get(e.date);
           if (r && !past) extra += ` <span class="cal-priced ${num(r.move_bp) > 0.05 ? "up" : num(r.move_bp) < -0.05 ? "down" : ""}">priced ${bp(num(r.move_bp), 1)}bp · ${moves(num(r.move_bp))}</span>`;
         }
-        return `<div class="cal-ev${isF ? " fomc" : ""}${past ? " past" : ""}${e.date === today ? " today" : ""}">`
+        return `<div class="cal-ev${isF ? " fomc" : TOP.has(e.type) ? " tier1" : ""}${e.type === "blackout" ? " blk" : ""}${past ? " past" : ""}${e.date === today ? " today" : ""}">`
           + `<span class="cal-d">${d}<small>${isF ? "" : " " + dow(e.date)}</small></span>`
           + `<span class="cal-g" style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span>`
           + `<span class="cal-l">${e.label}${extra}</span></div>`;
@@ -809,6 +911,15 @@
     });
     el.innerHTML = h || `<div class="empty">No upcoming events.</div>`;
     $("#cal-all").textContent = S.calAll ? "Next 3 months" : "Show all";
+  }
+
+  // Fed 靜默期：會議第一天之前的第二個週六開始，到會後隔天結束（會議都是兩天，決議日 = 第二天）
+  function blackouts(meetings) {
+    return (meetings || []).filter((m) => m >= "2025-01-01").map((m) => {
+      const start = shiftDays(m, -1), dw = new Date(start + "T00:00:00Z").getUTCDay();
+      const sat1 = shiftDays(start, -((dw + 1) % 7 || 7));
+      return { date: shiftDays(sat1, -7), type: "blackout", label: `Fed blackout until ${md(shiftDays(m, 1))} (${md(m)} FOMC)` };
+    });
   }
 
   // ---------- 啟動 ----------
@@ -854,7 +965,7 @@
       + `${nxt ? ` · next ${name} ${md(nxt.date)}` : ""}</span>`;
   }
   // SEP 中位數：每個預測年度畫在那年 12/31
-  const sepPts = (col) => D.sep.filter((r) => r[col] !== "").map((r) => ({ date: `${r.year}-12-31`, v: +r[col], year: r.year }));
+  const sepPts = (col) => D.sep.filter((r) => r[col] !== "" && r[col] != null).map((r) => ({ date: `${r.year}-12-31`, v: +r[col], year: r.year }));
   // 只畫接下來 2 個年底，太遠的預測會把圖拉太長
   const sepTrace = (col, name, color, after) => {
     const p = sepPts(col).filter((x) => !after || (x.date >= after && x.date <= shiftDays(after, 730)));
@@ -910,7 +1021,7 @@
   const PACE2 = (Math.pow(1.02, 1 / 12) - 1) * 100;
   // CPI 拆項兩種看法：時間序列的貢獻疊圖、各項（含 desk 常看的細項）× 月份的熱力圖
   function renderCpiParts(comps) {
-    const P = palette(), v = S.cpiView, narrow = innerWidth < 600;
+    const P = palette(), v = S.bdView, narrow = innerWidth < 600;
     const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
       heat: "Each component's m/m change over the last 24 months, with the items desks watch indented under the block they belong to: OER and rent make up most of shelter; medical and transport services (which includes car insurance) drive supercore; airfares are small but jumpy; used cars swing core goods. Colour is how unusual the move is for that row (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
     $("#cpi-hint").textContent = hint;
@@ -993,6 +1104,20 @@
       plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
     }
 
+    // PPI
+    const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
+    plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
+      baseLayout({ yaxis: pctAxis() }));
+    $("#ppi-date").innerHTML = dataLine("ppi", "ppi", "PPI");
+  }
+
+  // CPI 和 PCE 拆項合成一個 panel：上面切 CPI / PCE，下面切 Contributions / Heatmap（Henry 覺得兩個一樣的 panel 重複）
+  function renderParts() {
+    const cpi = S.bdIdx === "cpi";
+    document.querySelector(".bd-cpi").hidden = !cpi; document.querySelector(".bd-pce").hidden = cpi;
+    $("#cpi-hint").hidden = !cpi; $("#pce-hint").hidden = cpi; $("#pce-date").hidden = cpi;
+    if (!cpi) return renderPceParts();
+    if (!D.macro.length) return;
     // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
     // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
     const comps = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore, approx.)", 25.3], ["cpi_food", "Food", 13.6], ["cpi_energy", "Energy", 6.4]];
@@ -1002,11 +1127,6 @@
     $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
       + `<p class="hint note">Weights are approximate BLS relative importance, so the bars add up close to, not exactly, the headline. Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
 
-    // PPI
-    const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
-    plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
-      baseLayout({ yaxis: pctAxis() }));
-    $("#ppi-date").innerHTML = dataLine("ppi", "ppi", "PPI");
   }
 
   // m/m 年化的月資料（Cleveland median CPI）換成 YoY：連乘 12 個月，缺任何一個月就不算
@@ -1046,7 +1166,7 @@
     const el = $("#c-pce-parts"); if (!el) return;
     if (!D.pce.length) { $("#pce-table").innerHTML = ""; return empty("c-pce-parts", "PCE components load after the next daily update."); }
     clearEmpty("c-pce-parts");
-    const P = palette(), v = S.pceView, narrow = innerWidth < 600;
+    const P = palette(), v = S.bdView, narrow = innerWidth < 600;
     // supercore 自己的 m/m 用 BEA 的 services ex energy & housing（FRED IA001260M）
     const own = (k) => (k === "supercore" ? ser("pce_supercore") : pceSer(k + "_p"));
     $("#pce-hint").textContent = v === "time"
@@ -1159,9 +1279,10 @@
     const P = palette();
     $("#jobs-take2").textContent = jobsTakeaway();
     $("#jobs-date2").innerHTML = dataLine("unrate", "nfp", "NFP");
-    const u = fromYears(ser("unrate"), 5), part = fromYears(ser("civpart"), 5);
+    // 右軸：參與率，或 25-54 歲就業率（prime-age EPOP）
+    const prime = S.uView === "prime", u = fromYears(ser("unrate"), 5), part = fromYears(ser(prime ? "epop_prime" : "civpart"), 5);
     const tr = [{ ...xy(u), name: "Unemployment rate", line: { color: P[2], width: 2.2 }, hovertemplate: "%{y:.1f}%" },
-      { ...xy(part), name: "Participation rate (right)", yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "%{y:.1f}%" }];
+      { ...xy(part), name: `${prime ? "Prime-age (25-54) employment rate" : "Participation rate"} (right)`, yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "%{y:.1f}%" }];
     const su = sepTrace("unrate", "Fed projection", P[2], lastV(u) ? lastV(u).date : null); if (su) tr.push(su);
     clearEmpty("c-jobs");
     const narrow = innerWidth < 600;
@@ -1176,6 +1297,11 @@
     // 那個月公布時，對前兩個月的合計修正（ALFRED）
     const rev = new Map(D.rel.filter((r) => r.measure === "nfp" && r.rev2 !== "").map((r) => [r.ref, +r.rev2]));
     const revTxt = p24.map((p) => (rev.has(p.date) ? `<br>Prior 2 months revised ${rev.get(p.date) > 0 ? "+" : ""}${rev.get(p.date)}k in this report` : ""));
+    const lp = lastV(p24), lr = lp && rev.get(lp.date);
+    // 最近三份報告的兩個月淨修正：連續往下修是勞動市場轉弱的早期訊號
+    const revs = [...rev.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-3);
+    $("#nfp-date").innerHTML = lp ? `<span class="muted">${monthName(lp.date)}: ${bp(lp.v, 0)}k${lr != null ? `, prior two months revised <b class="${lr < 0 ? "down" : lr > 0 ? "up" : ""}">${bp(lr, 0)}k</b>` : ""}`
+      + (revs.length > 1 ? ` · net revisions in the last ${revs.length} reports: ${revs.map(([d, v]) => `${monthName(d).slice(0, 3)} ${bp(v, 0)}k`).join(", ")}` : "") + "</span>" : "";
     plot("c-nfp", [{ ...xy(p24), name: "Monthly change", type: "bar", marker: { color: rgba(P[0], 0.75) }, customdata: revTxt, hovertemplate: "%{y:+.0f}k%{customdata}" },
       { ...xy(a3), name: "3-month average", line: { color: css("--ink"), width: 2 }, hovertemplate: "%{y:+.0f}k" }],
       baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
@@ -1190,10 +1316,14 @@
     $("#wage-date").innerHTML = [["ahe", "AHE"], ["eci_wag", "ECI"], ["atl_wage", "Atlanta Fed"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n} ${c === "eci_wag" ? "Q" + (Math.floor((+l.date.slice(5, 7) - 1) / 3) + 1) + " " + l.date.slice(0, 4) : monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
 
     const cl = D.claims.filter((r) => r.icsa !== "").map((r) => ({ date: r.date, v: r.icsa / 1000 })), c2 = fromYears(cl, 2);
-    plot("c-claims", [{ ...xy(c2), name: "Weekly", line: { color: rgba(P[1], 0.55), width: 1.2 }, hovertemplate: "%{y:.0f}k" },
-      { ...xy(fromYears(avgK(cl, 4), 2)), name: "4-week average", line: { color: P[1], width: 2.2 }, hovertemplate: "%{y:.0f}k" }],
-      baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k" } }));
-    const c0 = lastV(cl); $("#claims-date").innerHTML = c0 ? `<span class="muted">Week ending ${md(c0.date)} · released every Thursday</span>` : "";
+    // continuing claims（百萬人，右軸）晚一週
+    const cc = fromYears(D.claims.filter((r) => r.ccsa).map((r) => ({ date: r.date, v: r.ccsa / 1e6 })), 2);
+    plot("c-claims", [{ ...xy(c2), name: "Initial, weekly", line: { color: rgba(P[1], 0.55), width: 1.2 }, hovertemplate: "Initial %{y:.0f}k<extra></extra>" },
+      { ...xy(fromYears(avgK(cl, 4), 2)), name: "Initial, 4-week average", line: { color: P[1], width: 2.2 }, hovertemplate: "4-wk avg %{y:.0f}k<extra></extra>" },
+      ...(cc.length ? [{ ...xy(cc), name: "Continuing (right)", yaxis: "y2", line: { color: P[3], width: 1.8, dash: "dot" }, hovertemplate: "Continuing %{y:.2f}m<extra></extra>" }] : [])],
+      baseLayout({ margin: { l: 48, r: 52, t: 10, b: 40 }, yaxis: { ...baseLayout().yaxis, ticksuffix: "k" }, yaxis2: { ...baseLayout().yaxis, ticksuffix: "m", tickformat: ".2f", overlaying: "y", side: "right", showgrid: false } }));
+    const c0 = lastV(cl), cc0 = lastV(cc);
+    $("#claims-date").innerHTML = c0 ? `<span class="muted">Initial ${c0.v.toFixed(0)}k, week ending ${md(c0.date)}${cc0 ? ` · continuing ${cc0.v.toFixed(2)}m, week ending ${md(cc0.date)}` : ""} · released every Thursday</span>` : "";
 
     // JOLTS：職缺 ÷ 失業人數（V/U，左軸）和離職率（右軸）
     const un = new Map(ser("unemploy").map((p) => [p.date, p.v]));
@@ -1210,28 +1340,39 @@
     $("#jolts-date").innerHTML = j0 || q0 ? `<span class="muted">${[j0 && `V/U ${j0.v.toFixed(2)}`, q0 && `quits ${q0.v.toFixed(1)}%`].filter(Boolean).join(" · ")} (${monthName((j0 || q0).date)}) · JOLTS runs about two months behind</span>` : "";
   }
 
-  // Rates 頁：10y = 實質利率 + breakeven
+  // Rates 頁：10y 拆成 實質利率 + breakeven，或 預期短率路徑 + term premium（Kim-Wright）
+  const D_HINT = {
+    be: "The 10y yield splits into the real yield (TIPS) and breakeven inflation. When the long end moves, this shows whether it is the market's inflation expectations or the real rate doing the work.",
+    tp: "The other way desks split the 10y: the average short rate the market expects over ten years (the Fed path) plus the term premium, the extra yield investors want for locking money up that long (worries about deficits, supply, inflation risk). This uses the Fed Board's Kim-Wright model, published on FRED with about a week's lag; the NY Fed's ACM model is the other common estimate and gives similar moves. A rise in the 10y with the expected path flat is a term premium story, usually supply or fiscal; a rise led by the path is about the Fed.",
+  };
   function renderDecomp() {
-    const be = D.be.filter((r) => r.be10 !== "" && r.real10 !== "");
-    if (!be.length) return empty("c-decomp", "No breakeven data yet");
+    $("#decomp-hint").textContent = D_HINT[S.dView];
+    const tp = S.dView === "tp";
+    const [ka, kb] = tp ? ["kw_tp10", "kw_fit10"] : ["real10", "be10"];
+    const be = D.be.filter((r) => r[ka] !== "" && r[kb] !== "" && r[ka] != null && r[kb] != null);
+    if (!be.length) { $("#decomp-table").innerHTML = ""; return empty("c-decomp", tp ? "Term premium data load after the next daily update." : "No breakeven data yet"); }
     const P = palette(), rows = inRange(be, "date", S.dRange);
+    // tp 視圖：底下 = 預期短率（擬合 − TP），上面 = TP；兩塊相加 = Kim-Wright 擬合的 10y
+    const parts = tp ? [["Expected short-rate path", (r) => +r.kw_fit10 - +r.kw_tp10], ["Term premium", (r) => +r.kw_tp10]]
+      : [["Real yield (TIPS)", (r) => +r.real10], ["Breakeven inflation", (r) => +r.be10]];
     const nom = rows.map((r) => { const y = D.yields[yIdx[r.date]]; return y ? num(y["10y"]) : null; });
     clearEmpty("c-decomp");
     plot("c-decomp", [
-      { x: rows.map((r) => r.date), y: rows.map((r) => +r.real10), name: "Real yield (TIPS)", stackgroup: "a", line: { color: P[0], width: 0.5 }, fillcolor: rgba(P[0], 0.35), hovertemplate: "%{y:.2f}%" },
-      { x: rows.map((r) => r.date), y: rows.map((r) => +r.be10), name: "Breakeven inflation", stackgroup: "a", line: { color: P[1], width: 0.5 }, fillcolor: rgba(P[1], 0.3), hovertemplate: "%{y:.2f}%" },
+      { x: rows.map((r) => r.date), y: rows.map(parts[0][1]), name: parts[0][0], stackgroup: "a", line: { color: P[0], width: 0.5 }, fillcolor: rgba(P[0], 0.35), hovertemplate: "%{y:.2f}%" },
+      { x: rows.map((r) => r.date), y: rows.map(parts[1][1]), name: parts[1][0], stackgroup: "a", line: { color: P[1], width: 0.5 }, fillcolor: rgba(P[1], 0.3), hovertemplate: "%{y:.2f}%" },
       { x: rows.map((r) => r.date), y: nom, name: "10y nominal", line: { color: css("--ink"), width: 1.6 }, hovertemplate: "%{y:.2f}%" },
     ], baseLayout({ yaxis: pctAxis() }));
-    const last = be[be.length - 1];
-    let h = "<table><thead><tr><th>Change since</th><th>10y nominal (bp)</th><th>Real yield (bp)</th><th>Breakeven (bp)</th><th>Driven by</th></tr></thead><tbody>";
+    const last = be[be.length - 1], short = tp ? ["Path (bp)", "Term premium (bp)"] : ["Real yield (bp)", "Breakeven (bp)"];
+    let h = `<table><thead><tr><th>Change since</th><th>10y ${tp ? "fitted" : "nominal"} (bp)</th><th>${short[0]}</th><th>${short[1]}</th><th>Driven by</th></tr></thead><tbody>`;
     [["1W", 7], ["1M", 30], ["3M", 91], ["1Y", 365]].forEach(([k, d]) => {
       const a = atOrBefore(be, "date", shiftDays(last.date, -d)); if (!a) return;
-      const dr = (last.real10 - a.real10) * 100, db = (last.be10 - a.be10) * 100;
-      const who = Math.abs(dr) + Math.abs(db) < 3 ? "little change" : Math.abs(dr) > Math.abs(db) ? "real yield" : "inflation expectations";
+      const dr = (parts[0][1](last) - parts[0][1](a)) * 100, db = (parts[1][1](last) - parts[1][1](a)) * 100;
+      const who = Math.abs(dr) + Math.abs(db) < 3 ? "little change" : Math.abs(dr) > Math.abs(db) ? (tp ? "Fed path" : "real yield") : (tp ? "term premium" : "inflation expectations");
       h += `<tr><td>${cmpLabel[k] || k}</td><td class="n ${cls(dr + db)}">${bp(dr + db, 0)}</td><td class="n ${cls(dr)}">${bp(dr, 0)}</td><td class="n ${cls(db)}">${bp(db, 0)}</td><td>${who}</td></tr>`;
     });
     $("#decomp-table").innerHTML = `<div class="table-wrap">${h}</tbody></table></div>`
-      + `<p class="hint note">Real + breakeven adds up to the 10y TIPS-implied nominal yield, which sits a few bp from the Treasury 10y (black line). Data from FRED (T10YIE, DFII10), ${last.date}.</p>`;
+      + (tp ? `<p class="hint note">Kim-Wright fitted 10y (path + term premium) sits close to, not exactly on, the Treasury 10y (black line). FRED THREEFY10, THREEFYTP10, last ${last.date}.</p>`
+        : `<p class="hint note">Real + breakeven adds up to the 10y TIPS-implied nominal yield, which sits a few bp from the Treasury 10y (black line). Data from FRED (T10YIE, DFII10), ${last.date}.</p>`);
   }
 
   // ---------- 數據 surprise：預期（FF / 手動）vs 首次公布（ALFRED） ----------
@@ -1377,13 +1518,100 @@
     }
   }
 
+  // ---------- 成長：GDP / GDPNow、零售銷售 control group、工業生產和區域 Fed 調查 ----------
+  const qName = (iso) => `Q${Math.floor((+iso.slice(5, 7) - 1) / 3) + 1} ${iso.slice(0, 4)}`;
+  // control group = 零售（不含餐飲）− 汽車 − 加油站 − 建材，網站自己減
+  const rsControl = () => D.macro.filter((r) => r.rs_xfs && r.rs_mv && r.rs_gas && r.rs_bm).map((r) => ({ date: r.date, v: +r.rs_xfs - +r.rs_mv - +r.rs_gas - +r.rs_bm }));
+  function gdpParts() {
+    const g = (D.gq || []).filter((r) => r.gdp !== "").map((r) => ({ date: r.date, v: +r.gdp }));
+    const lg = lastV(g), now = (D.gq || []).filter((r) => r.gdpnow !== "" && (!lg || r.date > lg.date)).map((r) => ({ date: r.date, v: +r.gdpnow })).pop() || null;
+    return { g, lg, now };
+  }
+  function nextEvt(type) { const t = localToday(); return D.events.find((e) => e.type === type && e.date >= t); }
+  function growthTakeaway() {
+    const { lg, now } = gdpParts(), c = mom(rsControl()), lc = lastV(c);
+    if (!lg) return "";
+    let t = `Real GDP grew ${f1(lg.v)}% annualized in ${qName(lg.date)}`;
+    t += now ? `; the Atlanta Fed's GDPNow tracks ${f1(now.v)}% for ${qName(now.date)}.` : ".";
+    if (lc) {
+      const a3 = lastV(avgK(c, 3));
+      t += ` Retail sales control group ${lc.v >= 0 ? "rose" : "fell"} ${f1(Math.abs(lc.v))}% in ${monthName(lc.date).slice(0, 3)} (3-month average ${a3 ? (a3.v >= 0 ? "+" : "") + a3.v.toFixed(1) : "–"}%).`;
+    }
+    return t;
+  }
+  function gdpTraces(years) {
+    const P = palette(), { g, now } = gdpParts(), gs = fromYears(g, years);
+    // 季資料畫在季初那天：柱寬固定 2 個月，GDPNow 那根才不會因為只有一個點而變成一條線
+    const W = 62 * 864e5;
+    const tr = [{ ...xy(gs), name: "Real GDP, q/q annualized", type: "bar", width: gs.map(() => W), marker: { color: gs.map((p) => rgba(P[0], p.v < 0 ? 0.45 : 0.75)) },
+      customdata: gs.map((p) => qName(p.date)), hovertemplate: "%{customdata}: %{y:.1f}%<extra></extra>" }];
+    if (now) tr.push({ x: [now.date], y: [now.v], width: [W], name: `GDPNow ${qName(now.date)}`, type: "bar", marker: { color: "rgba(0,0,0,0)", line: { color: P[0], width: 2 } },
+      hovertemplate: `GDPNow ${qName(now.date)}: %{y:.1f}%<extra></extra>` });
+    return tr;
+  }
+  function renderGrowthCard() {
+    const el = $("#growth-take"); if (!el) return;
+    const { lg, now } = gdpParts();
+    if (!lg) { el.textContent = "Growth data load after the next daily update."; return; }
+    el.textContent = growthTakeaway();
+    const n = nextEvt("gdp");
+    $("#growth-date").innerHTML = `<span class="muted">${qName(lg.date)} data${n ? ` · next GDP ${md(n.date)}` : ""}</span>`;
+    const lc = lastV(mom(rsControl()));
+    $("#growth-k").innerHTML = `<span>GDP <b class="num">${f1(lg.v)}%</b></span>` + (now ? `<span>GDPNow <b class="num">${f1(now.v)}%</b></span>` : "")
+      + (lc ? `<span>Control group <b class="num">${lc.v >= 0 ? "+" : ""}${lc.v.toFixed(1)}%</b> m/m</span>` : "");
+    const tg = gdpTraces(5), x0 = tg[0].x[0], x1 = shiftDays((now || lg).date, 75);
+    plot("c-growth-mini", tg, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, barmode: "overlay", bargap: 0.25, xaxis: { ...baseLayout().xaxis, range: [shiftDays(x0, -45), x1] }, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
+  }
+  function renderGrowth() {
+    const { lg } = gdpParts(), P = palette(), narrow = innerWidth < 600;
+    if (!lg) return empty("c-gdp", "Growth data load after the next daily update.");
+    clearEmpty("c-gdp");
+    $("#growth-take2").textContent = growthTakeaway();
+    const n = nextEvt("gdp");
+    $("#gdp-date").innerHTML = `<span class="muted">${qName(lg.date)} data${n ? ` · next: ${n.label} on ${md(n.date)}` : ""} · FRED A191RL1Q225SBEA, GDPNOW</span>`;
+    const tr = gdpTraces(5), sp = sepTrace("gdp", "Fed projection (Q4/Q4)", css("--ink"), lg.date); if (sp) tr.push(sp);
+    plot("c-gdp", tr, baseLayout({ barmode: "overlay", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {}) }));
+
+    // 零售銷售：control group m/m（柱）+ headline m/m（點），最近 2 年
+    const c = mom(rsControl()).slice(-24), hd = mom(ser("rs_total")).slice(-24);
+    plot("c-rs", [{ ...xy(c), name: "Control group m/m", type: "bar", marker: { color: rgba(P[0], 0.75) }, hovertemplate: "Control %{y:+.2f}%<extra></extra>" },
+      { ...xy(hd), name: "Headline m/m", mode: "markers", marker: { symbol: "diamond", size: 8, color: css("--ink") }, hovertemplate: "Headline %{y:+.2f}%<extra></extra>" }],
+      baseLayout({ bargap: 0.3, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+    const lc = lastV(c), nr = nextEvt("retail");
+    $("#rs-date").innerHTML = lc ? `<span class="muted">${monthName(lc.date)} data${nr ? ` · next ${md(nr.date)}` : ""} · FRED RSAFS, RSXFS less RSMVPD, RSGASS, RSBMGESD</span>` : "";
+
+    // 工業生產 YoY（左）+ Philly / Empire 現況指數（右）
+    const ip = fromYears(yoy(ser("indpro")), 5), ph = fromYears(ser("philly"), 5), em = fromYears(ser("empire"), 5);
+    plot("c-ip", [{ ...xy(ip), name: "Industrial production YoY", line: { color: P[0], width: 2.2 }, hovertemplate: "IP %{y:.1f}% YoY<extra></extra>" },
+      { ...xy(ph), name: "Philly Fed (right)", yaxis: "y2", line: { color: P[2], width: 1.3 }, hovertemplate: "Philly %{y:.1f}<extra></extra>" },
+      { ...xy(em), name: "Empire State (right)", yaxis: "y2", line: { color: P[3], width: 1.3 }, hovertemplate: "Empire %{y:.1f}<extra></extra>" }],
+      baseLayout({ margin: { l: 44, r: 44, t: 10, b: narrow ? 90 : 40 }, ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" } } : {}),
+        yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), yaxis2: { ...baseLayout().yaxis, overlaying: "y", side: "right", showgrid: false, zeroline: true, zerolinecolor: rgba(css("--muted"), 0.4) } }));
+    const li = lastV(ip), lp = lastV(ph);
+    $("#ip-date").innerHTML = li ? `<span class="muted">IP ${monthName(li.date)}${lp ? ` · Philly / Empire ${monthName(lp.date)}` : ""} · FRED INDPRO, GACDFSA066MSFRBPHI, GACDISA066MSFRBNY</span>` : "";
+  }
+
+  // Cleveland Fed nowcast：還沒公布 PCE 的月份（通常兩個月），m/m
+  function renderNowcast() {
+    const el = $("#nowcast"); if (!el) return;
+    const N = (D.nowcast || []).filter((r) => r.core_pce !== "" && r.actual_core_pce === "");
+    if (!N.length) { el.innerHTML = ""; return; }
+    const v = (x) => (x === "" || x == null ? "–" : (+x).toFixed(2) + "%");
+    const a = (r, k) => (r["actual_" + k] !== "" ? `<b>${v(r["actual_" + k])}</b> <small class="muted">actual</small>` : v(r[k]));
+    let h = "<table><thead><tr><th>Month</th><th>Core CPI m/m</th><th>Core PCE m/m</th><th>CPI m/m</th><th>PCE m/m</th></tr></thead><tbody>";
+    N.slice().reverse().forEach((r) => { h += `<tr><td>${monthName(r.month)}</td><td class="n">${a(r, "core_cpi")}</td><td class="n"><b>${v(r.core_pce)}</b></td><td class="n">${a(r, "cpi")}</td><td class="n">${v(r.pce)}</td></tr>`; });
+    el.innerHTML = `<h3 class="subhead">Cleveland Fed nowcast <span class="muted">as of ${md(N[0].asof)}</span></h3><div class="table-wrap">${h}</tbody></table></div>`
+      + `<p class="hint note">The Cleveland Fed's model estimate for months not yet published, from oil and gasoline prices and whatever CPI and PPI data are already out. Desks do the same after each CPI and PPI release to pin down core PCE, the number the Fed targets. Once a print is out it shows as actual. 2% a year is about 0.17% a month.</p>`;
+  }
+
   // ---------- 分頁：#overview / #rates / #calendar（舊的 #events 也導到 calendar）----------
-  const PAGES = ["overview", "rates", "inflation", "jobs", "calendar"];
+  const PAGES = ["overview", "rates", "inflation", "jobs", "growth", "calendar"];
   const RENDER = {
-    overview: () => { renderNext(); renderHero(); renderMacroCards(); },
-    rates: () => { renderRatesTake(); renderYields(); renderFed(); renderDecomp(); renderFomc(); renderSurIndex(); },
-    inflation: () => { renderInflation(); renderTrend(); renderPceParts(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
+    overview: () => { renderNext(); renderHero(); renderMacroCards(); renderGrowthCard(); },
+    rates: () => { renderRatesTake(); renderYields(); renderFed(); renderAuctions(); renderFunding(); renderDecomp(); renderFomc(); renderSurIndex(); },
+    inflation: () => { renderInflation(); renderNowcast(); renderTrend(); renderParts(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
+    growth: () => renderGrowth(),
     calendar: () => renderCalendar(),
   };
   function route() {
@@ -1403,9 +1631,11 @@
     D.pathSr3 = await load("fed_path_sr3.csv").catch(() => []);
     D.bills = await load("bills_ois.csv").catch(() => []);
     D.pce = await load("pce.csv").catch(() => []);
+    [D.auct, D.fund, D.gq, D.nowcast] = await Promise.all(["auctions.csv", "funding.csv", "growth_q.csv", "nowcast.csv"].map(load));
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }
+    D.events = [...D.events, ...blackouts(D.meetings)].sort((a, b) => (a.date < b.date ? -1 : 1));
     D.yields.forEach((r, i) => (yIdx[r.date] = i));
     const ly = D.yields[D.yields.length - 1];
     $("#asof").textContent = ly ? `Data as of ${ly.date}` : "No data yet";
@@ -1414,11 +1644,14 @@
     bindSeg("#f-views", "fView", renderFed);
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
-    bindSeg("#cpi-views", "cpiView", () => renderInflation());
-    bindSeg("#pce-views", "pceView", renderPceParts);
+    bindSeg("#bd-index", "bdIdx", renderParts);
+    bindSeg("#bd-views", "bdView", renderParts);
     bindSeg("#w-views", "wView", renderWedge);
     bindSeg("#e-range", "eRange", renderExp);
     bindSeg("#d-range", "dRange", renderDecomp);
+    bindSeg("#d-views", "dView", renderDecomp);
+    bindSeg("#fund-views", "fundView", renderFunding);
+    bindSeg("#u-views", "uView", renderJobs);
     // Overview 卡片整張可點；在圖上拖曳（縮放）或點到裡面的連結 / 按鈕時不跳頁
     document.querySelectorAll(".panel.go").forEach((el) => {
       let down = null;

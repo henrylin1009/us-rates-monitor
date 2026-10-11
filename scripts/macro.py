@@ -4,6 +4,8 @@
 - claims.csv：初領失業金（週）
 - breakeven.csv：10y breakeven、10y 實質利率、5y breakeven、5y5y forward（日）
 - sep.csv：FOMC SEP 中位數，每個預測年度一列
+- growth_q.csv：實質 GDP 和 GDPNow（季）
+- funding.csv：SOFR、IORB、ON RRP、準備金、TGA、Fed 總資產
 
 需要環境變數 FRED_API_KEY。每次都整條重抓（資料很小），抓不到的 series 保留舊值。
 """
@@ -33,12 +35,23 @@ MONTHLY = {
     "median_cpi": "MEDCPIM158SFRBCLE", "trim_pce": "PCETRIM12M159SFRBDAL",
     # 通膨預期：UMich 1 年（%）
     "umich_1y": "MICH",
+    # 就業：25-54 歲就業率（prime-age EPOP，不受人口老化影響）
+    "epop_prime": "LNS12300060",
+    # 成長：零售銷售（advance，百萬美元）。control group = 零售（不含餐飲）− 汽車 − 加油站 − 建材，網站自己減
+    "rs_total": "RSAFS", "rs_xfs": "RSXFS", "rs_mv": "RSMVPD", "rs_gas": "RSGASS", "rs_bm": "RSBMGESD",
+    # 工業生產指數、區域 Fed 製造業調查（現況擴散指數，>0 = 擴張）
+    "indpro": "INDPRO", "philly": "GACDFSA066MSFRBPHI", "empire": "GACDISA066MSFRBNY",
 }
-WEEKLY = {"icsa": "ICSA"}
-DAILY = {"be10": "T10YIE", "real10": "DFII10", "be5": "T5YIE", "be5y5y": "T5YIFR"}
-SEP = {"core_pce": "JCXFEMD", "unrate": "UNRATEMD", "fedfunds": "FEDTARMD"}
+WEEKLY = {"icsa": "ICSA", "ccsa": "CCSA"}
+# Kim-Wright 模型（Fed 理事會）：10y 擬合殖利率和 term premium，相減 = 預期短率平均
+DAILY = {"be10": "T10YIE", "real10": "DFII10", "be5": "T5YIE", "be5y5y": "T5YIFR", "kw_fit10": "THREEFY10", "kw_tp10": "THREEFYTP10"}
+# 季資料：實質 GDP（q/q 年化 %），Atlanta Fed GDPNow（FRED 上一季一個值 = 該季最新的 nowcast）
+QUARTERLY = {"gdp": "A191RL1Q225SBEA", "gdpnow": "GDPNOW"}
+# 資金面：SOFR、IORB（%，日）、ON RRP（十億美元，日）、準備金、TGA、Fed 總資產（百萬美元，週三）
+FUNDING = {"sofr": "SOFR", "iorb": "IORB", "rrp": "RRPONTSYD", "reserves": "WRESBAL", "tga": "WTREGEN", "walcl": "WALCL"}
+SEP = {"core_pce": "JCXFEMD", "unrate": "UNRATEMD", "fedfunds": "FEDTARMD", "gdp": "GDPC1MD"}
 
-MONTHLY_FROM, WEEKLY_FROM, DAILY_FROM = "2000-01-01", "2015-01-01", "2015-01-01"
+MONTHLY_FROM, WEEKLY_FROM, DAILY_FROM, FUNDING_FROM = "2000-01-01", "2015-01-01", "2015-01-01", "2021-08-01"
 
 
 def fred_series(get, key: str, sid: str, start: str) -> dict[str, str]:
@@ -89,3 +102,7 @@ def update_macro(get, read_csv, write_csv) -> None:
     rows = collect(get, key, DAILY, DAILY_FROM, read_csv("breakeven.csv"))
     write_csv("breakeven.csv", rows, ["date", *DAILY])
     write_csv("sep.csv", sep_rows(get, key, read_csv("sep.csv")), ["year", *SEP])
+    rows = collect(get, key, QUARTERLY, MONTHLY_FROM, read_csv("growth_q.csv"))
+    write_csv("growth_q.csv", rows, ["date", *QUARTERLY])
+    rows = collect(get, key, FUNDING, FUNDING_FROM, read_csv("funding.csv"))
+    write_csv("funding.csv", rows, ["date", *FUNDING])

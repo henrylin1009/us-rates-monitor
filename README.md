@@ -22,7 +22,11 @@ GitHub Actions（週一到週五 23:40 UTC）
       │                                    bills_ois.csv（1m/3m/6m bill − 同期間 ZQ 路徑的複利平均）
       │                                    fed_path_sr3.csv（ZQ 路徑之後用 SR3 接上，scripts/sofrstrip.py）
       │                                    fed_path_partial.csv（下一次會議合約已到期的舊日子，從接得上的會議開始，只給比較用）
-      ├ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
+      ├ scripts/macro.py 抓 FRED 通膨、就業、成長 → docs/data/macro.csv、claims.csv、breakeven.csv（含 Kim-Wright term premium）、sep.csv
+      │                                    growth_q.csv（GDP、GDPNow）、funding.csv（SOFR、IORB、RRP、準備金、TGA、Fed 總資產）
+      ├ scripts/auctions.py 財政部 coupon 標售結果 → docs/data/auctions.csv（Fiscal Data API）
+      ├ scripts/nowcast.py Cleveland Fed 通膨 nowcast → docs/data/nowcast.csv
+      ├ scripts/calendars.py 行事曆 → docs/data/events.json（FRED 公布日、ISM 自算、Fed 主席 / Beige Book、已公告標售）
       └ scripts/surprise.py 預期值（FF）＋首次公布值（ALFRED） → docs/data/consensus.csv、releases.csv
 GitHub Pages（main 分支 /docs）
   └ docs/index.html + app.js（Plotly）讀上面的 CSV
