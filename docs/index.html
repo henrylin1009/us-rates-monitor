@@ -144,15 +144,6 @@
     <div class="chart" id="c-decomp"></div>
     <div id="decomp-table"></div>
   </section>
-  <section class="panel" id="p-surix">
-    <div class="panel-head">
-      <div>
-        <h2>Data surprises and the 2y</h2>
-        <p class="hint" id="surix-note"></p>
-      </div>
-    </div>
-    <div class="chart" id="c-surix"></div>
-  </section>
   <section class="panel" id="p-fomc">
     <div class="panel-head">
       <div>
@@ -168,6 +159,11 @@
     <div class="chart" id="c-fomc"></div>
     <div id="fomc-table"></div>
   </section>
+  <details class="panel more" id="p-surix" data-fold="surix">
+    <summary><h2>Data surprises and the 2y</h2> <span class="muted">secondary · forecasts only go back to Jan 2026</span></summary>
+    <p class="hint" id="surix-note"></p>
+    <div class="chart" id="c-surix"></div>
+  </details>
   <section class="notes">
     <details>
       <summary>How Fed pricing is computed</summary>
@@ -205,17 +201,14 @@
     <div class="panel-head"><div><h2>Underlying inflation</h2><p class="hint">Core still swings on a few odd items (a jump in airfares, a drop in used cars). The Cleveland Fed's median CPI takes the middle item each month, and the Dallas Fed's trimmed-mean PCE drops the biggest movers at both ends, so both show the trend underneath. Fed officials quote them when core looks noisy. All YoY.</p><p class="dline" id="trend-date"></p></div></div>
     <div class="chart" id="c-trend"></div>
   </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>CPI breakdown</h2><p class="hint" id="cpi-hint"></p></div>
-      <div class="seg" id="cpi-views"><button data-v="time" class="on">Contributions</button><button data-v="heat">Heatmap</button></div></div>
-    <div class="chart" id="c-cpi-parts"></div>
-    <div id="cpi-table"></div>
-  </section>
-  <section class="panel" id="p-pce">
-    <div class="panel-head"><div><h2>PCE breakdown</h2><p class="hint" id="pce-hint"></p><p class="dline" id="pce-date"></p></div>
-      <div class="seg" id="pce-views"><button data-v="time" class="on">Contributions</button><button data-v="heat">Heatmap</button></div></div>
-    <div class="chart" id="c-pce-parts"></div>
-    <div id="pce-table"></div>
+  <section class="panel" id="p-parts">
+    <div class="panel-head"><div><h2>Breakdown</h2><p class="hint" id="cpi-hint"></p><p class="hint" id="pce-hint"></p><p class="dline" id="pce-date"></p></div>
+      <div class="seg-col">
+        <div class="seg" id="bd-index"><button data-v="cpi" class="on">CPI</button><button data-v="pce">PCE</button></div>
+        <div class="seg" id="bd-views"><button data-v="time" class="on">Contributions</button><button data-v="heat">Heatmap</button></div>
+      </div></div>
+    <div class="bd-cpi"><div class="chart" id="c-cpi-parts"></div><div id="cpi-table"></div></div>
+    <div class="bd-pce" hidden><div class="chart" id="c-pce-parts"></div><div id="pce-table"></div></div>
   </section>
   <section class="panel" id="p-wedge">
     <div class="panel-head"><div><h2>CPI vs PCE</h2><p class="hint" id="wedge-hint"></p><p class="dline" id="wedge-date"></p></div>

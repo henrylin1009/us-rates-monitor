@@ -16,9 +16,11 @@ from pathlib import Path
 import requests
 
 import fomc
+from auctions import update_auctions
 from calendars import update_calendars
 from fedpricing import implied_month_rate, partial_path, price_path
 from macro import update_macro
+from nowcast import update_nowcast
 from pce import update_pce
 from surprise import update_surprise
 from fomc import MEETINGS
@@ -291,6 +293,10 @@ def main() -> int:
     args = ap.parse_args()
     global MEETINGS
     try:
+        update_auctions(get, read_csv, write_csv)  # 先跑：行事曆要用到已公告的標售
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_auctions 失敗：{e}")
+    try:
         update_calendars(get)  # 先更新 FOMC 日期，下面算 Fed 定價才會用到最新的
     except Exception as e:  # noqa: BLE001
         print(f"✗ update_calendars 失敗：{e}")
@@ -311,6 +317,10 @@ def main() -> int:
         update_pce(read_csv, write_csv)
     except Exception as e:  # noqa: BLE001
         print(f"✗ update_pce 失敗：{e}")
+    try:
+        update_nowcast(get, write_csv)
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_nowcast 失敗：{e}")
     try:
         update_surprise(get, read_csv, write_csv)
     except Exception as e:  # noqa: BLE001

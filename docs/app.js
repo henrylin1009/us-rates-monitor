@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", pceView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", bdIdx: "cpi", bdView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
@@ -282,6 +282,13 @@
     // 關鍵數字
     const row = (k, lv, d1, d7, unit) => `<tr><td>${k}</td><td class="n">${lv}</td><td class="n ${cls(d1)}">${bp(d1, 1)}</td><td class="n ${cls(d7)}">${bp(d7, 1)}</td></tr>`;
     let h = `<table class="ktab"><thead><tr><th></th><th>Level</th><th>1D bp</th><th>1W bp</th></tr></thead><tbody>`;
+    // 最上面一列放 Fed 在哪：EFFR 和目標區間（desk 早報第一行）
+    const ef = D.effr.filter((r) => r.effr !== ""), e0 = ef[ef.length - 1];
+    if (e0) {
+      const e1 = ef[ef.length - 2], e7 = atOrBefore(ef, "date", shiftDays(e0.date, -7)), d = (x) => (x ? (num(e0.effr) - num(x.effr)) * 100 : null);
+      const tgt = e0.target_low !== "" ? ` <small class="muted">${(+e0.target_low).toFixed(2)}–${(+e0.target_high).toFixed(2)}</small>` : "";
+      h += row(`EFFR${tgt}`, num(e0.effr).toFixed(2) + "%", d(e1), d(e7));
+    }
     ["2y", "5y", "10y", "30y"].forEach((t) => { h += row(t, num(a[t]) == null ? "–" : num(a[t]).toFixed(2) + "%", chg(a, b, t), chg(a, w, t)); });
     [["2s10s", "2y", "10y"], ["5s30s", "5y", "30y"]].forEach(([k, x, z]) => {
       const s0 = sprd(a, x, z), s1 = sprd(b, x, z), s7 = sprd(w, x, z);
@@ -302,8 +309,8 @@
     let fh = `<div>By year-end: <b class="num">${bp(num(f.cum_yearend_bp), 0)}bp</b> · ${moves(num(f.cum_yearend_bp))}`
       + (dYe == null ? "" : ` · <span class="${cls(dYe)}">${bp(dYe, 0)}bp vs 1W</span>`) + "</div>";
     const s = fomcSurprises().filter((x) => x.surprise != null).pop();
-    fh += s ? `<div class="sur">● Last FOMC surprise (${md(s.date)}): <b class="num ${cls(s.surprise)}">${bp(s.surprise, 1)}bp</b> · 2y ${bp(s.d2, 1)}bp</div>`
-      : `<div class="sur muted">● Last FOMC surprise: not enough pricing history yet</div>`;
+    // 還沒有會前定價的會議就不顯示這行（第一次是 2026-10-28 會議之後）
+    if (s) fh += `<div class="sur">● Last FOMC surprise (${md(s.date)}): <b class="num ${cls(s.surprise)}">${bp(s.surprise, 1)}bp</b> · 2y ${bp(s.d2, 1)}bp</div>`;
     $("#hero-fed").innerHTML = fh;
   }
 
@@ -362,12 +369,14 @@
     const rows = fomcSurprises().slice(-12).reverse();
     if (!rows.length) { el.innerHTML = `<p class="hint">No meetings yet.</p>`; return; }
     const decTxt = (d) => (d == null ? "–" : d > 0 ? `Hike ${d}bp` : d < 0 ? `Cut ${-d}bp` : "Hold");
-    let h = "<table><thead><tr><th>Meeting</th><th>Decision</th><th>Priced day before (bp)</th><th>Surprise (bp)</th><th>2y (bp)</th><th>Year-end pricing (bp)</th></tr></thead><tbody>";
-    rows.forEach((r) => {
-      h += `<tr><td class="n">${r.date}</td><td>${decTxt(r.dec)}</td><td class="n">${r.priced == null ? "–" : bp(r.priced, 1)}</td>`
-        + `<td class="n ${cls(r.surprise)}"><b>${r.surprise == null ? "–" : bp(r.surprise, 1)}</b></td>`
-        + `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td><td class="n ${cls(r.fed)}">${r.fed == null ? "–" : bp(r.fed, 1)}</td></tr>`;
-    });
+    // 整欄都沒有值的欄位（定價歷史還不夠）先不顯示，有第一筆就自動出現
+    const has = (k) => rows.some((r) => r[k] != null);
+    const cols = [["Priced day before (bp)", "priced", (r) => `<td class="n">${bp(r.priced, 1)}</td>`],
+      ["Surprise (bp)", "surprise", (r) => `<td class="n ${cls(r.surprise)}"><b>${bp(r.surprise, 1)}</b></td>`],
+      ["2y (bp)", "d2", (r) => `<td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td>`],
+      ["Year-end pricing (bp)", "fed", (r) => `<td class="n ${cls(r.fed)}">${bp(r.fed, 1)}</td>`]].filter(([, k]) => has(k));
+    let h = "<table><thead><tr><th>Meeting</th><th>Decision</th>" + cols.map(([n]) => `<th>${n}</th>`).join("") + "</tr></thead><tbody>";
+    rows.forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${decTxt(r.dec)}</td>` + cols.map(([, , f]) => f(r)).join("") + "</tr>"; });
     const first = D.summ.length ? D.summ[0].asof : null;
     const note = `<p class="hint note">Pricing history starts on ${first || "–"}, so meetings before that have no diamond and no surprise yet. Both fill in from each new meeting.</p>`;
     el.innerHTML = note + fold("fomc", "Meeting-by-meeting numbers", `<div class="table-wrap">${h}</tbody></table></div>`);
@@ -434,7 +443,7 @@
   const Y_HINT = {
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
     curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them.",
-    spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
+    spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted. 2s5s10s is a butterfly (2 × 5y − 2y − 10y): it rises when the 5y cheapens against the two wings, usually when the market prices more Fed hikes (or fewer cuts) over the next few years, since the belly carries most of that.",
     bills: "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).",
   };
   // ---------- 比較日期拉桿 ----------
@@ -543,11 +552,15 @@
     }
 
     if (v === "spread") {
-      const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"] };
+      // 三個天期的是 butterfly：2 × 中間 − 兩翼，正 = 中間（5y）相對兩翼便宜
+      const defs = { "3m10y": ["3m", "10y"], "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"], "2s5s10s": ["2y", "5y", "10y"] };
       ctl.append(chips("Spreads", Object.keys(defs).map((k) => [k, k]), S.spreads, true, rr), rangeChips("range", rr), eventChips(rr));
       const rows = inRange(D.yields, "date", S.range);
       const tr = Object.keys(defs).filter((k) => S.spreads.includes(k)).map((k, i) => ({
-        x: rows.map((r) => r.date), y: rows.map((r) => { const a = num(r[defs[k][0]]), b = num(r[defs[k][1]]); return a == null || b == null ? null : (b - a) * 100; }),
+        x: rows.map((r) => r.date), y: rows.map((r) => {
+          const v = defs[k].map((t) => num(r[t])); if (v.some((z) => z == null)) return null;
+          return (v.length === 3 ? 2 * v[1] - v[0] - v[2] : v[1] - v[0]) * 100;
+        }),
         name: k, type: "scatter", mode: "lines", line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.0f}bp",
       }));
       const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
@@ -910,7 +923,7 @@
   const PACE2 = (Math.pow(1.02, 1 / 12) - 1) * 100;
   // CPI 拆項兩種看法：時間序列的貢獻疊圖、各項（含 desk 常看的細項）× 月份的熱力圖
   function renderCpiParts(comps) {
-    const P = palette(), v = S.cpiView, narrow = innerWidth < 600;
+    const P = palette(), v = S.bdView, narrow = innerWidth < 600;
     const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
       heat: "Each component's m/m change over the last 24 months, with the items desks watch indented under the block they belong to: OER and rent make up most of shelter; medical and transport services (which includes car insurance) drive supercore; airfares are small but jumpy; used cars swing core goods. Colour is how unusual the move is for that row (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
     $("#cpi-hint").textContent = hint;
@@ -993,6 +1006,20 @@
       plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
     }
 
+    // PPI
+    const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
+    plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
+      baseLayout({ yaxis: pctAxis() }));
+    $("#ppi-date").innerHTML = dataLine("ppi", "ppi", "PPI");
+  }
+
+  // CPI 和 PCE 拆項合成一個 panel：上面切 CPI / PCE，下面切 Contributions / Heatmap（Henry 覺得兩個一樣的 panel 重複）
+  function renderParts() {
+    const cpi = S.bdIdx === "cpi";
+    document.querySelector(".bd-cpi").hidden = !cpi; document.querySelector(".bd-pce").hidden = cpi;
+    $("#cpi-hint").hidden = !cpi; $("#pce-hint").hidden = cpi; $("#pce-date").hidden = cpi;
+    if (!cpi) return renderPceParts();
+    if (!D.macro.length) return;
     // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
     // 權重是 BLS relative importance 的近似值（%），每年 12 月更新一次，差一點不影響看誰在推
     const comps = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore, approx.)", 25.3], ["cpi_food", "Food", 13.6], ["cpi_energy", "Energy", 6.4]];
@@ -1002,11 +1029,6 @@
     $("#cpi-table").innerHTML = fold("cpiParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
       + `<p class="hint note">Weights are approximate BLS relative importance, so the bars add up close to, not exactly, the headline. Supercore here is CPI services less rent of shelter, which still includes energy services, so it is a close approximation of the usual definition.</p>`;
 
-    // PPI
-    const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
-    plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
-      baseLayout({ yaxis: pctAxis() }));
-    $("#ppi-date").innerHTML = dataLine("ppi", "ppi", "PPI");
   }
 
   // m/m 年化的月資料（Cleveland median CPI）換成 YoY：連乘 12 個月，缺任何一個月就不算
@@ -1046,7 +1068,7 @@
     const el = $("#c-pce-parts"); if (!el) return;
     if (!D.pce.length) { $("#pce-table").innerHTML = ""; return empty("c-pce-parts", "PCE components load after the next daily update."); }
     clearEmpty("c-pce-parts");
-    const P = palette(), v = S.pceView, narrow = innerWidth < 600;
+    const P = palette(), v = S.bdView, narrow = innerWidth < 600;
     // supercore 自己的 m/m 用 BEA 的 services ex energy & housing（FRED IA001260M）
     const own = (k) => (k === "supercore" ? ser("pce_supercore") : pceSer(k + "_p"));
     $("#pce-hint").textContent = v === "time"
@@ -1382,7 +1404,7 @@
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); },
     rates: () => { renderRatesTake(); renderYields(); renderFed(); renderDecomp(); renderFomc(); renderSurIndex(); },
-    inflation: () => { renderInflation(); renderTrend(); renderPceParts(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
+    inflation: () => { renderInflation(); renderTrend(); renderParts(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     calendar: () => renderCalendar(),
   };
@@ -1414,8 +1436,8 @@
     bindSeg("#f-views", "fView", renderFed);
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
-    bindSeg("#cpi-views", "cpiView", () => renderInflation());
-    bindSeg("#pce-views", "pceView", renderPceParts);
+    bindSeg("#bd-index", "bdIdx", renderParts);
+    bindSeg("#bd-views", "bdView", renderParts);
     bindSeg("#w-views", "wView", renderWedge);
     bindSeg("#e-range", "eRange", renderExp);
     bindSeg("#d-range", "dRange", renderDecomp);

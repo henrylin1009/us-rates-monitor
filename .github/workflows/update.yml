@@ -31,6 +31,7 @@ jobs:
           python scripts/test_surprise.py
           python scripts/test_sofrstrip.py
           python scripts/test_pce.py
+          python scripts/test_auctions.py
       - name: 抓資料
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}

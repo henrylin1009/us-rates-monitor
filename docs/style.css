@@ -257,3 +257,4 @@ details.panel.more > summary::-webkit-details-marker { display: none; }
 details.panel.more > summary::before { content: "▸"; color: var(--muted); font-size: 12px; }
 details.panel.more[open] > summary::before { content: "▾"; }
 details.panel.more > summary h2 { font-size: 15px; }
+[hidden] { display: none !important; }
