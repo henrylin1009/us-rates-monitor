@@ -1,0 +1,76 @@
+{
+ "SR3=F": [
+  [
+   "2026-10-09",
+   95.7699966430664
+  ]
+ ],
+ "SR3Z26.CME": [
+  [
+   "2026-10-09",
+   95.7699966430664
+  ]
+ ],
+ "SR3H27.CME": [
+  [
+   "2026-10-09",
+   95.49500274658203
+  ]
+ ],
+ "SR3Z27.CME": [
+  [
+   "2026-10-09",
+   95.23999786376953
+  ]
+ ],
+ "SR3H28.CME": [
+  [
+   "2026-10-09",
+   95.2300033569336
+  ]
+ ],
+ "SR3Z28.CME": [
+  [
+   "2026-10-09",
+   95.23500061035156
+  ]
+ ],
+ "SR3Z29.CME": [
+  [
+   "2026-10-09",
+   95.26000213623047
+  ]
+ ],
+ "SR3U31.CME": [
+  [
+   "2026-10-09",
+   95.125
+  ]
+ ],
+ "SR3Z26.CMX": [],
+ "SR3Z26": [],
+ "SR1X26.CME": [
+  [
+   "2026-10-09",
+   96.05999755859375
+  ]
+ ],
+ "ZQZ28.CBT": [],
+ "ZQF29.CBT": [],
+ "cme_sr3": [
+  403,
+  "{\"message\": \"This IP address is blocked due to suspected web scraping activity associated with it on this CMEgroup.com page. Use of scripts, software, spiders, robots, avatars, agents, tools or other scraping mechanisms is strictly prohibited by CME Group\u2019s website Data Terms of Use. If you are attempting to access data or content from the website via automated means or for commercial purposes, CME has numerous other methods to deliver the content you require. Please contact CME Group's Global Command Center (GCC) at gcc@cmegroup.com and your inquiry will be directed to the appropriate team.\"}"
+ ],
+ "cme_settle": [
+  403,
+  "{\"message\": \"This IP address is blocked due to suspected web scraping activity associated with it on this CMEgroup.com page. Use of scripts, software, spiders, robots, avatars, agents, tools or other scraping mechanisms is strictly prohibited by CME Group\u2019s website Data Terms of Use. If you are attempting to access data or content from the website via automated means or for commercial purposes, CME has numerous other methods to deliver the content you require. Please contact CME Group's Global Command Center (GCC) at gcc@cmegroup.com and your inquiry will be directed to the appropriate team.\"}"
+ ],
+ "sofr": [
+  200,
+  "{ \"refRates\": [ { \"effectiveDate\": \"2026-10-08\", \"type\": \"SOFR\" ,\"percentRate\": 3.87 ,\"percentPercentile1\": 3.83 ,\"percentPercentile25\": 3.85 ,\"percentPercentile75\": 3.91 ,\"percentPercentile99\": 3.95 ,\"volumeInBillions\": 2963 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-07\", \"type\": \"SOFR\" ,\"percentRate\": 3.88 ,\"percentPercentile1\": 3.81 ,\"percentPercentile25\": 3.86 ,\"percentPercentile75\": 3.92 ,\"percentPercentile99\": 3.96 ,\"volumeInBillions\": 2968 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-06\", \"type\": \"SOFR\" ,\"percentRate\": 3.90 ,\"percentPercentile1\": 3.84 ,\"percentPercentile25\": 3.88 ,\"percentPercentile75\": 3.95 ,\"percentPercentile99\": 3.98 ,\"volumeInBillions\": 2997 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-05\", \"type\": \"SOFR\" ,\"percentRate\": 3.89 ,\"percentPercentile1\": 3.84 ,\"percentPercentile25\": 3.87 ,\"percentPercentile75\": 3.94 ,\"percentPercentile99\": 3.97 ,\"volumeInBillions\": 3007 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-02\", \"type\": \"SOFR\" ,\"percentRate\": 3.88 ,\"percentPercentile1\": 3.83 ,\"percentPercentile25\": 3.86 ,\"percentPercentile75\": 3.93 ,\"percentPercentile99\": 3.96 ,\"volumeInBillions\": 3013 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-01\", \"type\": \"SOFR\" ,\"percentRate\": 3.87 ,\"percentPercentile1\": 3.83 ,\"percentPercentile25\": 3.84 ,\"percentPercentile75\": 3.92 ,\"percentPercentile99\": 3.97 ,\"volumeInBillions\": 3067 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-09-30\", \"type\": \"SOFR\" ,\"percentRate\": 3.90 ,\"percentPercentile1\": 3.83 ,\"percentPercentile25\": 3.88 ,\"percentPercentile75\": 3.96 ,\"percentPercentile99\": 3.99 ,\"volumeInBillions\": 3230 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-09-29\", \"type\": \"SOFR\" ,\"percentRate\": 3.88 ,\"percentPercentile1\": 3.81 ,\"percentPercentile25\": 3.86 ,\"percentPercentile75\": 3.93 ,\"percentPercentile99\": 3.97 ,\"volumeInBillions\": 2967 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-09-28\", \"type\": \"SOFR\" ,\"percentRate\": 3.90 ,\"percentPercentile1\": 3.83 ,\"percentPercentile25\": 3.89 ,\"percentPercentile75\": 3.95 ,\"percentPercentile99\": 3.98 ,\"volumeInBillions\": 2964 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-09-25\", \"type\": \"SOFR\" ,\"percentRate\": 3.90 ,\"percentPercentile1\": 3.83 ,\"percentPercentile25\": 3.89 ,\"percentPercentile75\": 3.95 ,\"percentPercentile99\": 3.99 ,\"volumeInBillions\": 2914 ,\"revisionIndicator\": \"\" } ] }"
+ ],
+ "tgcr": [
+  200,
+  "{ \"refRates\": [ { \"effectiveDate\": \"2026-10-08\", \"type\": \"TGCR\" ,\"percentRate\": 3.85 ,\"percentPercentile1\": 3.80 ,\"percentPercentile25\": 3.84 ,\"percentPercentile75\": 3.86 ,\"percentPercentile99\": 3.89 ,\"volumeInBillions\": 1189 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-07\", \"type\": \"TGCR\" ,\"percentRate\": 3.86 ,\"percentPercentile1\": 3.80 ,\"percentPercentile25\": 3.86 ,\"percentPercentile75\": 3.87 ,\"percentPercentile99\": 3.91 ,\"volumeInBillions\": 1181 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-06\", \"type\": \"TGCR\" ,\"percentRate\": 3.88 ,\"percentPercentile1\": 3.80 ,\"percentPercentile25\": 3.88 ,\"percentPercentile75\": 3.89 ,\"percentPercentile99\": 3.90 ,\"volumeInBillions\": 1180 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-05\", \"type\": \"TGCR\" ,\"percentRate\": 3.87 ,\"percentPercentile1\": 3.81 ,\"percentPercentile25\": 3.87 ,\"percentPercentile75\": 3.88 ,\"percentPercentile99\": 3.89 ,\"volumeInBillions\": 1168 ,\"revisionIndicator\": \"\" }, { \"effectiveDate\": \"2026-10-02\", \"type\": \"TGCR\" ,\"percentRate\": 3.86 ,\"percentPercentile1\": 3.80 ,\"percentPercentile25\": 3.86 ,\"percentPercentile75\": 3.87 ,\"percentPercentile99\": 3.90 ,\"volumeInBillions\": 1174 ,\"revisionIndicator\": \"\" } ] }"
+ ]
+}
