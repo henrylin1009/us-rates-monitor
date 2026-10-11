@@ -2,7 +2,7 @@
 
 - macro.csv：月資料（原始指數或水準），網站自己算 YoY、年化
 - claims.csv：初領失業金（週）
-- breakeven.csv：10y breakeven、10y 實質利率（日）
+- breakeven.csv：10y breakeven、10y 實質利率、5y breakeven、5y5y forward（日）
 - sep.csv：FOMC SEP 中位數，每個預測年度一列
 
 需要環境變數 FRED_API_KEY。每次都整條重抓（資料很小），抓不到的 series 保留舊值。
@@ -25,9 +25,15 @@ MONTHLY = {
     "cpi_transvc": "CUSR0000SAS4", "cpi_airfare": "CUSR0000SETG01", "cpi_usedcars": "CUSR0000SETA02",
     # 工資：ECI 私部門工資（季資料，日期落在季初那個月）、Atlanta Fed wage tracker（3 個月平均，已經是 y/y %）
     "eci_wag": "ECIWAG", "atl_wage": "FRBATLWGT3MMAUMHWGO",
+    # PCE 版 supercore（core services ex housing，Powell 講的那個）
+    "pce_supercore": "IA001260M",
+    # 趨勢型：Cleveland Fed median CPI（m/m 年化 %）、Dallas Fed trimmed-mean PCE（已經是 12 個月 %）
+    "median_cpi": "MEDCPIM158SFRBCLE", "trim_pce": "PCETRIM12M159SFRBDAL",
+    # 通膨預期：UMich 1 年（%）
+    "umich_1y": "MICH",
 }
 WEEKLY = {"icsa": "ICSA"}
-DAILY = {"be10": "T10YIE", "real10": "DFII10"}
+DAILY = {"be10": "T10YIE", "real10": "DFII10", "be5": "T5YIE", "be5y5y": "T5YIFR"}
 SEP = {"core_pce": "JCXFEMD", "unrate": "UNRATEMD", "fedfunds": "FEDTARMD"}
 
 MONTHLY_FROM, WEEKLY_FROM, DAILY_FROM = "2000-01-01", "2015-01-01", "2015-01-01"
