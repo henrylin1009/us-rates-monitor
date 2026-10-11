@@ -1044,7 +1044,8 @@
       $("#wedge-hint").textContent = "Core CPI YoY minus core PCE YoY. CPI usually runs higher, about " + avg.toFixed(1) + "pt on average in 2000-19, for three reasons: shelter is about 44% of core CPI but only about 17% of core PCE; PCE counts health care paid by employers and Medicare, which CPI leaves out; and PCE's formula lets the basket shift toward things that got relatively cheaper. Below zero means PCE is running hotter, which usually happens when rents are cooling (that drags CPI more) while health care or the PCE-only items such as portfolio management fees are rising.";
       plot("c-wedge", [{ ...xy(g), name: "Core CPI − core PCE", type: "bar", marker: { color: rgba(P[0], 0.7) }, hovertemplate: "%{y:+.2f}pt<extra></extra>" }],
         baseLayout({ showlegend: false, bargap: 0.15, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") },
-          ...hline(avg, `2000-19 average ${avg >= 0 ? "+" : ""}${avg.toFixed(2)}pt`) }));
+          // 平均線的標籤放右上角：放左邊會壓在柱子上
+          ...(() => { const h = hline(avg, ""); h.annotations = [{ xref: "paper", x: 1, y: avg, text: `2000-19 average ${avg >= 0 ? "+" : ""}${avg.toFixed(2)}pt`, showarrow: false, xanchor: "right", yanchor: "bottom", bgcolor: css("--surface"), font: { size: 11, color: css("--muted") } }]; return h; })() }));
       $("#wedge-date").innerHTML = l ? `<span class="muted">${monthName(l.date)}: ${l.v >= 0 ? "+" : ""}${l.v.toFixed(2)}pt</span>` : "";
     } else {
       const sc = yoy(ser("cpi_supercore")), sp = yoy(ser("pce_supercore"));
@@ -1069,7 +1070,7 @@
     if (b55.length) tr.push({ ...xy(cut(b55)), name: "5y5y forward", line: { color: P[0], width: 2.2 }, hovertemplate: "5y5y %{y:.2f}%<extra></extra>" });
     if (b5.length) tr.push({ ...xy(cut(b5)), name: "5y breakeven", line: { color: P[2], width: 1.6 }, hovertemplate: "5y %{y:.2f}%<extra></extra>" });
     tr.push({ ...xy(cut(b10)), name: "10y breakeven", line: { color: P[4], width: 1.4 }, hovertemplate: "10y %{y:.2f}%<extra></extra>" });
-    if (um.length) tr.push({ ...xy(cut(um)), name: "UMich 1-year (survey)", mode: "lines+markers", line: { color: P[3], width: 1.6, dash: "dot" }, marker: { size: 4 }, hovertemplate: "UMich 1y %{y:.1f}%<extra></extra>" });
+    if (um.length) tr.push({ ...xy(cut(um)), name: "UMich 1-year (survey)", visible: "legendonly", mode: "lines+markers", line: { color: P[3], width: 1.6, dash: "dot" }, marker: { size: 4 }, hovertemplate: "UMich 1y %{y:.1f}%<extra></extra>" });
     const narrow = innerWidth < 600;
     plot("c-exp", tr, baseLayout({ yaxis: pctAxis(), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 100 } } : {}) }));
     const l55 = lastV(b55), lu = lastV(um);
