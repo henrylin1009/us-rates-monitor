@@ -5,7 +5,7 @@
 - releases.csv：每次公布當天的數字，用 ALFRED 當天的版本算，跟新聞標題一樣
   actual = 這次公布的值、prior = 上次公布時的值、revised = 這次公布對上個月的修正後值
   非農另外有 rev2 = 前兩個月合計修正（千人）
-  actual_x = 百分比類的 actual 算到小數兩位（desk 看的 unrounded，例如 core CPI 0.26 vs 0.34 都公布成 0.3）
+  unrounded = 百分比類的 actual 算到小數三位（desk 看的 unrounded，例如 core CPI 0.26 vs 0.34 都公布成 0.3）
 
 需要 FRED_API_KEY。ALFRED 每個公布日要打一次 API，第一次會補 RELEASE_FROM 之後的歷史，之後只抓新的。
 """
@@ -34,7 +34,7 @@ MEASURES = {
     "claims": ("ICSA", "level_k", "Unemployment Claims"),
 }
 FF_TITLES = {v[2]: k for k, v in MEASURES.items()}
-REL_COLS = ["date", "measure", "ref", "actual", "prior", "revised", "rev2", "actual_x"]
+REL_COLS = ["date", "measure", "ref", "actual", "prior", "revised", "rev2", "unrounded"]
 CON_COLS = ["date", "measure", "forecast", "previous", "source"]
 
 
@@ -99,7 +99,7 @@ def vintage_rows(measure: str, kind: str, vintages: list[tuple[str, list[tuple[s
             continue
         r = {"date": vd, "measure": measure, "ref": ref, "actual": actual, "revised": "" if revised is None else revised,
              "prior": prev["actual"] if prev and prev["ref"] == obs[-2][0] else "", "rev2": "",
-             "actual_x": compute(kind, obs, len(obs) - 1, 2) if kind.startswith("pct") else ""}
+             "unrounded": compute(kind, obs, len(obs) - 1, 3) if kind.startswith("pct") else ""}
         if kind == "diff" and prev and prev["ref"] == obs[-2][0] and len(obs) >= 4:
             before = compute(kind, obs, len(obs) - 3)
             if before is not None and prev.get("_prior_raw") is not None:
@@ -130,7 +130,7 @@ def update_releases(get, key: str, old: list[dict]) -> list[dict]:
         # 為了算 prior 和非農修正，最後一個已存的 vintage 也要重抓
         known = sorted(d for d, mm in have if mm == m)
         # 舊檔還沒有 unrounded 那欄的百分比指標：整段重抓一次補上
-        if kind.startswith("pct") and any(r["measure"] == m and r.get("actual_x", "") == "" for r in old):
+        if kind.startswith("pct") and any(r["measure"] == m and r.get("unrounded", "") == "" for r in old):
             known = []
         start = known[-1] if known else RELEASE_FROM
         todo = [v for v in vds if v >= start]
