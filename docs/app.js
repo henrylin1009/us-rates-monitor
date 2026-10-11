@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", cpiView: "time", pceView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
@@ -936,12 +936,13 @@
   }
 
   // 熱力圖：每列 × 月份，顏色 = 和自己 2015-19 平均差幾個標準差
-  function heatRows(id, rows) {
+  // rows：[欄位, 標籤, 資料表（預設 D.macro）]；base = 決定月份範圍的那條
+  function heatRows(id, rows, base = ser("cpi")) {
     const narrow = innerWidth < 600;
-    const months = mom(ser("cpi")).slice(narrow ? -12 : -24).map((p) => p.date);
+    const months = mom(base).slice(narrow ? -12 : -24).map((p) => p.date);
     const z = [], txt = [];
-    rows.forEach(([c]) => {
-      const m = mom(ser(c)), base = m.filter((p) => p.date >= "2015-01-01" && p.date < "2020-01-01").map((p) => p.v);
+    rows.forEach(([c, , src]) => {
+      const m = mom(ser(c, src)), base = m.filter((p) => p.date >= "2015-01-01" && p.date < "2020-01-01").map((p) => p.v);
       const mu = base.reduce((a, x) => a + x, 0) / base.length, sd = Math.sqrt(base.reduce((a, x) => a + (x - mu) ** 2, 0) / base.length) || 1;
       const mp = new Map(m.map((p) => [p.date, p.v]));
       z.push(months.map((d) => (mp.has(d) ? (mp.get(d) - mu) / sd : null)));
@@ -1031,22 +1032,97 @@
     $("#trend-date").innerHTML = [["trim_pce", "Trimmed-mean PCE"], ["median_cpi", "Median CPI"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n}: ${monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
   }
 
+  // PCE 分項（BEA 月資料）：權重 = 上個月名目支出佔整體 PCE 的比例，貢獻 = 權重 × 自己的 m/m
+  const pceSer = (k) => ser(k, D.pce);
+  const pceShare = (k, base = "total_n") => new Map(D.pce.filter((r) => r[k] && r[base]).map((r) => [r.date, +r[k] / +r[base]]));
+  // 對整體 PCE m/m 的貢獻（百分點）；supercore = core services 的貢獻 − housing 的貢獻
+  function pceContrib(k) {
+    if (k === "supercore") { const a = new Map(pceContrib("core_svc").map((p) => [p.date, p.v])); return pceContrib("housing").filter((p) => a.has(p.date)).map((p) => ({ date: p.date, v: a.get(p.date) - p.v })); }
+    const w = pceShare(k + "_n");
+    return mom(pceSer(k + "_p")).filter((p) => w.has(mBack(p.date, 1))).map((p) => ({ date: p.date, v: p.v * w.get(mBack(p.date, 1)) }));
+  }
+  const PCE_PARTS = [["core_goods", "Core goods"], ["housing", "Housing"], ["supercore", "Services ex housing (supercore)"], ["food", "Food"], ["energy", "Energy"]];
+  function renderPceParts() {
+    const el = $("#c-pce-parts"); if (!el) return;
+    if (!D.pce.length) { $("#pce-table").innerHTML = ""; return empty("c-pce-parts", "PCE components load after the next daily update."); }
+    clearEmpty("c-pce-parts");
+    const P = palette(), v = S.pceView, narrow = innerWidth < 600;
+    // supercore 自己的 m/m 用 BEA 的 services ex energy & housing（FRED IA001260M）
+    const own = (k) => (k === "supercore" ? ser("pce_supercore") : pceSer(k + "_p"));
+    $("#pce-hint").textContent = v === "time"
+      ? "What drove each month's PCE, last 12 months, split the way Powell does it: core goods, housing services, and core services excluding housing (supercore), plus food and energy. Each bar is a component's m/m times its share of spending last month, in percentage points of headline PCE; stacked, they add up to about the headline (diamond). Housing is a much smaller block here than in CPI, and supercore, which includes health care and financial services, is the biggest."
+      : "Each component's m/m change over the last 24 months, with the PCE-only items that drive the gap with CPI indented under supercore: health care (including what employers and Medicare pay) and financial services (portfolio management fees move with the stock market). Colour is how unusual the move is for that row versus its 2015-19 average; the number is the m/m change itself.";
+    $("#pce-date").innerHTML = dataLine("core_pce", "pce", "PCE", "BEA, ");
+    if (v === "time") {
+      const tb = PCE_PARTS.map(([k, n], i) => {
+        const c = pceContrib(k).slice(-12), m = new Map(mom(own(k)).map((p) => [p.date, p.v]));
+        return { x: c.map((p) => p.date), y: c.map((p) => p.v), customdata: c.map((p) => m.get(p.date)), name: n, type: "bar", marker: { color: P[i % P.length] },
+          hovertemplate: `%{y:+.2f}pt (${n.split(" (")[0]} itself %{customdata:+.2f}% m/m)<extra></extra>` };
+      });
+      const head = mom(pceSer("total_p")).slice(-12);
+      tb.push({ ...xy(head), name: "Headline PCE m/m", mode: "markers", marker: { symbol: "diamond", size: 10, color: css("--ink"), line: { color: css("--surface"), width: 1.5 } }, hovertemplate: "Headline %{y:+.2f}%<extra></extra>" });
+      const nb = narrow ? { legend: { ...baseLayout().legend, y: -0.1, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 140 } } : {};
+      plot("c-pce-parts", tb, baseLayout({ ...nb, barmode: "relative", bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, xaxis: { ...baseLayout().xaxis, tickformat: "%b %y" } }));
+    } else {
+      const R = D.pce;
+      heatRows("c-pce-parts", [["total_p", "Headline PCE", R], ["core_p", "Core PCE", R], ["core_goods_p", "Core goods", R], ["housing_p", "Housing", R],
+        ["pce_supercore", narrow ? "Supercore" : "Services ex housing"], ["health_p", "· Health care", R], ["finsvc_p", "· Financial services", R], ["portfolio_p", "· Portfolio mgmt", R],
+        ["food_p", "Food", R], ["energy_p", "Energy", R]], pceSer("total_p"));
+    }
+    // 表：最新權重（佔整體 PCE）、m/m、3 個月年化、YoY
+    const last = D.pce[D.pce.length - 1];
+    let h = "<table><thead><tr><th>Component</th><th>Share of PCE</th><th>Latest m/m</th><th>3m annualized</th><th>YoY</th></tr></thead><tbody>";
+    const rowsT = [...PCE_PARTS, ["health", "· Health care"], ["finsvc", "· Financial services"]];
+    rowsT.forEach(([k, n]) => {
+      const s = own(k), sh = k === "supercore" ? (+last.core_svc_n - +last.housing_n) / +last.total_n : +last[k + "_n"] / +last.total_n;
+      h += `<tr><td>${n}</td><td class="n">${(sh * 100).toFixed(1)}%</td><td class="n">${f1(lastV(mom(s))?.v, 2)}%</td><td class="n">${f1(lastV(annK(s, 3))?.v)}%</td><td class="n">${f1(lastV(yoy(s))?.v)}%</td></tr>`;
+    });
+    $("#pce-table").innerHTML = fold("pceParts", "Show table", `<div class="table-wrap">${h}</tbody></table></div>`)
+      + `<p class="hint note">Source: BEA NIPA tables 2.4.4U (prices) and 2.4.5U (spending), monthly. PCE is a chained index, so the bars add up close to, not exactly, the headline. Health care and financial services are part of supercore.</p>`;
+  }
+
+  // core CPI − core PCE 的差距拆成幾塊（YoY，百分點）：每塊 = CPI 權重 × CPI 漲幅 − PCE 權重 × PCE 漲幅
+  // CPI 權重是 BLS relative importance 的近似值（佔 core 的比例）；PCE 權重用一年前的名目支出佔 core 的比例
+  const CPI_W = { shelter: 35.4 / 80, med: 8.1 / 80 };
+  function gapPieces() {
+    const c = new Map(yoy(ser("core_cpi")).map((p) => [p.date, p.v])), pce = yoy(ser("core_pce"));
+    const ys = (s) => new Map(yoy(s).map((p) => [p.date, p.v]));
+    const sh = ys(ser("cpi_shelter")), md_ = ys(ser("cpi_med")), hs = ys(pceSer("housing_p")), hc = ys(pceSer("health_p")), fn = ys(pceSer("finsvc_p"));
+    const wH = pceShare("housing_n", "core_n"), wC = pceShare("health_n", "core_n"), wF = pceShare("finsvc_n", "core_n");
+    return pce.filter((p) => c.has(p.date)).map((p) => {
+      const d = p.date, d12 = mBack(d, 12), gap = c.get(d) - p.v;
+      const ok = [sh, md_, hs, hc, fn].every((m) => m.has(d)) && [wH, wC, wF].every((m) => m.has(d12));
+      if (!ok) return { date: d, gap };
+      const housing = CPI_W.shelter * sh.get(d) - wH.get(d12) * hs.get(d);
+      const health = CPI_W.med * md_.get(d) - wC.get(d12) * hc.get(d);
+      const fin = -wF.get(d12) * fn.get(d);
+      return { date: d, gap, housing, health, fin, other: gap - housing - health - fin,
+        info: { cpiSh: sh.get(d), pceHs: hs.get(d), cpiMed: md_.get(d), pceHc: hc.get(d), pceFin: fn.get(d), wH: wH.get(d12), wC: wC.get(d12), wF: wF.get(d12) } };
+    });
+  }
+
   // CPI vs PCE：core 的差距（歷史上 CPI 比較高），或兩種 supercore
   function renderWedge() {
     const P = palette(), narrow = innerWidth < 600;
     const lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
     clearEmpty("c-wedge");
     if (S.wView === "gap") {
-      const c = new Map(yoy(ser("core_cpi")).map((p) => [p.date, p.v]));
-      const gap = yoy(ser("core_pce")).filter((p) => c.has(p.date)).map((p) => ({ date: p.date, v: c.get(p.date) - p.v }));
-      const base = gap.filter((p) => p.date >= "2000-01-01" && p.date < "2020-01-01"), avg = base.reduce((a, p) => a + p.v, 0) / (base.length || 1);
-      const g = fromYears(gap, 10), l = lastV(gap);
-      $("#wedge-hint").textContent = "Core CPI YoY minus core PCE YoY. CPI usually runs higher, about " + avg.toFixed(1) + "pt on average in 2000-19, for three reasons: shelter is about 44% of core CPI but only about 17% of core PCE; PCE counts health care paid by employers and Medicare, which CPI leaves out; and PCE's formula lets the basket shift toward things that got relatively cheaper. Below zero means PCE is running hotter, which usually happens when rents are cooling (that drags CPI more) while health care or the PCE-only items such as portfolio management fees are rising.";
-      plot("c-wedge", [{ ...xy(g), name: "Core CPI − core PCE", type: "bar", marker: { color: rgba(P[0], 0.7) }, hovertemplate: "%{y:+.2f}pt<extra></extra>" }],
-        baseLayout({ showlegend: false, bargap: 0.15, yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") },
-          // 平均線的標籤放右上角：放左邊會壓在柱子上
-          ...(() => { const h = hline(avg, ""); h.annotations = [{ xref: "paper", x: 1, y: avg, text: `2000-19 average ${avg >= 0 ? "+" : ""}${avg.toFixed(2)}pt`, showarrow: false, xanchor: "right", yanchor: "bottom", bgcolor: css("--surface"), font: { size: 11, color: css("--muted") } }]; return h; })() }));
-      $("#wedge-date").innerHTML = l ? `<span class="muted">${monthName(l.date)}: ${l.v >= 0 ? "+" : ""}${l.v.toFixed(2)}pt</span>` : "";
+      const all = gapPieces();
+      const base = all.filter((p) => p.date >= "2000-01-01" && p.date < "2020-01-01"), avg = base.reduce((a, p) => a + p.gap, 0) / (base.length || 1);
+      const g = fromYears(all, 10).filter((p) => p.housing != null), l = lastV(all);
+      $("#wedge-hint").textContent = "Core CPI YoY minus core PCE YoY (diamond), split into what causes it. Each block is the item's weight in core CPI times its CPI inflation, minus its weight in core PCE times its PCE inflation, in percentage points. Housing: shelter is about 44% of core CPI but about 17% of core PCE, so when rents run hot CPI runs above PCE, and when they cool the gap shrinks. Health care: a small CPI item (out-of-pocket only) but about a fifth of core PCE (it counts what employers and Medicare pay). Financial services: almost only in PCE, and portfolio management fees rise with the stock market, which pushes PCE up. Everything else is the rest of the basket plus the formula difference. CPI averaged " + avg.toFixed(2) + "pt above PCE in 2000-19.";
+      const PIECES = [["housing", "Housing (shelter weight)"], ["health", "Health care"], ["fin", "Financial services (PCE only)"], ["other", "Everything else + formula"]];
+      const cols = [P[1], P[2], P[0], css("--muted")];
+      const tr = PIECES.map(([k, n], i) => ({ x: g.map((p) => p.date), y: g.map((p) => p[k]), name: n, type: "bar", marker: { color: rgba(cols[i], 0.8) }, hovertemplate: `${n} %{y:+.2f}pt<extra></extra>` }));
+      tr.push({ x: g.map((p) => p.date), y: g.map((p) => p.gap), name: "Core CPI − core PCE", mode: "markers", marker: { symbol: "diamond", size: 6, color: css("--ink") }, hovertemplate: "Total gap %{y:+.2f}pt<extra></extra>" });
+      const h = hline(avg, ""); h.annotations = [{ xref: "paper", x: 1, y: avg, text: `2000-19 average ${avg >= 0 ? "+" : ""}${avg.toFixed(2)}pt`, showarrow: false, xanchor: "right", yanchor: "bottom", bgcolor: css("--surface"), font: { size: 11, color: css("--muted") } }];
+      plot("c-wedge", tr, baseLayout({ barmode: "relative", bargap: 0.15, hovermode: "x unified", yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, ...h,
+        ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 110 } } : {}) }));
+      const lp = lastV(g);
+      const sg = (x) => (x >= 0 ? "+" : "") + x.toFixed(2);
+      $("#wedge-date").innerHTML = lp ? `<span class="muted">${monthName(lp.date)}: gap ${sg(lp.gap)}pt = housing ${sg(lp.housing)} · health care ${sg(lp.health)} · financial services ${sg(lp.fin)} · everything else ${sg(lp.other)}</span>`
+        + `<br><span class="muted">Housing YoY: CPI shelter ${lp.info.cpiSh.toFixed(1)}% vs PCE housing ${lp.info.pceHs.toFixed(1)}%. Health care: CPI ${lp.info.cpiMed.toFixed(1)}% vs PCE ${lp.info.pceHc.toFixed(1)}%. PCE financial services ${lp.info.pceFin.toFixed(1)}%.</span>`
+        : (l ? `<span class="muted">${monthName(l.date)}: ${sg(l.gap)}pt</span>` : "");
     } else {
       const sc = yoy(ser("cpi_supercore")), sp = yoy(ser("pce_supercore"));
       $("#wedge-hint").textContent = "Services inflation without housing, the part most tied to wages. The PCE version (core services excluding housing and energy) is the one Powell means by supercore; the CPI line is CPI services less rent of shelter, a close approximation. Both YoY.";
@@ -1306,7 +1382,7 @@
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); },
     rates: () => { renderRatesTake(); renderYields(); renderFed(); renderDecomp(); renderFomc(); renderSurIndex(); },
-    inflation: () => { renderInflation(); renderTrend(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
+    inflation: () => { renderInflation(); renderTrend(); renderPceParts(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     calendar: () => renderCalendar(),
   };
@@ -1326,6 +1402,7 @@
     D.pathPart = await load("fed_path_partial.csv").catch(() => []);
     D.pathSr3 = await load("fed_path_sr3.csv").catch(() => []);
     D.bills = await load("bills_ois.csv").catch(() => []);
+    D.pce = await load("pce.csv").catch(() => []);
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }
@@ -1338,6 +1415,7 @@
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
     bindSeg("#cpi-views", "cpiView", () => renderInflation());
+    bindSeg("#pce-views", "pceView", renderPceParts);
     bindSeg("#w-views", "wView", renderWedge);
     bindSeg("#e-range", "eRange", renderExp);
     bindSeg("#d-range", "dRange", renderDecomp);

@@ -24,7 +24,7 @@ MONTHLY = {
     "unemploy": "UNEMPLOY", "quits_rate": "JTSQUR",
     # CPI 細項（desk 常看的）：OER、房租、醫療服務、交通服務、機票、二手車
     "cpi_oer": "CUSR0000SEHC", "cpi_rent": "CUSR0000SEHA", "cpi_medsvc": "CUSR0000SAM2",
-    "cpi_transvc": "CUSR0000SAS4", "cpi_airfare": "CUSR0000SETG01", "cpi_usedcars": "CUSR0000SETA02",
+    "cpi_transvc": "CUSR0000SAS4", "cpi_med": "CPIMEDSL", "cpi_airfare": "CUSR0000SETG01", "cpi_usedcars": "CUSR0000SETA02",
     # 工資：ECI 私部門工資（季資料，日期落在季初那個月）、Atlanta Fed wage tracker（3 個月平均，已經是 y/y %）
     "eci_wag": "ECIWAG", "atl_wage": "FRBATLWGT3MMAUMHWGO",
     # PCE 版 supercore（core services ex housing，Powell 講的那個）
