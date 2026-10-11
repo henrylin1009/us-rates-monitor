@@ -1,15 +1,20 @@
-import json, yfinance as yf
+import json, time, requests, yfinance as yf
 out = {}
-codes = "HMUZ"
-for y in range(26, 32):
-    for c in codes:
-        t = f"SR3{c}{y}.CME"
-        try:
-            h = yf.Ticker(t).history(period="1y", interval="1d", auto_adjust=False)
-            out[t] = [] if h is None or h.empty else {"n": len(h), "first": str(h.index[0].date()), "tail": [(str(i.date()), round(float(r.Close), 4), int(r.Volume)) for i, r in h.tail(8).iterrows()]}
-        except Exception as e:
-            out[t] = "ERR " + str(e)[:200]
-for t in ["ZQK28.CBT", "ZQM28.CBT", "ZQN28.CBT", "ZQU28.CBT", "ZQV28.CBT", "ZQZ26.CBT"]:
-    h = yf.Ticker(t).history(period="1mo", interval="1d", auto_adjust=False)
-    out[t] = [] if h is None or h.empty else {"n": len(h), "tail": [(str(i.date()), round(float(r.Close), 4), int(r.Volume)) for i, r in h.tail(3).iterrows()]}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"}
+p1, p2 = int(time.time()) - 400 * 86400, int(time.time())
+for t in ["SR3Z27.CME", "SR3H28.CME", "SR3Z28.CME"]:
+    for host in ["query1", "query2"]:
+        for q in [f"period1={p1}&period2={p2}&interval=1d", "range=1y&interval=1d", "range=3mo&interval=1wk", "range=max&interval=1d"]:
+            try:
+                r = requests.get(f"https://{host}.finance.yahoo.com/v8/finance/chart/{t}?{q}", headers=UA, timeout=30)
+                d = r.json()["chart"]["result"][0]
+                ts = d.get("timestamp") or []
+                out[f"{t} {host} {q}"] = [len(ts), d["indicators"]["quote"][0].get("close", [])[-5:], d["meta"].get("firstTradeDate"), d["meta"].get("dataGranularity")]
+            except Exception as e:
+                out[f"{t} {host} {q}"] = "ERR " + str(e)[:150]
+    try:
+        h = yf.download(t, start="2026-08-01", end="2026-10-11", progress=False, auto_adjust=False)
+        out[t + " download"] = len(h)
+    except Exception as e:
+        out[t + " download"] = "ERR " + str(e)[:150]
 json.dump(out, open("probe/result.json", "w"), indent=1)
