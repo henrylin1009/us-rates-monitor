@@ -19,6 +19,7 @@ import fomc
 from calendars import update_calendars
 from fedpricing import implied_month_rate, partial_path, price_path
 from macro import update_macro
+from pce import update_pce
 from surprise import update_surprise
 from fomc import MEETINGS
 from sofrstrip import splice, sr3_contracts, zq_avg
@@ -306,6 +307,10 @@ def main() -> int:
         update_macro(get, read_csv, write_csv)
     except Exception as e:  # noqa: BLE001
         print(f"✗ update_macro 失敗：{e}")
+    try:
+        update_pce(read_csv, write_csv)
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_pce 失敗：{e}")
     try:
         update_surprise(get, read_csv, write_csv)
     except Exception as e:  # noqa: BLE001
