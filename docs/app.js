@@ -1119,9 +1119,19 @@
       baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "k" } }));
     const c0 = lastV(cl); $("#claims-date").innerHTML = c0 ? `<span class="muted">Week ending ${md(c0.date)} · released every Thursday</span>` : "";
 
-    const jo = fromYears(ser("jolts"), 5).map((p) => ({ date: p.date, v: p.v / 1000 }));
-    plot("c-jolts", [{ ...xy(jo), name: "Job openings", line: { color: P[0], width: 2 }, hovertemplate: "%{y:.2f}m" }], baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "m" } }));
-    const j0 = lastV(ser("jolts")); $("#jolts-date").innerHTML = j0 ? `<span class="muted">${monthName(j0.date)} data · JOLTS runs about two months behind</span>` : "";
+    // JOLTS：職缺 ÷ 失業人數（V/U，左軸）和離職率（右軸）
+    const un = new Map(ser("unemploy").map((p) => [p.date, p.v]));
+    const vu = fromYears(ser("jolts").filter((p) => un.get(p.date)).map((p) => ({ date: p.date, v: p.v / un.get(p.date) })), 10);
+    const qr = fromYears(ser("quits_rate"), 10);
+    if (!vu.length && !qr.length) empty("c-jolts", "No JOLTS data yet");
+    else clearEmpty("c-jolts"), plot("c-jolts", [
+      { ...xy(vu), name: "Openings per unemployed", line: { color: P[0], width: 2 }, hovertemplate: "V/U %{y:.2f}<extra></extra>" },
+      { ...xy(qr), name: "Quits rate (right)", yaxis: "y2", line: { color: P[2], width: 1.8 }, hovertemplate: "Quits %{y:.1f}%<extra></extra>" }],
+      baseLayout({ margin: { l: 44, r: 52, t: 10, b: 40 }, yaxis: { ...baseLayout().yaxis, tickformat: ".1f" },
+        yaxis2: { ...pctAxis(), overlaying: "y", side: "right", showgrid: false },
+        shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 1, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }] }));
+    const j0 = lastV(vu), q0 = lastV(qr);
+    $("#jolts-date").innerHTML = j0 || q0 ? `<span class="muted">${[j0 && `V/U ${j0.v.toFixed(2)}`, q0 && `quits ${q0.v.toFixed(1)}%`].filter(Boolean).join(" · ")} (${monthName((j0 || q0).date)}) · JOLTS runs about two months behind</span>` : "";
   }
 
   // Rates 頁：10y = 實質利率 + breakeven
