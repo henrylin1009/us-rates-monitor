@@ -321,7 +321,7 @@
       return { date: e.date, dec, priced, pricedRate: pr ? num(pr.post) : null, surprise: dec == null || priced == null ? null : dec - priced, d2: r ? r.d2 : null, fed: r ? r.fed : null };
     });
   }
-  // 實際 EFFR（實線）vs 會前一天 price 的利率（菱形）+ 今天 price 的未來路徑（虛線）
+  // 實際 EFFR（實線）vs 會前一天 price 的利率（菱形）。只看過去；未來路徑在 Fed pricing 的 Implied path（Henry：兩張重複）
   function renderFomcChart() {
     if (!D.effr.length) return empty("c-fomc", "No EFFR data");
     const yrs = { "6M": 0.5, "1Y": 1, "2Y": 2, "5Y": 5 }[S.fomcRange];
@@ -339,16 +339,8 @@
     });
     const asof = D.path.length ? D.path[D.path.length - 1].asof : null;
     const fwd = asof ? D.path.filter((x) => x.asof === asof) : [];
-    if (fwd.length) {
-      const e0 = eff[eff.length - 1];
-      traces.push({
-        x: [e0.date, ...fwd.map((x) => x.meeting)], y: [num(fwd[0].pre), ...fwd.map((x) => num(x.post))],
-        name: `Priced now (${asof})`, mode: "lines+markers", line: { color: acc, width: 2, dash: "dash", shape: "hv" }, marker: { size: 5, color: acc },
-        customdata: ["", ...fwd.map((x) => bp(num(x.cum_bp), 1))], hovertemplate: "%{y:.2f}% · %{customdata}bp cum<extra>Priced now</extra>",
-      });
-    }
-    // 每次 FOMC 會議：底部一排標記 + 淡淡的直線。過去的依決定上色（升息紅、降息綠、不動灰），未來的空心
-    const lastFwd = fwd.length ? fwd[fwd.length - 1].meeting : null;
+    // 每次 FOMC 會議：底部一排標記 + 淡淡的直線。過去的依決定上色（升息紅、降息綠、不動灰），只多畫下一次（空心）
+    const lastFwd = fwd.length ? fwd[0].meeting : null;
     const mtg = [...new Set([...(D.meetings || []), ...D.events.filter((e) => e.type === "fomc").map((e) => e.date), ...fwd.map((x) => x.meeting)])]
       .filter((d) => d >= start && (!lastFwd || d <= lastFwd)).sort();
     const done = (d) => d <= eff[eff.length - 1].date;
@@ -387,10 +379,13 @@
     if (!A.length) return empty("c-fomc", "No Fed pricing data yet.");
     clearEmpty("c-fomc");
     const last = A[A.length - 1];
-    const upcoming = pathOn(last).map((r) => r.meeting);
-    if (!upcoming.includes(S.histMeeting)) S.histMeeting = upcoming[0];
+    // Henry：只看下一次會議就好，不用選
+    S.histMeeting = (pathOn(last)[0] || {}).meeting;
+    if (!S.histMeeting) return empty("c-fomc", "No upcoming meeting priced.");
     const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" });
-    $("#fomc-controls").append(chips("Meeting", upcoming.map((m) => [m, mon(m)]), S.histMeeting, false, (x) => { S.histMeeting = x; renderFomc(); }));
+    const lbl = document.createElement("div"); lbl.className = "hint";
+    lbl.innerHTML = `Next meeting: <b>${mon(S.histMeeting)}</b>`;
+    $("#fomc-controls").append(lbl);
     const m = S.histMeeting, today = baseRange(last);
     // 每天：那天的路徑 → 分布 → 取出這次會議那一列，換成絕對的區間下緣
     const series = A.map((a) => {
@@ -424,8 +419,8 @@
   }
   // 過去的會議：會前定價 vs 實際決定；或某次未來會議的機率怎麼一路變
   const FOMC_HINT = {
-    past: "The solid line is the actual policy rate (EFFR). Each diamond is the rate futures priced for that meeting the day before; the gap between diamond and line is the surprise. The dashed line is where the market prices the rate today, meeting by meeting. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, open ones still ahead. Hover for the decision or what is priced.",
-    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range. For meetings after the next one, read the direction of the shift rather than exact percentages: the split assumes meetings are independent.",
+    past: "Looking back: the solid line is the actual policy rate (EFFR) and each blue diamond is the rate futures priced for that meeting the day before, so the gap between diamond and line is the surprise. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, the open one is next. Where the market prices the rate from here on is in Fed pricing, Implied path. Pre-meeting pricing exists only from Sep 2026 (Yahoo keeps no expired ZQ contracts), so older meetings show the decision without a diamond.",
+    hist: "How the odds of each target range after the next FOMC meeting have shifted day by day (like FedWatch's history). Colours are relative to today's range.",
   };
   function renderFomc() {
     $("#fomc-controls").innerHTML = ""; $("#fomc-table").innerHTML = "";
@@ -566,7 +561,7 @@
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
     priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
-    path: "The implied policy rate after each FOMC meeting. Fed funds futures (ZQ) only cover about 15 months, so past the dashed divider the line continues with 3-month SOFR futures (SR3): each step is the average rate expected over one quarter, shifted down by the SOFR–fed funds gap measured where the two overlap so the two pieces join up. Faint lines mark how far today's 1y/2y/3y/5y Treasuries reach; a yield is roughly the average of this path out to its line, plus term premium. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then. SR3 history starts 2026-10-09.",
+    path: "The implied policy rate after each FOMC meeting. Fed funds futures (ZQ) only cover about 15 months, so past the dashed divider the line continues with 3-month SOFR futures (SR3): each step is the average rate expected over one quarter, shifted down by the SOFR–fed funds gap measured where the two overlap so the two pieces join up. Faint lines mark how far today's 1y/2y/3y/5y Treasuries reach; a yield is roughly the average of this path out to its line, plus term premium. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then. Yahoo serves only the latest SR3 price (its history is unusable), so SR3 history starts 2026-10-09 and builds up daily; a compare date before that shows only the ZQ part.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
@@ -658,7 +653,13 @@
         if (extNow) tr.push(extNow);
         if (d) {
           const [a, part] = cmpAsof(A, shiftDays(last, -d));
-          if (a && a !== last) { tr.push(pathTrace(a, P[1], 1.8, "dot", 1, part)); const ex = part ? null : extTrace(a, P[1], 1.5, "dot"); if (ex) tr.push(ex); }
+          if (a && a !== last) {
+            const t = pathTrace(a, P[1], 1.8, "dot", 1, part), ex = part ? null : extTrace(a, P[1], 1.5, "dot");
+            // Yahoo 不給 SR3 歷史，比較日在 SR3 開始累積之前就只有 ZQ 段
+            const s0 = (D.pathSr3 || []).reduce((m, r) => (!m || r.asof < m ? r.asof : m), null);
+            if (!ex && extNow && s0 && a < s0) t.name += ` (no SR3 data before ${s0})`;
+            tr.push(t); if (ex) tr.push(ex);
+          }
         }
         // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
         const lastM = pathOn(last).slice(-1)[0], extEnd = extNow ? extNow.x[extNow.x.length - 1] : null;
