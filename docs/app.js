@@ -152,7 +152,7 @@
     types.forEach((t, k) => {
       const evs = D.events.filter((e) => e.type === t && e.date >= start && e.date <= horizon);
       if (!evs.length) return;
-      const y = 0.03 + k * 0.045, c = evtColor(t);
+      const y = k, c = evtColor(t);
       const colors = evs.map((e) => {
         if (t !== "fomc") return c;
         const dec = fomcDecision(e.date) || "";
@@ -169,7 +169,11 @@
         ann.push({ x: e.date, yref: "paper", y: 1, text: EVT[t].name + " " + e.date.slice(5).replace("-", "/"), showarrow: false, textangle: -90, xanchor: "right", yanchor: "top", font: { size: 10, color: c } });
       });
     });
-    layout.yaxis2 = { overlaying: "y", range: [0, 1], visible: false, fixedrange: true };
+    // 事件記號放在圖下面一條獨立的帶子，不壓在線上
+    const strip = Math.min(0.2, 0.035 * Math.max(1, types.length) + 0.01);
+    layout.yaxis = { ...(layout.yaxis || baseLayout().yaxis), domain: [strip + 0.03, 1] };
+    layout.yaxis2 = { domain: [0, strip], range: [types.length - 0.5, -0.5], visible: false, fixedrange: true };
+    layout.xaxis = { ...(layout.xaxis || baseLayout().xaxis), anchor: "y2" };
     layout.shapes = shapes; layout.annotations = ann;
     if (hasFuture) {
       layout.xaxis = { ...layout.xaxis, range: [start, horizon] };
@@ -329,7 +333,13 @@
     const eff = D.effr.filter((r) => r.date >= start && r.effr !== "");
     const ink = css("--ink"), acc = css("--s1"), muted = css("--muted");
     const decTxt = (d) => (d == null ? "–" : d > 0 ? `hike ${d}bp` : d < 0 ? `cut ${-d}bp` : "hold");
-    const traces = [{ x: eff.map((r) => r.date), y: eff.map((r) => num(r.effr)), name: "Actual (EFFR)", mode: "lines", line: { color: ink, width: 2, shape: "hv" }, hovertemplate: "%{y:.2f}%<extra>EFFR</extra>" }];
+    // 主流畫法：Fed 的目標區間（上下限之間塗色），EFFR 細線畫在裡面（月底、季底的小跳動不再搶眼）
+    const tg = eff.filter((r) => r.target_low !== "" && r.target_high !== "");
+    const traces = [
+      { x: tg.map((r) => r.date), y: tg.map((r) => num(r.target_low)), mode: "lines", line: { width: 0, shape: "hv" }, showlegend: false, hoverinfo: "skip" },
+      { x: tg.map((r) => r.date), y: tg.map((r) => num(r.target_high)), name: "Fed target range", mode: "lines", fill: "tonexty", fillcolor: rgba(ink, 0.12),
+        line: { width: 1, color: rgba(ink, 0.35), shape: "hv" }, customdata: tg.map((r) => num(r.target_low)), hovertemplate: "%{customdata:.2f}–%{y:.2f}%<extra>Target</extra>" },
+      { x: eff.map((r) => r.date), y: eff.map((r) => num(r.effr)), name: "EFFR", mode: "lines", line: { color: ink, width: 1.4 }, hovertemplate: "%{y:.2f}%<extra>EFFR</extra>" }];
     const sur = fomcSurprises().filter((x) => x.pricedRate != null && x.date >= start);
     if (sur.length) traces.push({
       x: sur.map((x) => x.date), y: sur.map((x) => x.pricedRate), name: "Priced day before", mode: "markers",
@@ -355,10 +365,12 @@
     const mc = mtg.map((d) => { const dec = done(d) ? fomcDecision(d) || "" : ""; return dec.startsWith("hike") ? css("--up") : dec.startsWith("cut") ? css("--down") : muted; });
     const mTxt = mtg.map((d) => { const f = fwd.find((x) => x.meeting === d);
       return `FOMC ${md(d)} ${d.slice(0, 4)}: ` + (done(d) ? fomcDecision(d) || "–" : f ? `priced ${bp(num(f.cum_bp), 1)}bp cumulative` : "upcoming"); });
-    traces.push({ x: mtg, y: mtg.map(() => 0.03), yaxis: "y2", mode: "markers", name: "FOMC meeting", showlegend: true,
+    traces.push({ x: mtg, y: mtg.map(() => 0.03), yaxis: "y2", mode: "markers", name: "FOMC meeting", showlegend: false,
       marker: { symbol: mtg.map((d) => (done(d) ? "diamond" : "diamond-open")), size: 9, color: mc, line: { width: 1.5, color: mc } },
       text: mTxt, hovertemplate: "%{text}<extra></extra>" });
-    const lay = baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, yaxis2: { overlaying: "y", range: [0, 1], visible: false, fixedrange: true } });
+    const narrow = innerWidth < 600;
+    const lay = baseLayout({ hovermode: "closest", yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, yaxis2: { overlaying: "y", range: [0, 1], visible: false, fixedrange: true },
+      ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 8, t: 10, b: 90 } } : {}) });
     lay.shapes = mtg.map((d) => ({ type: "line", xref: "x", yref: "paper", x0: d, x1: d, y0: 0, y1: 1, layer: "below", line: { color: rgba(muted, 0.25), width: 1 } }));
     if (asof) lay.shapes.push({ type: "line", xref: "x", yref: "paper", x0: asof, x1: asof, y0: 0, y1: 1, line: { color: muted, width: 1, dash: "dot" } });
     lay.annotations = asof ? [{ x: asof, y: 1, xref: "x", yref: "paper", text: " today", showarrow: false, xanchor: "left", yanchor: "top", font: { color: muted, size: 11 } }] : [];
@@ -552,6 +564,7 @@
     path: "The implied policy rate after each FOMC meeting. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
   };
+  const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + " '" + iso.slice(2, 4);
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
   const pathOn = (a) => D.path.filter((r) => r.asof === a);
   // 比較用的舊日期：fed_path 沒有（下一次會議合約已到期）就用 fed_path_partial（從接得上的會議開始）
@@ -581,7 +594,6 @@
       // WIRP 式：每次會議 price 了多少 bp（柱）＋從今天起累計（線），可疊一週 / 一個月前的累計來看 repricing
       ctl.append(chips("Compare", ["1W", "1M"].map((k) => [k, cmpLabel[k]]), S.pricedCmp, true, rr));
       const rows = pathOn(last), x = rows.map((r) => r.meeting), start = rows.length ? num(rows[0].pre) : effrNow;
-      const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + " '" + iso.slice(2, 4);
       const xl = x.map(mon);
       // 舊日期的累計：用那天的會議後隱含利率減今天的起點，同一把尺才比得起來（中間開過會也不會錯位）
       const then = (a, part) => { const m = new Map(pathAt(a, part).map((r) => [r.meeting, num(r.post)])); return x.map((d) => (m.has(d) ? (m.get(d) - start) * 100 : null)); };
@@ -648,13 +660,17 @@
       const rows = pathOn(last), { levels, dists } = levelDist(rows), base = baseRange(last);
       const tr = levels.map((k) => {
         const c = levelColor(k, levels);
-        return { x: rows.map((r) => r.meeting), y: dists.map((d) => (d.get(k) || 0) * 100), name: rangeLabel(base, k) + (k === 0 ? " (today)" : ""),
+        return { x: rows.map((r) => mon(r.meeting)), y: dists.map((d) => (d.get(k) || 0) * 100), name: rangeLabel(base, k) + (k === 0 ? " (today)" : ""),
           type: "bar", marker: { color: c, line: { color: css("--surface"), width: 1 } },
           text: dists.map((d) => ((d.get(k) || 0) >= 0.1 ? rangeLabel(base, k, true) + "<br>" + Math.round(d.get(k) * 100) + "%" : "")),
-          textposition: "inside", insidetextanchor: "middle", textangle: 0, textfont: { color: Math.abs(k) >= 2 || k === 0 ? "#fff" : css("--ink"), size: 10.5 },
+          textposition: "inside", insidetextanchor: "middle", textangle: 0, textfont: { color: k !== 0 && levelAlpha(k, levels) >= 0.6 ? "#fff" : css("--ink"), size: 10.5 },
           hovertemplate: `${rangeLabel(base, k)}%: %{y:.1f}%<extra></extra>` };
       });
-      plot(id, tr, baseLayout({ barmode: "stack", hovermode: "x unified", legend: { ...baseLayout().legend, traceorder: "reversed" },
+      // 手機上圖例放到圖下面、柱子裡不寫字（太擠）
+      const narrow = innerWidth < 600;
+      if (narrow) tr.forEach((t) => { t.text = null; });
+      plot(id, tr, baseLayout({ barmode: "stack", hovermode: "x unified", legend: { ...baseLayout().legend, traceorder: "reversed", ...(narrow ? { y: -0.18, yanchor: "top" } : {}) },
+        ...(narrow ? { margin: { l: 40, r: 8, t: 10, b: 150 } } : {}),
         xaxis: { ...baseLayout().xaxis, type: "category" }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
       renderDistTable(rows, levels, dists, base);
     }
@@ -685,11 +701,15 @@
     return lo == null || hi == null ? { lo: num(e.effr) - 0.125, hi: num(e.effr) + 0.125 } : { lo, hi };
   }
   const rangeLabel = (b, k, short) => { const lo = b.lo + k * 0.25, hi = b.hi + k * 0.25; return short ? lo.toFixed(2) : `${lo.toFixed(2)}–${hi.toFixed(2)}`; };
+  // 每一檔的深淺：今天往外一檔 0.25，最遠那檔 0.9，檔和檔之間分得出來
+  function levelAlpha(k, levels) {
+    const n = Math.max(1, ...levels.filter((x) => Math.sign(x) === Math.sign(k)).map(Math.abs));
+    return n === 1 ? 0.45 : 0.25 + 0.65 * (Math.abs(k) - 1) / (n - 1);
+  }
   function levelColor(k, levels) {
     // 柔和一點：今天那檔用淡灰，越遠的檔顏色越深，但不到全飽和
     if (k === 0) return rgba(css("--muted"), 0.22);
-    const n = Math.max(1, ...levels.filter((x) => Math.sign(x) === Math.sign(k)).map(Math.abs));
-    return rgba(css(k > 0 ? "--up" : "--down"), (0.18 + 0.32 * Math.abs(k) / n).toFixed(2));
+    return rgba(css(k > 0 ? "--up" : "--down"), levelAlpha(k, levels).toFixed(2));
   }
   // 相對今天：比今天低 / 一樣 / 比今天高
   function vsToday(d) { let lo = 0, eq = 0, hi = 0; d.forEach((p, k) => { if (k < 0) lo += p; else if (k > 0) hi += p; else eq += p; }); return { lo, eq, hi }; }
@@ -813,8 +833,9 @@
     return p.length ? { ...xy(p), name, mode: "markers", marker: { symbol: "diamond-open", size: 10, color, line: { width: 2 } },
       customdata: p.map((x) => x.year), hovertemplate: `%{y:.1f}% (Fed median for end-%{customdata})<extra>${name}</extra>` } : null;
   };
-  const hline = (y, text) => ({ shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: y, y1: y, line: { color: css("--muted"), width: 1, dash: "dash" } }],
-    annotations: text ? [{ xref: "paper", x: 0, y, text, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] : [] });
+  // 水平參考線；說明放圖例（直接寫在圖上會壓到線）
+  const hline = (y) => ({ shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: y, y1: y, line: { color: css("--muted"), width: 1, dash: "dash" } }] });
+  const hlineKey = (name) => ({ x: [null], y: [null], name, mode: "lines", line: { color: css("--muted"), width: 1, dash: "dash" }, hoverinfo: "skip" });
   const pctAxis = (extra = {}) => ({ ...baseLayout().yaxis, ticksuffix: "%", ...extra });
 
   // 一句結論
@@ -846,7 +867,7 @@
     const ti = [{ ...xy(pce.filter((p) => p.date >= start)), name: "Core PCE YoY", line: { color: P[0], width: 2 } },
       { ...xy(cpi.filter((p) => p.date >= start)), name: "Core CPI YoY", line: { color: P[3], width: 1.6 } }];
     const sp = sepTrace("core_pce", "Fed projection", P[0], lastV(pce).date); if (sp) ti.push(sp);
-    plot("c-infl-mini", ti, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis(), ...hline(2, "2% target") }));
+    plot("c-infl-mini", [...ti, hlineKey("2%")], baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, legend: { ...baseLayout().legend, y: 1.02, yanchor: "bottom" }, yaxis: pctAxis(), ...hline(2) }));
 
     const u = ser("unrate"), uS = u.filter((p) => p.date >= start), pay = diff(ser("payems")), sahm = lastV(ser("sahm"));
     $("#jobs-take").textContent = jobsTakeaway();
@@ -855,7 +876,7 @@
       + (sahm ? `<span>Sahm <b class="num ${sahm.v >= 0.5 ? "up" : ""}">${sahm.v.toFixed(2)}</b></span>` : "") + lastSurpriseLine("jobs");
     const tj = [{ ...xy(uS), name: "Unemployment rate", line: { color: P[2], width: 2 } }];
     const su = sepTrace("unrate", "Fed projection", P[2], lastV(u).date); if (su) tj.push(su);
-    plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis() }));
+    plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, legend: { ...baseLayout().legend, y: 1.02, yanchor: "bottom" }, yaxis: pctAxis() }));
   }
 
   // 一年 2% 換成每個月的速度：1.02^(1/12) − 1 ≈ 0.165%
@@ -938,7 +959,7 @@
       const tr = [{ ...xy(pce), name: `Core PCE ${I_VIEWS[S.iView][0]}`, line: { color: P[0], width: 2.2 }, hovertemplate: "%{y:.2f}%" },
         { ...xy(cpi), name: `Core CPI ${I_VIEWS[S.iView][0]}`, line: { color: P[3], width: 1.6 }, hovertemplate: "%{y:.2f}%" }];
       const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
-      plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
+      plot("c-infl", [...tr, hlineKey("2% target")], baseLayout({ yaxis: pctAxis(), ...hline(2), ...lg }));
     }
 
     // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
@@ -1105,10 +1126,17 @@
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
     const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
-    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => r.actual), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
+    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => r.actual), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, customdata: hov, hovertemplate: "%{customdata}<extra></extra>",
+      // 柱子上標數字：0.0 的柱子沒有高度，沒標就像漏掉
+      text: m === "claims" ? null : rs.map((r) => fmtU(m, r.actual).replace(SM[m].unit, "")), textposition: "outside", cliponaxis: false,
+      textfont: { family: "IBM Plex Mono, monospace", size: 10.5, color: css("--muted") } }];
     const fc = rs.filter((r) => r.forecast != null);
     if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
-    plot(`c-sur-${page}`, tr, baseLayout({ hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
+    // 上下留空間給柱子上的數字
+    const vals = rs.flatMap((r) => [r.actual, r.forecast]).filter((x) => x != null && !isNaN(x)).map(Number);
+    const hi = Math.max(0, ...vals), lo = Math.min(0, ...vals), pad = (hi - lo) * 0.14 || 0.1;
+    plot(`c-sur-${page}`, tr, baseLayout({ hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted"),
+      ...(m === "claims" ? {} : { range: [lo < 0 ? lo - pad : 0, hi + pad] }) } }));
     let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
     rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
     el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
