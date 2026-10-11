@@ -440,6 +440,7 @@
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
     curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted.",
+    bills: "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).",
   };
   // ---------- 比較日期拉桿 ----------
   // Henry：不要 Compare 按鈕，只用一條拉桿；刻度 1D / 1W / 1M… 之間等距（不是線性時間），刻度之間也能停在任何一天
@@ -528,6 +529,22 @@
       };
       ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "5Y"], Y[0].date, last.date, Y[0].date.slice(0, 4)), S.curveBack,
         (d) => { const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
+    }
+
+    if (v === "bills") {
+      ctl.append(rangeChips("range", rr), eventChips(rr));
+      const rows = inRange(D.yields, "date", S.range), start = rows.length ? rows[0].date : "";
+      const bo = (D.bills || []).filter((r) => r.date >= start), ef = new Map(D.effr.map((r) => [r.date, num(r.effr)]));
+      const spot = rows.filter((r) => num(r["1m"]) != null && ef.get(r.date) != null);
+      const tr = [{ x: spot.map((r) => r.date), y: spot.map((r) => (num(r["1m"]) * 360 / 365 - ef.get(r.date)) * 100), name: "1m bill − EFFR (spot)",
+        type: "scatter", mode: "lines", line: { color: css("--muted"), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.1f}bp" },
+        ...["1m", "3m", "6m"].map((t, i) => ({ x: bo.map((r) => r.date), y: bo.map((r) => num(r[`spread_${t}`])), name: `${t} bill − OIS`, type: "scatter", mode: "lines",
+          line: { color: P[i], width: 2 }, customdata: bo.map((r) => [num(r[`bill_${t}`]), num(r[`ois_${t}`])]),
+          hovertemplate: `%{y:.1f}bp (bill %{customdata[0]:.3f}%, OIS %{customdata[1]:.3f}%)` }))];
+      const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } });
+      if (rows.length) addEvents(tr, L, rows[0].date);
+      plot(id, tr, L);
+      renderReactions($("#y-table"));
     }
 
     if (v === "spread") {
@@ -1223,6 +1240,7 @@
       ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv", "releases.csv", "consensus.csv", "consensus_manual.csv"].map(load));
     D.pathPart = await load("fed_path_partial.csv").catch(() => []);
     D.pathSr3 = await load("fed_path_sr3.csv").catch(() => []);
+    D.bills = await load("bills_ois.csv").catch(() => []);
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }

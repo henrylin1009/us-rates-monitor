@@ -21,7 +21,7 @@ from fedpricing import implied_month_rate, partial_path, price_path
 from macro import update_macro
 from surprise import update_surprise
 from fomc import MEETINGS
-from sofrstrip import splice, sr3_contracts
+from sofrstrip import splice, sr3_contracts, zq_avg
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "docs" / "data"
@@ -33,6 +33,7 @@ TENORS = {"1 Mo": "1m", "2 Mo": "2m", "3 Mo": "3m", "4 Mo": "4m", "6 Mo": "6m", 
 YIELD_COLS = ["date"] + list(TENORS.values())
 MONTH_CODES = "FGHJKMNQUVXZ"
 BACKFILL_FROM_YEAR = 2015
+BILL_DAYS = {"1m": 28, "3m": 91, "6m": 182}  # 4 / 13 / 26 週 bill
 
 
 # ---------- CSV 小工具 ----------
@@ -204,7 +205,9 @@ def compute_pricing() -> None:
     for r in read_csv("sr3.csv"):
         sr3.setdefault(r["date"], {})[r["contract"]] = float(r["price"])
 
-    path_rows, summ_rows, part_rows, ext_rows = [], [], [], []
+    yields = {r["date"]: r for r in read_csv("yields.csv")}
+
+    path_rows, summ_rows, part_rows, ext_rows, bill_rows = [], [], [], [], []
     for ds in sorted(by_day):
         asof = date.fromisoformat(ds)
         prices = by_day[ds]
@@ -231,6 +234,18 @@ def compute_pricing() -> None:
             path_rows.append({"asof": ds, "meeting": p.meeting.isoformat(), "pre": p.pre, "post": p.post,
                               "move_bp": p.move_bp, "cum_bp": p.cum_bp, "p_hike": p.p_hike, "p_hold": p.p_hold,
                               "p_cut": p.p_cut, "lo_bp": p.lo_bp, "p_lo": p.p_lo, "hi_bp": p.hi_bp, "p_hi": p.p_hi})
+        # bill − OIS：bill 換成貨幣市場慣例（CMT 是 bond-equivalent act/365 → ×360/365），
+        # 減掉同一段期間 ZQ 路徑的複利平均（= 每天滾隔夜的預期收益）。差距就是 bill 本身的貴 / 便宜
+        y = yields.get(ds)
+        if y:
+            steps = [(p.meeting, p.post) for p in path]
+            row = {"date": ds}
+            for t, days in BILL_DAYS.items():
+                if y.get(t):
+                    b = float(y[t]) * 360 / 365
+                    o = zq_avg(asof, e, steps, asof, asof + timedelta(days=days))
+                    row.update({f"bill_{t}": round(b, 4), f"ois_{t}": round(o, 4), f"spread_{t}": round((b - o) * 100, 1)})
+            bill_rows.append(row)
         # ZQ 路徑之後用 SR3 接上（basis 調整到 EFFR）
         if ds in sr3:
             for r in splice(asof, e, [(p.meeting, p.post) for p in path], sr3[ds]):
@@ -254,6 +269,7 @@ def compute_pricing() -> None:
     write_csv("fed_summary.csv", summ_rows, ["asof", "effr", "next_meeting", "next_move_bp", "next_p_hike",
                                              "next_p_cut", "yearend_meeting", "cum_yearend_bp", "implied_6m",
                                              "cum_6m_bp", "implied_12m", "cum_12m_bp"])
+    write_csv("bills_ois.csv", bill_rows, ["date"] + [f"{k}_{t}" for t in BILL_DAYS for k in ("bill", "ois", "spread")])
     write_csv("fed_path_sr3.csv", ext_rows, ["asof", "contract", "start", "end", "sofr", "basis_bp", "rate"])
     write_csv("fed_path_partial.csv", part_rows, ["asof", "meeting", "pre", "post", "move_bp", "cum_bp"])
     if summ_rows:

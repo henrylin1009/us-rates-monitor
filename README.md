@@ -19,6 +19,7 @@ GitHub Actions（週一到週五 23:40 UTC）
       ├ ZQ 期貨（Yahoo Finance）          → docs/data/zq.csv
       ├ SR3 期貨（Yahoo Finance，約五年）  → docs/data/sr3.csv
       ├ scripts/fedpricing.py 算定價      → docs/data/fed_path.csv、fed_summary.csv
+      │                                    bills_ois.csv（1m/3m/6m bill − 同期間 ZQ 路徑的複利平均）
       │                                    fed_path_sr3.csv（ZQ 路徑之後用 SR3 接上，scripts/sofrstrip.py）
       │                                    fed_path_partial.csv（下一次會議合約已到期的舊日子，從接得上的會議開始，只給比較用）
       ├ scripts/macro.py 抓 FRED 通膨、就業 → docs/data/macro.csv、claims.csv、breakeven.csv、sep.csv
