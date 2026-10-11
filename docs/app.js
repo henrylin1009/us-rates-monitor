@@ -379,10 +379,13 @@
     if (!A.length) return empty("c-fomc", "No Fed pricing data yet.");
     clearEmpty("c-fomc");
     const last = A[A.length - 1];
-    const upcoming = pathOn(last).map((r) => r.meeting);
-    if (!upcoming.includes(S.histMeeting)) S.histMeeting = upcoming[0];
+    // Henry：只看下一次會議就好，不用選
+    S.histMeeting = (pathOn(last)[0] || {}).meeting;
+    if (!S.histMeeting) return empty("c-fomc", "No upcoming meeting priced.");
     const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" });
-    $("#fomc-controls").append(chips("Meeting", upcoming.map((m) => [m, mon(m)]), S.histMeeting, false, (x) => { S.histMeeting = x; renderFomc(); }));
+    const lbl = document.createElement("div"); lbl.className = "hint";
+    lbl.innerHTML = `Next meeting: <b>${mon(S.histMeeting)}</b>`;
+    $("#fomc-controls").append(lbl);
     const m = S.histMeeting, today = baseRange(last);
     // 每天：那天的路徑 → 分布 → 取出這次會議那一列，換成絕對的區間下緣
     const series = A.map((a) => {
@@ -417,7 +420,7 @@
   // 過去的會議：會前定價 vs 實際決定；或某次未來會議的機率怎麼一路變
   const FOMC_HINT = {
     past: "Looking back: the solid line is the actual policy rate (EFFR) and each blue diamond is the rate futures priced for that meeting the day before, so the gap between diamond and line is the surprise. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, the open one is next. Where the market prices the rate from here on is in Fed pricing, Implied path. Pre-meeting pricing exists only from Sep 2026 (Yahoo keeps no expired ZQ contracts), so older meetings show the decision without a diamond.",
-    hist: "Pick an FOMC meeting to see how the odds of each target range after it have shifted day by day (like FedWatch's history). Colours are relative to today's range. For meetings after the next one, read the direction of the shift rather than exact percentages: the split assumes meetings are independent.",
+    hist: "How the odds of each target range after the next FOMC meeting have shifted day by day (like FedWatch's history). Colours are relative to today's range.",
   };
   function renderFomc() {
     $("#fomc-controls").innerHTML = ""; $("#fomc-table").innerHTML = "";
