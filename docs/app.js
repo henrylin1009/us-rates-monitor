@@ -566,7 +566,7 @@
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
     priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
-    path: "The implied policy rate after each FOMC meeting. Fed funds futures (ZQ) only cover about 15 months, so past the dashed divider the line continues with 3-month SOFR futures (SR3): each step is the average rate expected over one quarter, shifted down by the SOFR–fed funds gap measured where the two overlap so the two pieces join up. Faint lines mark how far today's 1y/2y/3y/5y Treasuries reach; a yield is roughly the average of this path out to its line, plus term premium. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then. SR3 history starts 2026-10-09.",
+    path: "The implied policy rate after each FOMC meeting. Fed funds futures (ZQ) only cover about 15 months, so past the dashed divider the line continues with 3-month SOFR futures (SR3): each step is the average rate expected over one quarter, shifted down by the SOFR–fed funds gap measured where the two overlap so the two pieces join up. Faint lines mark how far today's 1y/2y/3y/5y Treasuries reach; a yield is roughly the average of this path out to its line, plus term premium. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then. Yahoo serves only the latest SR3 price (its history is unusable), so SR3 history starts 2026-10-09 and builds up daily; a compare date before that shows only the ZQ part.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
@@ -658,7 +658,13 @@
         if (extNow) tr.push(extNow);
         if (d) {
           const [a, part] = cmpAsof(A, shiftDays(last, -d));
-          if (a && a !== last) { tr.push(pathTrace(a, P[1], 1.8, "dot", 1, part)); const ex = part ? null : extTrace(a, P[1], 1.5, "dot"); if (ex) tr.push(ex); }
+          if (a && a !== last) {
+            const t = pathTrace(a, P[1], 1.8, "dot", 1, part), ex = part ? null : extTrace(a, P[1], 1.5, "dot");
+            // Yahoo 不給 SR3 歷史，比較日在 SR3 開始累積之前就只有 ZQ 段
+            const s0 = (D.pathSr3 || []).reduce((m, r) => (!m || r.asof < m ? r.asof : m), null);
+            if (!ex && extNow && s0 && a < s0) t.name += ` (no SR3 data before ${s0})`;
+            tr.push(t); if (ex) tr.push(ex);
+          }
         }
         // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
         const lastM = pathOn(last).slice(-1)[0], extEnd = extNow ? extNow.x[extNow.x.length - 1] : null;
