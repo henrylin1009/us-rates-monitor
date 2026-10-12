@@ -77,6 +77,8 @@ h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
 
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px 8px; margin-bottom: 20px; }
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+/* 標題欄吃掉剩下的寬度、文字在裡面換行：資料說明變長時切換按鈕不會被擠到下一行 */
+.panel-head > div:first-child:not(.seg):not(.seg-col) { flex: 1 1 280px; min-width: 0; }
 h2 { font-size: 17px; margin: 0; }
 .tag { font-size: 11.5px; font-weight: 500; color: var(--muted); border: 1px solid var(--line); padding: 1px 7px; border-radius: 999px; margin-left: 6px; vertical-align: 2px; }
 .hint { margin: 3px 0 0; color: var(--muted); font-size: 13px; max-width: 560px; }
