@@ -569,6 +569,7 @@
     repo: "Where overnight money trades against the rate the Fed pays banks on reserves (IORB, the ceiling it wants to hold). SOFR is the Treasury repo rate; EFFR is unsecured bank lending. When reserves are plentiful both sit a few bp below IORB. SOFR pushing up to or above IORB means cash is getting scarce (heavy Treasury settlements, month and quarter ends, falling reserves): the signal that ended QT in late 2025 and that desks watch for funding stress. Month-end and tax-date spikes are normal; a rising baseline is what matters.",
     liq: "The plumbing behind those rates, in $ trillions. Reserves are the cash banks hold at the Fed; the overnight reverse repo (RRP) is money funds parking cash at the Fed; the Treasury General Account (TGA) is the government's cash at the Fed. A rising TGA (after debt issuance or tax dates) or a growing Fed balance sheet runoff drains reserves; once the RRP is near zero, every drain comes straight out of reserves, which is when repo rates start to climb. Fed total assets (dotted) shows QT or balance sheet growth.",
     bills: BILLS_HINT,
+    curve: "The reserve demand curve: each dot is one day, bank reserves (that week) against SOFR − IORB. With plenty of reserves the rate barely moves (flat part, SOFR well below IORB); below roughly $3tn it turns steep and SOFR starts to trade at or above IORB. The Fed manages its balance sheet to stay on the flat side, so where today sits on this curve tells you how close funding is to stress. The line is the median spread in each $0.1tn bucket. The threshold shifts over time, so read it as a guide, not a fixed number.",
   };
   function renderFunding() {
     const id = "c-fund", ctl = $("#fund-controls"); if (!ctl) return;
@@ -600,6 +601,31 @@
         baseLayout({ margin: { l: 52, r: 52, t: 10, b: 40 }, yaxis: { ...baseLayout().yaxis, tickprefix: "$", ticksuffix: "tn" }, yaxis2: { ...baseLayout().yaxis, tickprefix: "$", ticksuffix: "tn", overlaying: "y", side: "right", showgrid: false } }));
       const lr = lastV(res), lt = lastV(tga), lq = lastV(rrp);
       $("#fund-date").innerHTML = lr ? `<span class="muted">Reserves $${lr.v.toFixed(2)}tn (${md(lr.date)})${lt ? ` · TGA $${lt.v.toFixed(2)}tn` : ""}${lq ? ` · RRP $${(lq.v * 1000).toFixed(lq.v < 0.01 ? 1 : 0)}bn (${md(lq.date)})` : ""} · FRED WRESBAL, WTREGEN, RRPONTSYD, WALCL</span>` : "";
+    }
+    if (v === "curve") {
+      // 每天的 SOFR − IORB 對上「當週」的準備金（週資料是週三，往後帶到下一筆）
+      let res = null; const pts = [];
+      for (const r of F) {
+        if (r.reserves !== "") res = num(r.reserves) / 1e6;
+        if (res != null && r.sofr !== "" && r.iorb !== "") pts.push({ date: r.date, x: res, y: (num(r.sofr) - num(r.iorb)) * 100 });
+      }
+      if (!pts.length) return empty(id, "Funding data load after the next daily update.");
+      const last = pts[pts.length - 1], y1 = shiftDays(last.date, -365), m3 = shiftDays(last.date, -91);
+      const grp = (f) => pts.filter(f), dot = (g, name, color, size) => ({ x: g.map((p) => p.x), y: g.map((p) => p.y), customdata: g.map((p) => p.date), name, mode: "markers", type: "scatter",
+        marker: { color, size }, hovertemplate: "%{customdata}: reserves $%{x:.2f}tn, SOFR − IORB %{y:.0f}bp<extra></extra>" });
+      // 每 0.1 兆一格的中位數，畫成需求曲線
+      const bins = new Map();
+      pts.forEach((p) => { const k = Math.floor(p.x * 10) / 10; (bins.get(k) || bins.set(k, []).get(k)).push(p.y); });
+      const med = (a) => { const b = [...a].sort((u, w) => u - w), n = b.length; return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+      const curve = [...bins].filter(([, a]) => a.length >= 5).sort((a, b) => a[0] - b[0]).map(([k, a]) => [k + 0.05, med(a)]);
+      plot(id, [dot(grp((p) => p.date < y1), "Earlier", rgba(css("--muted"), 0.35), 5),
+        dot(grp((p) => p.date >= y1 && p.date < m3), "Past year", rgba(P[1], 0.55), 6),
+        dot(grp((p) => p.date >= m3), "Last 3 months", rgba(P[0], 0.8), 7),
+        { x: curve.map((c) => c[0]), y: curve.map((c) => c[1]), name: "Median", mode: "lines", line: { color: css("--ink"), width: 2, shape: "spline" }, hovertemplate: "$%{x:.2f}tn: median %{y:.1f}bp<extra></extra>" },
+        { x: [last.x], y: [last.y], name: `Latest (${md(last.date)})`, mode: "markers", marker: { color: P[0], size: 13, line: { color: css("--ink"), width: 2 } }, hovertemplate: `${last.date}: reserves $%{x:.2f}tn, SOFR − IORB %{y:.0f}bp<extra></extra>` }],
+        baseLayout({ hovermode: "closest", xaxis: { ...baseLayout().xaxis, type: "linear", tickprefix: "$", ticksuffix: "tn", title: { text: "Bank reserves", font: { size: 12 } } },
+          yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1.5 } }));
+      $("#fund-date").innerHTML = `<span class="muted">Latest: reserves $${last.x.toFixed(2)}tn, SOFR − IORB ${last.y.toFixed(0)}bp (${md(last.date)}) · daily since ${pts[0].date.slice(0, 4)} · FRED WRESBAL, SOFR, IORB</span>`;
     }
     if (v === "bills") {
       ctl.append(rangeChips("fundRange", rr), eventChips(rr));
