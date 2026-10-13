@@ -1109,15 +1109,29 @@
     const yrs = mm ? 2 : S.iYears;
     $("#i-years").style.display = mm ? "none" : "";
     const pce = fromYears(f(ser("core_pce")), yrs), cpi = fromYears(f(ser("core_cpi")), yrs);
+    // Cleveland Fed nowcast：把還沒公布月份的 m/m 接在最後一個指數後面，再用同一個轉換（YoY、年化）算，畫成延伸
+    const now = (col) => {
+      const s = ser(col), l = lastV(s); if (!l) return [];
+      const ext = []; let lv = l.v, d = l.date;
+      (D.nowcast || []).filter((r) => r.month > l.date && r[col] !== "").sort((a, b) => (a.month < b.month ? -1 : 1)).forEach((r) => {
+        if (mBack(r.month, 1) !== d) return; lv *= 1 + r[col] / 100; d = r.month; ext.push({ date: d, v: lv });
+      });
+      if (!ext.length) return [];
+      return f(s.concat(ext)).filter((p) => p.date >= l.date);
+    };
+    const nP = now("core_pce"), nC = now("core_cpi"), nAsof = (D.nowcast || []).length ? md(D.nowcast[D.nowcast.length - 1].asof) : "";
     const narrow = innerWidth < 600, lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
     clearEmpty("c-infl");
     if (mm) {
       // 月增率用柱子；虛線是一年 2% 換成每月的速度（0.17%）
-      const bar = (s, n, c) => ({ ...xy(s), name: `${n} m/m`, type: "bar", marker: { color: rgba(c, 0.75) },
+      const bar = (s, n, c) => ({ ...xy(s), name: `${n} m/m`, type: "bar", offsetgroup: n, marker: { color: rgba(c, 0.75) },
         customdata: s.map((p) => (Math.pow(1 + p.v / 100, 12) - 1) * 100), hovertemplate: `${n} %{y:.2f}% m/m (%{customdata:.1f}% annualized)<extra></extra>` });
       // 速度線的說明放在圖例（放圖上會蓋到最近的柱子）
       const pace = { x: [null], y: [null], name: "2% a year pace (0.17%/month)", mode: "lines", line: { color: css("--ink"), width: 1.2, dash: "dash" }, hoverinfo: "skip" };
-      plot("c-infl", [bar(pce, "Core PCE", P[0]), bar(cpi, "Core CPI", P[3]), pace],
+      const nbar = (s, n, c) => ({ ...xy(s.slice(1)), name: `${n} nowcast`, type: "bar", offsetgroup: n, marker: { color: rgba(c, 0.12), line: { color: c, width: 1.5 } },
+        hovertemplate: `${n} nowcast %{y:.2f}% m/m (Cleveland Fed, ${nAsof})<extra></extra>` });
+      const nb = [nP.length > 1 ? nbar(nP, "Core PCE", P[0]) : null, nC.length > 1 ? nbar(nC, "Core CPI", P[3]) : null].filter(Boolean);
+      plot("c-infl", [bar(pce, "Core PCE", P[0]), bar(cpi, "Core CPI", P[3]), ...nb, pace],
         baseLayout({ barmode: "group", bargap: 0.25, xaxis: { ...baseLayout().xaxis, dtick: "M3", tickformat: "%b '%y" }, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), ...lg,
           shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: PACE2, y1: PACE2, layer: "above", line: { color: css("--ink"), width: 1.2, dash: "dash" } }],
  }));
@@ -1127,6 +1141,8 @@
         // headline 畫成虛線：能源大漲大跌時 headline 和 core 會差很多
         { ...xy(fromYears(f(ser("pce")), yrs)), name: "Headline PCE", line: { color: rgba(P[0], 0.6), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.2f}%" },
         { ...xy(fromYears(f(ser("cpi")), yrs)), name: "Headline CPI", line: { color: rgba(P[3], 0.6), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.2f}%" }];
+      // nowcast 延伸：同色細虛線，從最後一個公布值接出去
+      [[nP, "Core PCE", P[0]], [nC, "Core CPI", P[3]]].forEach(([s, n, c]) => { if (s.length > 1) tr.push({ ...xy(s), name: `${n} nowcast`, mode: "lines+markers", line: { color: c, width: 1.6, dash: "dash" }, marker: { size: 5, symbol: "circle-open", color: c }, hovertemplate: `${n} nowcast %{y:.2f}% (Cleveland Fed, ${nAsof})<extra></extra>` }); });
       const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
       plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
     }
@@ -1632,24 +1648,12 @@
   }
 
   // Cleveland Fed nowcast：還沒公布 PCE 的月份（通常兩個月），m/m
-  function renderNowcast() {
-    const el = $("#nowcast"); if (!el) return;
-    const N = (D.nowcast || []).filter((r) => r.core_pce !== "" && r.actual_core_pce === "");
-    if (!N.length) { el.innerHTML = ""; return; }
-    const v = (x) => (x === "" || x == null ? "–" : (+x).toFixed(2) + "%");
-    const a = (r, k) => (r["actual_" + k] !== "" ? `<b>${v(r["actual_" + k])}</b> <small class="muted">actual</small>` : v(r[k]));
-    let h = "<table><thead><tr><th>Month</th><th>Core CPI m/m</th><th>Core PCE m/m</th><th>CPI m/m</th><th>PCE m/m</th></tr></thead><tbody>";
-    N.slice().reverse().forEach((r) => { h += `<tr><td>${monthName(r.month)}</td><td class="n">${a(r, "core_cpi")}</td><td class="n"><b>${v(r.core_pce)}</b></td><td class="n">${a(r, "cpi")}</td><td class="n">${v(r.pce)}</td></tr>`; });
-    el.innerHTML = `<h3 class="subhead">Cleveland Fed nowcast <span class="muted">as of ${md(N[0].asof)}</span></h3><div class="table-wrap">${h}</tbody></table></div>`
-      + `<p class="hint note">The Cleveland Fed's model estimate for months not yet published, from oil and gasoline prices and whatever CPI and PPI data are already out. Desks do the same after each CPI and PPI release to pin down core PCE, the number the Fed targets. Once a print is out it shows as actual. 2% a year is about 0.17% a month.</p>`;
-  }
-
   // ---------- 分頁：#overview / #rates / #calendar（舊的 #events 也導到 calendar）----------
   const PAGES = ["overview", "rates", "inflation", "jobs", "growth", "calendar"];
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); renderGrowthCard(); },
     rates: () => { renderRatesTake(); renderYields(); renderFed(); renderAuctions(); renderFunding(); renderDecomp(); renderFomc(); renderSurIndex(); },
-    inflation: () => { renderInflation(); renderNowcast(); renderSurprisePanel("inflation"); renderParts(); renderExp(); renderWedge(); renderPpi(); },
+    inflation: () => { renderInflation(); renderSurprisePanel("inflation"); renderParts(); renderExp(); renderWedge(); renderPpi(); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     growth: () => renderGrowth(),
     calendar: () => renderCalendar(),
