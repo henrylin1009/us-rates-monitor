@@ -1,0 +1,19 @@
+name: probe
+on:
+  push:
+    branches: [claude/auction-tail]
+permissions:
+  contents: write
+jobs:
+  p:
+    if: "!contains(github.event.head_commit.message, 'data: wi')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: cd scripts && python test_auctions.py && python -c "from fetch import read_csv, write_csv; from auctions import update_wi; update_wi(read_csv, write_csv)" | tee ../wi_log.txt
+      - run: |
+          git config user.name "rates-bot"; git config user.email "rates-bot@users.noreply.github.com"
+          git add docs/data/auctions_wi.csv wi_log.txt; git commit -m "data: wi" || true; git push
