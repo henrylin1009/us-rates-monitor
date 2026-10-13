@@ -1050,8 +1050,9 @@
     const P = palette(), v = S.bdView, narrow = innerWidth < 600;
     const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
       heat: "Each component's m/m change over the last 24 months, with the items desks watch indented under the block they belong to: OER and rent make up most of shelter; medical and transport services (which includes car insurance) drive supercore; airfares are small but jumpy; used cars swing core goods. Colour is how unusual the move is for that row (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
-    $("#cpi-hint").textContent = hint || (v === "rank" ? RANK_HINT.cpi : YOY_HINT.cpi);
+    $("#cpi-hint").textContent = hint || (v === "rank" ? RANK_HINT.cpi : v === "lines" ? LINES_HINT : YOY_HINT.cpi);
     if (v === "yoy") return renderCoreYoy("cpi");
+    if (v === "lines") return renderLines("cpi");
     if (v === "rank") return renderRanked("cpi");
     if (v === "time") {
       const tb = comps.map(([c, n, w], i) => {
@@ -1247,15 +1248,18 @@
     cpi: "Which parts of core CPI are rising fastest. Each bar is a component's own YoY in the latest month, sorted from highest; the dot is its 3-month annualized pace, so a dot left of its bar means it has cooled lately and a dot to the right means it is heating up. Lighter bars are items inside a block (OER and rent in shelter; medical services, transport services and airfares in supercore; used cars in core goods). Unlike Core YoY, this ignores weights: a small item can top the list without moving the total much. Food and energy are left out.",
     pce: "Which parts of core PCE are rising fastest. Each bar is a component's own YoY in the latest month, sorted from highest; the dot is its 3-month annualized pace, so a dot left of its bar means it has cooled lately and a dot to the right means it is heating up. Lighter bars are items inside supercore: health care, financial services, and portfolio management fees (part of financial services, they move with the stock market). Unlike Core YoY, this ignores weights: a small item can top the list without moving the total much. Food and energy are left out.",
   };
-  function renderRanked(idx) {
-    const P = palette(), narrow = innerWidth < 600, id = idx === "cpi" ? "c-cpi-parts" : "c-pce-parts", R = D.pce;
-    // [資料, 標籤, 顏色（跟 Core YoY 同色：商品 P0、住房 P1、supercore P2）, 是否細項]
-    const items = idx === "cpi"
+  // [資料, 標籤, 顏色（跟 Core YoY 同色：商品 P0、住房 P1、supercore P2）, 是否細項]；Ranked 和 Lines 共用
+  function compItems(idx) {
+    const P = palette();
+    return idx === "cpi"
       ? [[ser("core_cpi"), "Core CPI", css("--ink")], [ser("cpi_goods"), "Core goods", P[0]], [ser("cpi_usedcars"), "Used cars", P[0], 1],
         [ser("cpi_shelter"), "Shelter", P[1]], [ser("cpi_oer"), "OER", P[1], 1], [ser("cpi_rent"), "Rent", P[1], 1],
         [ser("cpi_supercore"), "Supercore (approx.)", P[2]], [ser("cpi_medsvc"), "Medical services", P[2], 1], [ser("cpi_transvc"), "Transport services", P[2], 1], [ser("cpi_airfare"), "Airfares", P[2], 1]]
       : [[pceSer("core_p"), "Core PCE", css("--ink")], [pceSer("core_goods_p"), "Core goods", P[0]], [pceSer("housing_p"), "Housing", P[1]],
         [ser("pce_supercore"), "Supercore", P[2]], [pceSer("health_p"), "Health care", P[2], 1], [pceSer("finsvc_p"), "Financial services", P[2], 1], [pceSer("portfolio_p"), "Portfolio mgmt", P[2], 1]];
+  }
+  function renderRanked(idx) {
+    const P = palette(), narrow = innerWidth < 600, id = idx === "cpi" ? "c-cpi-parts" : "c-pce-parts", items = compItems(idx);
     const rows = items.map(([s, n, c, sub]) => { const y = lastV(yoy(s)), a = lastV(annK(s, 3)); return y && a ? { n: (sub ? "· " : "") + n, c, sub, y: y.v, a: a.v, d: y.date } : null; })
       .filter(Boolean).sort((a, b) => b.y - a.y);
     if (!rows.length) return empty(id, "Components load after the next daily update.");
@@ -1280,6 +1284,18 @@
       yaxis: { ...baseLayout().yaxis, type: "category", autorange: "reversed", showgrid: false, tickfont: { color: css("--ink"), size: 12 } },
       shapes: [{ type: "line", yref: "paper", y0: 0, y1: 1, x0: 2, x1: 2, line: { color: css("--muted"), width: 1, dash: "dash" } }], annotations: ann }));
   }
+  // Lines：各項自己的 YoY 走勢，core 粗黑線；預設只開三大塊，細項（機票、portfolio mgmt 這種會撐開軸的）點圖例才出現
+  const LINES_HINT = "Each block's own YoY over the last 5 years against the core (thick black line), the usual sell-side chart for seeing which part is above or below the total and which one crossed it recently. Items inside a block are dashed and hidden at first; click them in the legend to add them (some, like airfares or portfolio management fees, swing much more than the rest).";
+  function renderLines(idx) {
+    const narrow = innerWidth < 600, id = idx === "cpi" ? "c-cpi-parts" : "c-pce-parts";
+    // 手機上圖例放不下十條，細項只在寬螢幕出現
+    const tr = compItems(idx).filter(([, , , sub]) => !(narrow && sub)).map(([s, n, c, sub], i) => { const f = fromYears(yoy(s), 5);
+      return { ...xy(f), name: n, visible: sub ? "legendonly" : true, line: { color: i === 0 ? c : rgba(c, sub ? 0.6 : 1), width: i === 0 ? 3 : sub ? 1.4 : 1.8, dash: sub ? "dot" : "solid" }, hovertemplate: `${n} %{y:.1f}%<extra></extra>` }; });
+    if (!tr[0].x.length) return empty(id, "Components load after the next daily update.");
+    clearEmpty(id);
+    plot(id, tr, baseLayout({ hovermode: "x unified", yaxis: pctAxis(), ...hline(2, "2% target"),
+      ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 100 } } : {}) }));
+  }
   const PCE_PARTS = [["core_goods", "Core goods"], ["housing", "Housing"], ["supercore", "Services ex housing (supercore)"], ["food", "Food"], ["energy", "Energy"]];
   function renderPceParts() {
     const el = $("#c-pce-parts"); if (!el) return;
@@ -1294,8 +1310,10 @@
     $("#pce-date").innerHTML = dataLine("core_pce", "pce", "PCE", "BEA, ");
     if (v === "yoy") $("#pce-hint").textContent = YOY_HINT.pce;
     if (v === "rank") $("#pce-hint").textContent = RANK_HINT.pce;
+    if (v === "lines") $("#pce-hint").textContent = LINES_HINT;
     if (v === "yoy") renderCoreYoy("pce");
     else if (v === "rank") renderRanked("pce");
+    else if (v === "lines") renderLines("pce");
     else if (v === "time") {
       const tb = PCE_PARTS.map(([k, n], i) => {
         const c = pceContrib(k).slice(-12), m = new Map(mom(own(k)).map((p) => [p.date, p.v]));
