@@ -227,6 +227,16 @@ a.more:hover { text-decoration: underline; }
 .light.on { background: var(--up); }
 @media (max-width: 860px) { .duo { grid-template-columns: 1fr; } .seg-col { align-items: flex-start; } }
 @media (max-width: 860px) { .panel-head .hero-title { flex-basis: 100%; } }
+/* 標題列不隨 view 跳動：左欄吃剩下的寬度（basis 0），切換按鈕固定在右上，不會因為副標變長被擠到下一行；
+   資料日期那行桌機固定一行（太長就 …，滑過看全文），手機固定佔兩行 */
+.panel-head > div:first-child { flex: 1 1 0; min-width: 0; }
+.panel-head > .seg, .panel-head > .seg-col { flex: 0 1 auto; }
+.panel-head .dline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.45em; line-height: 1.45; }
+@media (max-width: 860px) { .panel-head > div:first-child { flex-basis: 100%; } }
+@media (max-width: 640px) {
+  .panel-head .dline { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: 2.9em; }
+  .panel-head .dline[hidden] { display: none; }
+}
 
 /* surprise */
 .kline .sur { flex-basis: 100%; margin-top: 2px; color: var(--ink); }
