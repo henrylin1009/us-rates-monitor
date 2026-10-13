@@ -337,7 +337,7 @@
       return { date: e.date, dec, priced, pricedRate: pr ? num(pr.post) : null, surprise: dec == null || priced == null ? null : dec - priced, d2: r ? r.d2 : null, fed: r ? r.fed : null };
     });
   }
-  // 實際 EFFR（實線）vs 會前一天 price 的利率（菱形）。只看過去；未來路徑在 Fed pricing 的 Implied path（Henry：兩張重複）
+  // 實際 EFFR（實線）vs 會前一天 price 的利率（菱形）。只看過去；未來路徑在 Fed pricing 的 Priced (bp)（Henry：兩張重複）
   function renderFomcChart() {
     if (!D.effr.length) return empty("c-fomc", "No EFFR data");
     const yrs = { "6M": 0.5, "1Y": 1, "2Y": 2, "5Y": 5 }[S.fomcRange];
@@ -437,7 +437,7 @@
   }
   // 過去的會議：會前定價 vs 實際決定；或某次未來會議的機率怎麼一路變
   const FOMC_HINT = {
-    past: "Looking back: the solid line is the actual policy rate (EFFR) and each blue diamond is the rate futures priced for that meeting the day before, so the gap between diamond and line is the surprise. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, the open one is next. Where the market prices the rate from here on is in Fed pricing, Implied path. Pre-meeting pricing exists only from Sep 2026 (Yahoo keeps no expired ZQ contracts), so older meetings show the decision without a diamond.",
+    past: "Looking back: the solid line is the actual policy rate (EFFR) and each blue diamond is the rate futures priced for that meeting the day before, so the gap between diamond and line is the surprise. Diamonds along the bottom mark each FOMC meeting: red a hike, green a cut, grey a hold, the open one is next. Where the market prices the rate from here on is in Fed pricing, Priced (bp). Pre-meeting pricing exists only from Sep 2026 (Yahoo keeps no expired ZQ contracts), so older meetings show the decision without a diamond.",
     hist: "How the odds of each target range after the next FOMC meeting have shifted day by day (like FedWatch's history). Colours are relative to today's range.",
   };
   function renderFomc() {
@@ -688,8 +688,7 @@
 
   // ---------- 圖二：Fed 定價 ----------
   const F_HINT = {
-    priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting, and cumulatively from today. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption.",
-    path: "The implied policy rate after each FOMC meeting. Fed funds futures (ZQ) only cover about 15 months, so past the dashed divider the line continues with 3-month SOFR futures (SR3): each step is the average rate expected over one quarter, shifted down by the SOFR–fed funds gap measured where the two overlap so the two pieces join up. Faint lines mark how far today's 1y/2y/3y/5y Treasuries reach; a yield is roughly the average of this path out to its line, plus term premium. Use the Compare slider (1D, 1W, 1M…) to see how much the market has repriced since then. Yahoo serves only the latest SR3 price (its history is unusable), so SR3 history starts 2026-10-09 and builds up daily; a compare date before that shows only the ZQ part.",
+    priced: "How many bp of hikes (+) or cuts (−) the futures price in at each FOMC meeting (bars), and cumulatively from today (line); the right axis reads the same line as the implied policy rate. This is the number desks quote (\"1.3 hikes priced by December\") because it is exactly what futures pin down; probabilities need an extra assumption. Fed funds futures (ZQ) cover about 15 months; past the dashed divider the line continues with 3-month SOFR futures (SR3), one step per quarter, shifted down by the SOFR–fed funds gap so the two pieces join up (SR3 history starts 2026-10-09). Diamonds are the Fed's own year-end median (dot plot): line above the diamonds = market more hawkish than the Fed.",
     probs: "Probability of each target range after each FOMC meeting (FedWatch style). Futures only fix the average (the bp in Priced); the split into ranges assumes each meeting is independent of the last, so later meetings look more spread out than the market likely believes. Grey = same as today, deeper orange = higher, deeper green = lower.",
   };
   const asofs = () => [...new Set(D.path.map((r) => r.asof))].sort();
@@ -708,6 +707,7 @@
     const A = asofs();
     if (!A.length) return empty(id, "No Fed pricing data yet (it needs ZQ futures prices first).");
     clearEmpty(id);
+    if (S.fView === "path") S.fView = "priced";
     const P = palette(), v = S.fView, rr = () => renderFed(), last = A[A.length - 1];
     // ZQ 報價來自 Yahoo，偶爾抓不到：標出 Fed 定價是哪一天的，落後殖利率 2 個交易日以上就提醒
     const behind = D.yields.filter((r) => r.date > last).length;
@@ -719,7 +719,8 @@
 
     if (v === "priced") {
       // WIRP 式：每次會議 price 了多少 bp（柱）＋從今天起累計（線），可疊一週 / 一個月前的累計來看 repricing
-      ctl.append(chips("Compare", ["1W", "1M"].map((k) => [k, cmpLabel[k]]), S.pricedCmp, true, rr));
+      ctl.append(chips("Horizon", [["2Y", "To end-" + (+last.slice(0, 4) + 2)], ["5Y", "5 years"]], S.pathHz, false, (h) => { S.pathHz = h; rr(); }));
+      ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pricedCmp, true, rr));
       const rows = pathOn(last), x = rows.map((r) => r.meeting), start = rows.length ? num(rows[0].pre) : effrNow;
       const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + " '" + iso.slice(2, 4);
       const xl = x.map(mon);
@@ -728,23 +729,53 @@
       const cmp = [];
       S.pricedCmp.forEach((k) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) cmp.push([k, a, then(a, part)]); });
       const mv = rows.map((r) => num(r.move_bp)), cum = rows.map((r) => num(r.cum_bp));
+      // SR3 的格子名稱尾巴加不換行空白，免得跟 ZQ 同月份的會議（例如 Dec '27）撞成同一格
+      // ZQ 大約只到 15 個月；之後接 SR3（3 個月 SOFR 期貨，已扣 SOFR−EFFR 的 basis），每季一格，拆不到單次會議
+      // 預設只看到後年年底，5Y 才把整條 SR3 畫出來
+      const hzEnd = `${+last.slice(0, 4) + 2}-12-31`;
+      const ext = (D.pathSr3 || []).filter((r) => r.asof === last && (S.pathHz === "5Y" || r.start <= hzEnd));
+      const xq = ext.map((r) => mon(r.start) + "\u00a0"), yq = ext.map((r) => (num(r.rate) - start) * 100);
+      const xAll = xl.concat(xq);
+      const sr3Then = (a) => { const m = new Map((D.pathSr3 || []).filter((r) => r.asof === a).map((r) => [r.contract, (num(r.rate) - start) * 100])); return ext.map((r) => (m.has(r.contract) ? m.get(r.contract) : null)); };
+      // Fed 點陣圖（SEP 中位數，年底）：放在那年最後一次會議那格；ZQ 涵蓋不到的年份放在包含 12/31 的 SR3 那季
+      const dots = D.sep.filter((r) => r.fedfunds !== "").map((r) => {
+        const ye = `${r.year}-12-31`; let k = -1;
+        x.forEach((d, i) => { if (d.slice(0, 4) === String(r.year)) k = i; });
+        if (k < 0 || x[k] < `${r.year}-12-01`) { const j = ext.findIndex((e) => e.start <= ye && ye < e.end); k = j >= 0 ? xl.length + j : -1; }
+        return k >= 0 && ye >= last ? { x: xAll[k], y: (+r.fedfunds - start) * 100, rate: +r.fedfunds, year: r.year } : null;
+      }).filter(Boolean);
+      const narrow = innerWidth < 600, dense = narrow || xAll.length > 16;
       const tr = [
         { x: xl, y: mv, name: "This meeting", type: "bar", marker: { color: mv.map((b) => rgba(css(b >= 0 ? "--up" : "--down"), 0.45)) },
-          text: mv.map((b) => (Math.abs(b) >= 5 ? bp(b, 1) : "")), textposition: "inside", insidetextanchor: "end", textfont: { size: 10.5, color: css("--ink") },
+          text: mv.map((b) => (!dense && Math.abs(b) >= 5 ? bp(b, 1) : "")), textposition: "inside", insidetextanchor: "end", textangle: 0, textfont: { size: 10.5, color: css("--ink") },
           customdata: mv.map((b) => moves(b)), hovertemplate: "This meeting %{y:+.1f}bp (%{customdata})<extra></extra>" },
-        ...cmp.map(([k, a, y], j) => ({ x: xl, y, name: `Cumulative ${cmpLabel[k]} (${a})`, type: "scatter", mode: "lines+markers",
+        ...cmp.map(([k, a, y], j) => ({ x: xAll, y: y.concat(sr3Then(a)), name: `Cumulative ${cmpLabel[k]} (${a})`, type: "scatter", mode: "lines+markers",
           line: { color: [P[3], P[4]][j % 2], width: 1.6, dash: "dot" }, marker: { size: 5 }, hovertemplate: `${cmpLabel[k]}: %{y:+.1f}bp<extra></extra>` })),
         { x: xl, y: cum, name: "Cumulative from today", type: "scatter", mode: "lines+markers+text", line: { color: P[0], width: 2.6 }, marker: { size: 7 },
-          text: cum.map((b) => bp(b, 0)), textposition: "top left", cliponaxis: false,
+          text: cum.map((b) => (narrow ? "" : bp(b, 0))), textposition: "top left", cliponaxis: false,
           textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--ink") },
           customdata: cum.map((b) => [moves(b), start + b / 100]), hovertemplate: "Cumulative %{y:+.1f}bp (%{customdata[0]}) → %{customdata[1]:.2f}%<extra></extra>" },
       ];
+      if (ext.length) tr.push({ x: [xl[xl.length - 1], ...xq], y: [cum[cum.length - 1], ...yq], name: "SR3 extension (quarterly)", type: "scatter", mode: "lines+markers", line: { color: P[0], width: 2, dash: "dash" }, marker: { size: 5 },
+        customdata: [[null, "", ""], ...ext.map((r) => [num(r.rate), `${md(r.start)} – ${md(r.end)}`, num(r.sofr).toFixed(3)])],
+        hovertemplate: "Cumulative %{y:+.1f}bp → %{customdata[0]:.2f}%<br>SR3 %{customdata[1]}, SOFR %{customdata[2]}%<extra></extra>" });
+      if (dots.length) tr.push({ x: dots.map((d) => d.x), y: dots.map((d) => d.y), name: "Fed dots (SEP median, year-end)", mode: "markers", type: "scatter",
+        marker: { symbol: "diamond-open", size: 12, color: css("--ink"), line: { width: 2 } }, customdata: dots.map((d) => [d.rate, d.year]),
+        hovertemplate: "Fed median for end-%{customdata[1]}: %{customdata[0]:.2f}% (%{y:+.0f}bp)<extra></extra>" });
       // 右軸 = 絕對利率（今天的起點 + bp）：左右兩軸用同一個範圍換算，刻度才對得上
-      const ys = [...mv, ...cum, ...cmp.flatMap(([, , y]) => y)].filter((z) => z != null && isFinite(z));
+      const ys = [...mv, ...cum, ...yq, ...dots.map((d) => d.y), ...cmp.flatMap(([, a, y]) => y.concat(sr3Then(a)))].filter((z) => z != null && isFinite(z));
       const lo = Math.min(0, ...ys), hi = Math.max(0, ...ys), pad = Math.max(5, (hi - lo) * 0.1), yr = [lo - pad, hi + pad];
       tr.push({ x: [xl[0]], y: [null], yaxis: "y2", showlegend: false, hoverinfo: "skip", type: "scatter" });
-      const narrow = innerWidth < 600;
-      plot(id, tr, baseLayout({ hovermode: "x unified", xaxis: { ...baseLayout().xaxis, type: "category" }, margin: { ...baseLayout().margin, r: narrow ? 44 : 56 },
+      const shapes = [], annotations = [];
+      if (ext.length) {
+        // 資料來源切換的地方：左邊 ZQ（每次會議），右邊 SR3（每季平均）
+        shapes.push({ type: "line", x0: xl.length - 0.5, x1: xl.length - 0.5, yref: "paper", y0: 0, y1: 1, line: { color: css("--ink"), width: 1, dash: "dash" } });
+        if (!narrow) annotations.push({ x: xl.length - 0.5, yref: "paper", y: 0, text: "ZQ, per meeting ◂ ", showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } },
+          { x: xl.length - 0.5, yref: "paper", y: 0, text: " ▸ SR3, quarterly", showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 11, color: css("--muted") } });
+      }
+      const lg = narrow ? { legend: { ...baseLayout().legend, y: -0.42, yanchor: "top" } } : {};
+      plot(id, tr, baseLayout({ ...lg, hovermode: "x unified", xaxis: { ...baseLayout().xaxis, type: "category", tickangle: dense ? -45 : 0 },
+        margin: { ...baseLayout().margin, r: narrow ? 44 : 56, ...(narrow ? { b: 250 } : {}) }, shapes, annotations,
         yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", range: yr, zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 },
         yaxis2: { ...baseLayout().yaxis, overlaying: "y", side: "right", range: yr.map((z) => start + z / 100), tickformat: ".2f", ticksuffix: "%", showgrid: false, zeroline: false, title: narrow ? undefined : { text: "Implied rate", font: { size: 11, color: css("--muted") } } } }));
       // 表：每次會議 bp / 幾碼 / 累計 / 和一週、一個月前比
@@ -759,77 +790,6 @@
       });
       $("#f-table").innerHTML = fold("fTable", "Show table", h + "</tbody></table>"
         + `<p class="hint">One move = 25bp. Cumulative is measured from today's EFFR (${start.toFixed(2)}%). Δ columns show how much cumulative pricing has changed: positive = more hawkish than then. These numbers come straight from futures prices; the Meeting odds tab adds an independence assumption on top.</p>`);
-    }
-
-    if (v === "path") {
-      const pathTrace = (a, c, w, dash, op = 1, part = false) => {
-        const rows = pathAt(a, part), e0 = num((atOrBefore(D.effr, "date", a) || {}).effr);
-        // 部分路徑不畫起點那段（前面幾次會議的合約已到期）
-        const x = part ? rows.map((r) => r.meeting) : [a, ...rows.map((r) => r.meeting)], y = part ? rows.map((r) => num(r.post)) : [e0, ...rows.map((r) => num(r.post))];
-        return { x, y, customdata: (part ? [] : [[0, 0]]).concat(rows.map((r) => [num(r.cum_bp), num(r.move_bp)])),
-          name: (a === last ? "Today " : "") + a + (part && rows.length ? ` (from ${md(rows[0].meeting)} on)` : ""), type: "scatter", mode: "lines+markers", opacity: op, line: { color: c, width: w, dash, shape: "hv" },
-          marker: { size: w > 2 ? 7 : 5 }, hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp, this meeting %{customdata[1]:+.1f}bp)" };
-      };
-      // ZQ 路徑之後的 SR3 季度段（已扣 basis），從 ZQ 最後一次會議接上去
-      const extTrace = (a, c, w, dash, legend) => {
-        const ext = (D.pathSr3 || []).filter((r) => r.asof === a), zq = pathOn(a);
-        if (!ext.length || !zq.length) return null;
-        const z = zq[zq.length - 1], e0 = num(zq[0].pre), lastE = ext[ext.length - 1];
-        const x = [z.meeting, ...ext.map((r) => r.start), lastE.end], y = [num(z.post), ...ext.map((r) => num(r.rate)), num(lastE.rate)];
-        const cd = [[num(z.cum_bp), "ZQ " + md(z.meeting), "", ""], ...ext.map((r) => [(num(r.rate) - e0) * 100, `SR3 ${r.contract.slice(0, 4)}-${r.contract.slice(5)}`, `${md(r.start)} – ${md(r.end)}`, num(r.sofr).toFixed(3)]), [null, "", "", ""]];
-        return { x, y, customdata: cd, name: legend, showlegend: !!legend, legendgroup: a, type: "scatter", mode: "lines", line: { color: c, width: w, dash, shape: "hv" },
-          hovertemplate: "%{y:.3f}% (cumulative %{customdata[0]:+.1f}bp)<br>%{customdata[1]} %{customdata[2]}, SOFR %{customdata[3]}%" };
-      };
-      const part0 = (D.pathPart || []).reduce((m, r) => (r.asof < m ? r.asof : m), A[0]);
-      const draw = (d) => {
-        S.pathBack = d;
-        const tr = [pathTrace(last, P[0], 2.6, "solid")], extNow = extTrace(last, P[0], 2, "dash", "Today, SR3 extension (quarterly)");
-        if (extNow) tr.push(extNow);
-        if (d) {
-          const [a, part] = cmpAsof(A, shiftDays(last, -d));
-          if (a && a !== last) {
-            const t = pathTrace(a, P[1], 1.8, "dot", 1, part), ex = part ? null : extTrace(a, P[1], 1.5, "dot");
-            // Yahoo 不給 SR3 歷史，比較日在 SR3 開始累積之前就只有 ZQ 段
-            const s0 = (D.pathSr3 || []).reduce((m, r) => (!m || r.asof < m ? r.asof : m), null);
-            if (!ex && extNow && s0 && a < s0) t.name += ` (no SR3 data before ${s0})`;
-            tr.push(t); if (ex) tr.push(ex);
-          }
-        }
-        // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
-        const lastM = pathOn(last).slice(-1)[0], extEnd = extNow ? extNow.x[extNow.x.length - 1] : null;
-        // 預設只看到後年年底（含那年的點陣圖），5Y 才把整條 SR3 延伸畫出來
-        const fullEnd = extEnd || (lastM ? shiftDays(lastM.meeting, 45) : last), hzEnd = `${+last.slice(0, 4) + 2}-12-31`;
-        const xEnd = S.pathHz === "5Y" || fullEnd < hzEnd ? fullEnd : shiftDays(hzEnd, 60);
-        // 超出視窗的點先剪掉，y 軸才不會被看不到的部分撐開；階梯線補一點接到右邊界
-        tr.forEach((t) => { const k = t.x.findIndex((d) => d > xEnd); if (k > 0) { t.x = t.x.slice(0, k).concat(xEnd); t.y = t.y.slice(0, k).concat(t.y[k - 1]); if (t.customdata) t.customdata = t.customdata.slice(0, k).concat([t.customdata[k - 1]]); } });
-        const dots = D.sep.filter((r) => r.fedfunds !== "" && `${r.year}-12-31` >= last && `${r.year}-12-31` <= xEnd);
-        if (dots.length) tr.push({ x: dots.map((r) => `${r.year}-12-31`), y: dots.map((r) => +r.fedfunds), name: "Fed dots (SEP median)", mode: "markers",
-          marker: { symbol: "diamond-open", size: 11, color: css("--ink"), line: { width: 2 } }, customdata: dots.map((r) => r.year),
-          hovertemplate: "%{y:.2f}%: Fed median for end-%{customdata} (midpoint of the target range)<extra></extra>" });
-        const shapes = [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }];
-        const annotations = [{ xref: "paper", x: 0.01, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "left", yanchor: "top", font: { size: 11, color: css("--muted") } }];
-        if (extNow) {
-          // 資料來源切換的地方：左邊 ZQ（每次會議），右邊 SR3（每季平均）
-          const sw = extNow.x[0];
-          shapes.push({ type: "line", x0: sw, x1: sw, yref: "paper", y0: 0, y1: 1, line: { color: css("--ink"), width: 1.2, dash: "dash" } });
-          annotations.push({ x: sw, yref: "paper", y: 1, text: "ZQ, per meeting ◂ ", showarrow: false, xanchor: "right", yanchor: "top", font: { size: 11, color: css("--ink") } },
-            { x: sw, yref: "paper", y: 1, text: " ▸ SR3, quarterly", showarrow: false, xanchor: "left", yanchor: "top", font: { size: 11, color: css("--ink") } });
-          // 今天的 1y/2y/3y/5y 公債涵蓋到哪裡
-          [1, 2, 3, 5].forEach((n) => {
-            const t = `${+last.slice(0, 4) + n}${last.slice(4)}`;
-            if (t > xEnd) return;
-            shapes.push({ type: "line", x0: t, x1: t, yref: "paper", y0: 0, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" }, opacity: 0.6 });
-            annotations.push({ x: t, yref: "paper", y: 0, text: `${n}y`, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 10.5, color: css("--muted") } });
-          });
-        }
-        const nw = innerWidth < 600 ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { ...baseLayout().margin, b: 150 } } : {};
-        const L = baseLayout({ ...nw, xaxis: { ...baseLayout().xaxis, range: [shiftDays(last, -20), xEnd] }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, shapes, annotations });
-        plot(id, tr, L);
-      };
-      ctl.append(chips("Horizon", [["2Y", "To end-" + (+last.slice(0, 4) + 2)], ["5Y", "5 years"]], S.pathHz, false, (v) => { S.pathHz = v; rr(); }));
-      ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y"], part0, last), S.pathBack,
-        (d) => { const [a] = d ? cmpAsof(A, shiftDays(last, -d)) : [null]; return a && a !== last ? `vs <b>${a}</b>` : "Today only"; }, draw));
-      renderTable(pathOn(last));
     }
 
     if (v === "probs") {
