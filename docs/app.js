@@ -1050,7 +1050,8 @@
     const P = palette(), v = S.bdView, narrow = innerWidth < 600;
     const hint = { time: "What drove each month's CPI, last 12 months. Each bar is a component's m/m change times its weight in the basket, in percentage points of headline CPI; stacked, they add up to roughly the headline (diamond). Hover a bar for the component's own m/m.",
       heat: "Each component's m/m change over the last 24 months, with the items desks watch indented under the block they belong to: OER and rent make up most of shelter; medical and transport services (which includes car insurance) drive supercore; airfares are small but jumpy; used cars swing core goods. Colour is how unusual the move is for that row (its 2015-19 average and spread), so energy's big swings don't drown out shelter; the number is the m/m change itself." }[v];
-    $("#cpi-hint").textContent = hint;
+    $("#cpi-hint").textContent = hint || YOY_HINT.cpi;
+    if (v === "yoy") return renderCoreYoy("cpi");
     if (v === "time") {
       const tb = comps.map(([c, n, w], i) => {
         const m = mom(ser(c)).slice(-12);
@@ -1211,6 +1212,34 @@
     const w = pceShare(k + "_n");
     return mom(pceSer(k + "_p")).filter((p) => w.has(mBack(p.date, 1))).map((p) => ({ date: p.date, v: p.v * w.get(mBack(p.date, 1)) }));
   }
+  // core YoY 拆成三塊的貢獻（百分點）：權重 × 各自的 YoY，疊起來 ≈ core YoY（菱形）
+  // 賣方圖表集最常見的畫法：一眼看出「3% 裡有幾點是服務」，以及是哪一塊在變
+  const YOY_HINT = {
+    pce: "What core PCE inflation is made of, last 5 years. Each bar is a block's share of core spending a year earlier times its own YoY, in percentage points; stacked, they add up to about core PCE YoY (diamond). Services are about three quarters of core, so they are most of the bar even when their inflation is steady; watch which block is changing.",
+    cpi: "What core CPI inflation is made of, last 5 years. Each bar is a block's weight in core CPI (approximate BLS relative importance) times its own YoY, in percentage points; stacked, they add up to about core CPI YoY (diamond). Shelter is about 44% of core CPI, so it is a much bigger block than in PCE.",
+  };
+  function renderCoreYoy(idx) {
+    const P = palette(), narrow = innerWidth < 600, id = idx === "cpi" ? "c-cpi-parts" : "c-pce-parts";
+    let pieces, core;
+    if (idx === "cpi") {
+      core = yoy(ser("core_cpi"));
+      pieces = [["cpi_goods", "Core goods", 19.3], ["cpi_shelter", "Shelter", 35.4], ["cpi_supercore", "Services ex shelter (supercore)", 25.3]].map(([c, n, w]) => [n, yoy(ser(c)).map((p) => ({ date: p.date, v: (p.v * w) / 80, own: p.v }))]);
+    } else {
+      core = yoy(pceSer("core_p"));
+      const part = (k) => { const w = pceShare(k + "_n", "core_n"); return yoy(pceSer(k + "_p")).filter((p) => w.has(mBack(p.date, 12))).map((p) => ({ date: p.date, v: p.v * w.get(mBack(p.date, 12)), own: p.v })); };
+      const svc = new Map(part("core_svc").map((p) => [p.date, p])), hs = part("housing");
+      const sup = hs.filter((p) => svc.has(p.date)).map((p) => ({ date: p.date, v: svc.get(p.date).v - p.v, own: null }));
+      const so = new Map(yoy(ser("pce_supercore")).map((p) => [p.date, p.v])); sup.forEach((p) => (p.own = so.get(p.date)));
+      pieces = [["Core goods", part("core_goods")], ["Housing", hs], ["Services ex housing (supercore)", sup]];
+    }
+    clearEmpty(id);
+    const tr = pieces.map(([n, s], i) => { const f = fromYears(s, 5); return { x: f.map((p) => p.date), y: f.map((p) => p.v), customdata: f.map((p) => p.own), name: n, type: "bar", marker: { color: P[i] },
+      hovertemplate: `${n.split(" (")[0]} %{y:.2f}pt (itself %{customdata:.1f}% YoY)<extra></extra>` }; });
+    const c = fromYears(core, 5);
+    tr.push({ ...xy(c), name: `Core ${idx.toUpperCase()} YoY`, mode: "markers", marker: { symbol: "diamond", size: 6, color: css("--ink") }, hovertemplate: "Core %{y:.2f}%<extra></extra>" });
+    const nb = narrow ? { legend: { ...baseLayout().legend, y: -0.1, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 110 } } : {};
+    plot(id, tr, baseLayout({ ...nb, barmode: "relative", bargap: 0.15, hovermode: "x unified", yaxis: { ...baseLayout().yaxis, ticksuffix: "pt", zeroline: true, zerolinecolor: css("--muted") }, ...hline(2, "2% target") }));
+  }
   const PCE_PARTS = [["core_goods", "Core goods"], ["housing", "Housing"], ["supercore", "Services ex housing (supercore)"], ["food", "Food"], ["energy", "Energy"]];
   function renderPceParts() {
     const el = $("#c-pce-parts"); if (!el) return;
@@ -1223,7 +1252,9 @@
       ? "What drove each month's PCE, last 12 months, split the way Powell does it: core goods, housing services, and core services excluding housing (supercore), plus food and energy. Each bar is a component's m/m times its share of spending last month, in percentage points of headline PCE; stacked, they add up to about the headline (diamond). Housing is a much smaller block here than in CPI, and supercore, which includes health care and financial services, is the biggest."
       : "Each component's m/m change over the last 24 months, with the PCE-only items that drive the gap with CPI indented under supercore: health care (including what employers and Medicare pay) and financial services (portfolio management fees move with the stock market). Colour is how unusual the move is for that row versus its 2015-19 average; the number is the m/m change itself.";
     $("#pce-date").innerHTML = dataLine("core_pce", "pce", "PCE", "BEA, ");
-    if (v === "time") {
+    if (v === "yoy") $("#pce-hint").textContent = YOY_HINT.pce;
+    if (v === "yoy") renderCoreYoy("pce");
+    else if (v === "time") {
       const tb = PCE_PARTS.map(([k, n], i) => {
         const c = pceContrib(k).slice(-12), m = new Map(mom(own(k)).map((p) => [p.date, p.v]));
         return { x: c.map((p) => p.date), y: c.map((p) => p.v), customdata: c.map((p) => m.get(p.date)), name: n, type: "bar", marker: { color: P[i % P.length] },
