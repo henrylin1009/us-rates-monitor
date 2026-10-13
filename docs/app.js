@@ -667,14 +667,16 @@
     // 顏色：需求弱（dealer 多、cover 低、indirect 少）= 橘（殖利率偏上），強 = 青
     const tone = (k, x, a) => { if (a == null || x == null) return ""; const d = x - a, th = k === "btc" ? 0.05 : 1.5; if (Math.abs(d) < th) return ""; const weak = k === "dealer_pct" ? d > 0 : d < 0; return weak ? "up" : "down"; };
     const cell = (r, k, dec, unit) => { const x = num(r[k]), a = r.avg[k]; return `<td class="n ${tone(k, x, a)}">${x == null ? "–" : x.toFixed(dec) + unit}<small class="muted"> ${a == null ? "" : a.toFixed(dec)}</small></td>`; };
+    const tailCell = (r) => r.tail == null ? `<td class="n muted">–</td>`
+      : `<td class="n ${r.tail >= 0.5 ? "up" : r.tail <= -0.5 ? "down" : ""}" title="WI ≈ ${r.wi.toFixed(3)}%">${r.tail > 0 ? "+" : r.tail < 0 ? "−" : ""}${Math.abs(r.tail).toFixed(1)}bp</td>`;
     const today = localToday();
     const up = A.filter((r) => r.btc === "" && r.auction_date >= today).sort((a, b) => (a.auction_date < b.auction_date ? -1 : 1));
     const latest = terms.map((t) => done.filter((r) => r.term === t).pop()).filter(Boolean).sort((a, b) => (a.auction_date < b.auction_date ? 1 : -1)).map(scored);
-    let h = "<table><thead><tr><th>Date</th><th>Auction</th><th>Size</th><th>High yield</th><th title='Bids ÷ amount sold. Small grey number = average of the previous 6 auctions of this tenor'>Bid-to-cover</th><th>Indirect</th><th>Direct</th><th>Dealers</th></tr></thead><tbody>";
-    up.forEach((r) => { h += `<tr class="upcoming"><td class="n">${md(r.auction_date)}</td><td>${r.term}${r.reopening ? " <small class=\"muted\">reopening</small>" : ""}</td><td class="n">$${num(r.offering_bn).toFixed(0)}bn</td><td class="n muted" colspan="5">announced, not yet held</td></tr>`; });
+    let h = "<table><thead><tr><th>Date</th><th>Auction</th><th>Size</th><th>High yield</th><th title='High yield minus the CBOE yield index at the 1pm close (stand-in for the when-issued yield). + = tail (weak), − = stop-through (strong). 5y, 10y and 30y only'>Tail ≈</th><th title='Bids ÷ amount sold. Small grey number = average of the previous 6 auctions of this tenor'>Bid-to-cover</th><th>Indirect</th><th>Direct</th><th>Dealers</th></tr></thead><tbody>";
+    up.forEach((r) => { h += `<tr class="upcoming"><td class="n">${md(r.auction_date)}</td><td>${r.term}${r.reopening ? " <small class=\"muted\">reopening</small>" : ""}</td><td class="n">$${num(r.offering_bn).toFixed(0)}bn</td><td class="n muted" colspan="6">announced, not yet held</td></tr>`; });
     latest.forEach((r) => { h += `<tr><td class="n">${md(r.auction_date)}</td><td>${r.term}${r.reopening ? " <small class=\"muted\">reopening</small>" : ""}</td><td class="n">$${num(r.offering_bn).toFixed(0)}bn</td><td class="n">${num(r.high_yield) == null ? "–" : num(r.high_yield).toFixed(3) + "%"}</td>`
-      + cell(r, "btc", 2, "") + cell(r, "indirect_pct", 1, "%") + cell(r, "direct_pct", 1, "%") + cell(r, "dealer_pct", 1, "%") + "</tr>"; });
-    el.innerHTML = `<div class="table-wrap">${h}</tbody></table></div><p class="hint note">Latest auction of each tenor; the small grey number is the average of the previous 6 auctions of the same tenor. Shares are of competitive bids accepted (excluding the Fed's own SOMA rollovers). Source: Treasury Fiscal Data, auctions_query.</p>`;
+      + tailCell(r) + cell(r, "btc", 2, "") + cell(r, "indirect_pct", 1, "%") + cell(r, "direct_pct", 1, "%") + cell(r, "dealer_pct", 1, "%") + "</tr>"; });
+    el.innerHTML = `<div class="table-wrap">${h}</tbody></table></div><p class="hint note">Latest auction of each tenor; the small grey number is the average of the previous 6 auctions of the same tenor. Shares are of competitive bids accepted (excluding the Fed's own SOMA rollovers). Tail ≈ = high yield minus the CBOE 5y/10y/30y yield index at 1:00pm ET, a free stand-in for the when-issued yield (close for reopenings, can be 1–2bp off for new issues); other tenors have no free intraday yield. Sources: Treasury Fiscal Data, auctions_query; CBOE ^FVX/^TNX/^TYX via Yahoo.</p>`;
     const L = latest[0];
     $("#auct-date").innerHTML = L ? `<span class="muted">Latest: ${L.term} on ${md(L.auction_date)}${up.length ? ` · next announced: ${up[0].term} on ${md(up[0].auction_date)}` : ""}</span>` : "";
     // 圖：選一個天期，最近 24 次的 dealer 比例（柱）和 bid-to-cover（線，右軸）
@@ -682,7 +684,7 @@
     const rs = done.filter((r) => r.term === S.auctTerm).slice(-24).map(scored);
     plot("c-auct", [{ x: rs.map((r) => r.auction_date), y: rs.map((r) => num(r.dealer_pct)), name: "Dealer share", type: "bar",
         marker: { color: rs.map((r) => (tone("dealer_pct", num(r.dealer_pct), r.avg.dealer_pct) === "up" ? rgba(css("--up"), 0.7) : tone("dealer_pct", num(r.dealer_pct), r.avg.dealer_pct) === "down" ? rgba(css("--down"), 0.7) : rgba(css("--muted"), 0.45))) },
-        customdata: rs.map((r) => [num(r.high_yield), num(r.indirect_pct), r.reopening ? " (reopening)" : ""]),
+        customdata: rs.map((r) => [num(r.high_yield), num(r.indirect_pct), (r.reopening ? " (reopening)" : "") + (r.tail == null ? "" : ` · tail ≈ ${r.tail >= 0 ? "+" : "−"}${Math.abs(r.tail).toFixed(1)}bp`)]),
         hovertemplate: "Dealers %{y:.1f}% · indirect %{customdata[1]:.1f}% · high yield %{customdata[0]:.3f}%%{customdata[2]}<extra></extra>" },
       { x: rs.map((r) => r.auction_date), y: rs.map((r) => num(r.btc)), name: "Bid-to-cover (right)", yaxis: "y2", mode: "lines+markers", line: { color: css("--ink"), width: 1.6 }, marker: { size: 5 }, hovertemplate: "Bid-to-cover %{y:.2f}<extra></extra>" }],
       baseLayout({ hovermode: "x unified", margin: { l: 44, r: 44, t: 10, b: 40 }, bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
@@ -1771,6 +1773,9 @@
     D.bills = await load("bills_ois.csv").catch(() => []);
     D.pce = await load("pce.csv").catch(() => []);
     [D.auct, D.fund, D.gq, D.nowcast] = await Promise.all(["auctions.csv", "funding.csv", "growth_q.csv", "nowcast.csv"].map(load));
+    // 近似 tail：high yield − 13:00 的 CBOE 殖利率（bp，正 = tail、負 = stop-through）
+    const wi = Object.fromEntries((await load("auctions_wi.csv").catch(() => [])).map((r) => [r.auction_date + r.term, r]));
+    D.auct.forEach((r) => { const w = wi[r.auction_date + r.term]; r.tail = w && r.high_yield !== "" ? (num(r.high_yield) - num(w.wi_yield)) * 100 : null; r.wi = w ? num(w.wi_yield) : null; });
     try { D.meta = await (await fetch("data/meta.json", { cache: "no-cache" })).json(); } catch { D.meta = {}; }
     try { D.events = ((await (await fetch("data/events.json", { cache: "no-cache" })).json()).events || []).sort((a, b) => (a.date < b.date ? -1 : 1)); } catch { D.events = []; }
     try { D.meetings = (await (await fetch("data/fomc.json", { cache: "no-cache" })).json()).meetings || []; } catch { D.meetings = []; }

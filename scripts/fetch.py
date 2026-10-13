@@ -16,7 +16,7 @@ from pathlib import Path
 import requests
 
 import fomc
-from auctions import update_auctions
+from auctions import update_auctions, update_wi
 from calendars import update_calendars
 from fedpricing import implied_month_rate, partial_path, price_path
 from macro import update_macro
@@ -296,6 +296,10 @@ def main() -> int:
         update_auctions(get, read_csv, write_csv)  # 先跑：行事曆要用到已公告的標售
     except Exception as e:  # noqa: BLE001
         print(f"✗ update_auctions 失敗：{e}")
+    try:
+        update_wi(read_csv, write_csv)
+    except Exception as e:  # noqa: BLE001
+        print(f"✗ update_wi 失敗：{e}")
     try:
         update_calendars(get)  # 先更新 FOMC 日期，下面算 Fed 定價才會用到最新的
     except Exception as e:  # noqa: BLE001

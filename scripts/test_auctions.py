@@ -2,7 +2,7 @@
 
 執行：python3 scripts/test_auctions.py
 """
-from auctions import term_label, to_row
+from auctions import term_label, to_row, wi_at_close
 from nowcast import parse
 
 # 2026-10-08 的 30 年期 reopening（Fiscal Data API 的欄位）
@@ -21,6 +21,12 @@ assert up["btc"] == "" and up["indirect_pct"] == "" and up["high_yield"] == "", 
 assert term_label({"security_type": "Note", "security_term": "1-Year 10-Month", "original_security_term": "2-Year", "reopening": "Yes", "floating_rate": "Yes"}) is None
 assert term_label({"security_type": "TIPS Note", "security_term": "5-Year", "reopening": "No", "floating_rate": "No", "inflation_index_security": "Yes"}) == "5y TIPS"
 assert term_label({"security_type": "Bill", "security_term": "6-Week"}) is None
+
+# 近似 tail：取收在 13:00 的那根 bar（2026-10-07 10y：1m 12:59 = 5.313）
+assert wi_at_close({"12:58": 5.316, "12:59": 5.313, "13:00": 5.313, "13:05": 5.292}, "1m") == 5.313
+assert wi_at_close({"12:50": 5.320, "12:55": 5.313, "13:00": 5.290}, "5m") == 5.313
+assert wi_at_close({"12:57": 4.845, "13:00": 4.84}, "1m") == 4.845  # 12:59/12:58 缺 → 往前找
+assert wi_at_close({"13:00": 4.84}, "5m") is None
 
 # Cleveland Fed nowcast JSON 的結構（縮小版）
 def ds(name, vals):
