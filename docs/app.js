@@ -6,7 +6,7 @@
   const RANGES = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "2Y": 731, "5Y": 1827, "All": 1e6 };
   const D = { yields: [], effr: [], path: [], summ: [], meta: {}, events: [], macro: [], claims: [], be: [], sep: [], rel: [], con: [], conManual: [] };
   const S = {
-    page: "overview", yView: "curve", fView: "priced", iView: "yoy", bdIdx: "cpi", bdView: "time", wView: "gap", eRange: "5Y", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
+    page: "overview", yView: "curve", fView: "priced", iView: "yoy", bdIdx: "cpi", bdView: "time", iYears: "5", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
@@ -1100,9 +1100,10 @@
   const I_VIEWS = { mm: ["m/m", (s) => mom(s)], yoy: ["YoY", (s) => yoy(s)], a3: ["3m annualized", (s) => annK(s, 3)], a6: ["6m annualized", (s) => annK(s, 6)] };
   function renderInflation() {
     if (!D.macro.length) return empty("c-infl", "No inflation data yet");
-    const P = palette(), f = I_VIEWS[S.iView][1];
+    const P = palette(), f = (I_VIEWS[S.iView] || I_VIEWS.yoy)[1];
     $("#infl-take2").textContent = inflTakeaway();
     $("#infl-date2").innerHTML = dataLine("core_pce", "pce", "PCE", "Core PCE: ") + `<span class="muted"> &nbsp;|&nbsp; </span>` + dataLine("core_cpi", "cpi", "CPI", "Core CPI: ");
+    if (S.iView === "trend") { $("#i-years").style.display = ""; return renderTrend(); }
     const mm = S.iView === "mm";
     // m/m 柱子只看最近 2 年（業界常見的畫法；5 年 60 對柱子太擠），更長的歷史看 YoY / 年化的線
     const yrs = mm ? 2 : S.iYears;
@@ -1129,8 +1130,10 @@
       const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
       plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
     }
+  }
 
-    // PPI
+  function renderPpi() {
+    const P = palette();
     const ppi = fromYears(yoy(ser("ppi")), 5), cppi = fromYears(yoy(ser("core_ppi")), 5);
     plot("c-ppi", [{ ...xy(ppi), name: "PPI final demand YoY", line: { color: P[1], width: 2 } }, { ...xy(cppi), name: "Core PPI YoY", line: { color: P[4], width: 1.6 } }],
       baseLayout({ yaxis: pctAxis() }));
@@ -1139,9 +1142,13 @@
 
   // CPI 和 PCE 拆項合成一個 panel：上面切 CPI / PCE，下面切 Contributions / Heatmap（Henry 覺得兩個一樣的 panel 重複）
   function renderParts() {
-    const cpi = S.bdIdx === "cpi";
-    document.querySelector(".bd-cpi").hidden = !cpi; document.querySelector(".bd-pce").hidden = cpi;
-    $("#cpi-hint").hidden = !cpi; $("#pce-hint").hidden = cpi; $("#pce-date").hidden = cpi;
+    // Supercore 是 CPI 和 PCE 放在一起比，所以這個 view 不用切 CPI / PCE
+    const sup = S.bdView === "super", cpi = S.bdIdx === "cpi";
+    $("#bd-index").style.visibility = sup ? "hidden" : "";
+    document.querySelector(".bd-super").hidden = !sup; $("#super-hint").hidden = !sup; $("#super-date").hidden = !sup;
+    document.querySelector(".bd-cpi").hidden = sup || !cpi; document.querySelector(".bd-pce").hidden = sup || cpi;
+    $("#cpi-hint").hidden = sup || !cpi; $("#pce-hint").hidden = sup || cpi; $("#pce-date").hidden = sup || cpi;
+    if (sup) return renderSuper();
     if (!cpi) return renderPceParts();
     if (!D.macro.length) return;
     // CPI 拆項：最近 12 個月，每塊的 m/m × 在 CPI 的權重 = 對整體 CPI 的貢獻（百分點），疊起來 ≈ 整體 m/m
@@ -1165,17 +1172,18 @@
     }).filter(Boolean);
   }
 
-  // 趨勢型指標：core PCE vs median CPI vs trimmed-mean PCE
+  // 趨勢型指標（主圖的 Trend 鈕）：core PCE vs median CPI vs trimmed-mean PCE
   function renderTrend() {
     const P = palette(), med = yoyFromAnn(ser("median_cpi")), trim = ser("trim_pce"), core = yoy(ser("core_pce"));
-    if (!med.length && !trim.length) return empty("c-trend", "Median CPI and trimmed-mean PCE load after the next daily update.");
-    clearEmpty("c-trend");
+    if (!med.length && !trim.length) return empty("c-infl", "Median CPI and trimmed-mean PCE load after the next daily update.");
+    clearEmpty("c-infl");
+    const yrs = S.iYears;
     const narrow = innerWidth < 600;
-    plot("c-trend", [{ ...xy(fromYears(core, 5)), name: "Core PCE", line: { color: P[0], width: 2.2 }, hovertemplate: "Core PCE %{y:.2f}%<extra></extra>" },
-      { ...xy(fromYears(trim, 5)), name: "Trimmed-mean PCE (Dallas Fed)", line: { color: P[2], width: 2 }, hovertemplate: "Trimmed-mean PCE %{y:.2f}%<extra></extra>" },
-      { ...xy(fromYears(med, 5)), name: "Median CPI (Cleveland Fed)", line: { color: P[3], width: 2 }, hovertemplate: "Median CPI %{y:.2f}%<extra></extra>" }],
+    plot("c-infl", [{ ...xy(fromYears(core, yrs)), name: "Core PCE", line: { color: P[0], width: 2.2 }, hovertemplate: "Core PCE %{y:.2f}%<extra></extra>" },
+      { ...xy(fromYears(trim, yrs)), name: "Trimmed-mean PCE (Dallas Fed)", line: { color: P[2], width: 2 }, hovertemplate: "Trimmed-mean PCE %{y:.2f}%<extra></extra>" },
+      { ...xy(fromYears(med, yrs)), name: "Median CPI (Cleveland Fed)", line: { color: P[3], width: 2 }, hovertemplate: "Median CPI %{y:.2f}%<extra></extra>" }],
       baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 100 } } : {}) }));
-    $("#trend-date").innerHTML = [["trim_pce", "Trimmed-mean PCE"], ["median_cpi", "Median CPI"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n}: ${monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
+    $("#infl-date2").innerHTML += `<span class="muted"> &nbsp;|&nbsp; </span>` + [["trim_pce", "Trimmed-mean PCE"], ["median_cpi", "Median CPI"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n}: ${monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
   }
 
   // PCE 分項（BEA 月資料）：權重 = 上個月名目支出佔整體 PCE 的比例，貢獻 = 權重 × 自己的 m/m
@@ -1249,12 +1257,12 @@
     });
   }
 
-  // CPI vs PCE：core 的差距（歷史上 CPI 比較高），或兩種 supercore
+  // CPI vs PCE：core 的差距（歷史上 CPI 比較高），放在收合的 Deep dive 裡
   function renderWedge() {
     const P = palette(), narrow = innerWidth < 600;
     const lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
     clearEmpty("c-wedge");
-    if (S.wView === "gap") {
+    {
       const all = gapPieces();
       const base = all.filter((p) => p.date >= "2000-01-01" && p.date < "2020-01-01"), avg = base.reduce((a, p) => a + p.gap, 0) / (base.length || 1);
       const g = fromYears(all, 10).filter((p) => p.housing != null), l = lastV(all);
@@ -1271,34 +1279,38 @@
       $("#wedge-date").innerHTML = lp ? `<span class="muted">${monthName(lp.date)}: gap ${sg(lp.gap)}pt = housing ${sg(lp.housing)} · health care ${sg(lp.health)} · core goods ${sg(lp.goods)} · financial services ${sg(lp.fin)} · other services + formula ${sg(lp.other)}</span>`
         + `<br><span class="muted">Housing YoY: CPI shelter ${lp.info.cpiSh.toFixed(1)}% vs PCE housing ${lp.info.pceHs.toFixed(1)}%. Health care services: CPI ${lp.info.cpiMed.toFixed(1)}% vs PCE ${lp.info.pceHc.toFixed(1)}%. Core goods: CPI ${lp.info.cpiG.toFixed(1)}% vs PCE ${lp.info.pceG.toFixed(1)}%. PCE financial services ${lp.info.pceFin.toFixed(1)}%.</span>`
         : (l ? `<span class="muted">${monthName(l.date)}: ${sg(l.gap)}pt</span>` : "");
-    } else {
-      const sc = yoy(ser("cpi_supercore")), sp = yoy(ser("pce_supercore"));
-      $("#wedge-hint").textContent = "Services inflation without housing, the part most tied to wages. The PCE version (core services excluding housing and energy) is the one Powell means by supercore; the CPI line is CPI services less rent of shelter, a close approximation. Both YoY.";
-      if (!sp.length) { $("#wedge-date").innerHTML = ""; return empty("c-wedge", "PCE supercore loads after the next daily update."); }
-      plot("c-wedge", [{ ...xy(fromYears(sp, 5)), name: "PCE supercore (Fed's)", line: { color: P[0], width: 2.2 }, hovertemplate: "PCE supercore %{y:.2f}%<extra></extra>" },
-        { ...xy(fromYears(sc, 5)), name: "CPI supercore (approx.)", line: { color: P[3], width: 1.8 }, hovertemplate: "CPI supercore %{y:.2f}%<extra></extra>" }],
-        baseLayout({ yaxis: pctAxis(), ...lg }));
-      const l = lastV(sp); $("#wedge-date").innerHTML = l ? `<span class="muted">PCE supercore: ${monthName(l.date)}</span>` : "";
     }
   }
 
-  // 通膨預期：5y5y、5y、10y breakeven（日）+ UMich 1 年（月）
+  // 兩種 supercore（Breakdown 的 Supercore 鈕）
+  function renderSuper() {
+    const P = palette(), narrow = innerWidth < 600;
+    const lg = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
+    clearEmpty("c-super");
+    const sc = yoy(ser("cpi_supercore")), sp = yoy(ser("pce_supercore"));
+    if (!sp.length) { $("#super-date").innerHTML = ""; return empty("c-super", "PCE supercore loads after the next daily update."); }
+    plot("c-super", [{ ...xy(fromYears(sp, 5)), name: "PCE supercore (Fed's)", line: { color: P[0], width: 2.2 }, hovertemplate: "PCE supercore %{y:.2f}%<extra></extra>" },
+      { ...xy(fromYears(sc, 5)), name: "CPI supercore (approx.)", line: { color: P[3], width: 1.8 }, hovertemplate: "CPI supercore %{y:.2f}%<extra></extra>" }],
+      baseLayout({ yaxis: pctAxis(), ...lg }));
+    const l = lastV(sp), lc = lastV(sc);
+    $("#super-date").innerHTML = l ? `<span class="muted">PCE supercore ${l.v.toFixed(1)}% (${monthName(l.date)})${lc ? ` · CPI supercore ${lc.v.toFixed(1)}% (${monthName(lc.date)})` : ""}</span>` : "";
+  }
+
+  // 通膨預期：5y5y 和 5y breakeven（日），固定看 5 年（Henry 覺得頁面太雜，UMich、10y 和區間鈕拿掉）
   function renderExp() {
     const P = palette(), be = D.be;
     const col = (c) => be.filter((r) => r[c] !== "" && r[c] != null).map((r) => ({ date: r.date, v: +r[c] }));
-    const b55 = col("be5y5y"), b5 = col("be5"), b10 = col("be10"), um = ser("umich_1y");
-    if (!b10.length) return empty("c-exp", "No breakeven data yet");
+    const b55 = col("be5y5y"), b5 = col("be5");
+    if (!b55.length && !b5.length) return empty("c-exp", "No breakeven data yet");
     clearEmpty("c-exp");
-    const end = b10[b10.length - 1].date, start = shiftDays(end, -RANGES[S.eRange]), cut = (s) => s.filter((p) => p.date >= start);
+    const end = lastV(b55.length ? b55 : b5).date, start = shiftDays(end, -RANGES["5Y"]), cut = (s) => s.filter((p) => p.date >= start);
     const tr = [];
     if (b55.length) tr.push({ ...xy(cut(b55)), name: "5y5y forward", line: { color: P[0], width: 2.2 }, hovertemplate: "5y5y %{y:.2f}%<extra></extra>" });
     if (b5.length) tr.push({ ...xy(cut(b5)), name: "5y breakeven", line: { color: P[2], width: 1.6 }, hovertemplate: "5y %{y:.2f}%<extra></extra>" });
-    tr.push({ ...xy(cut(b10)), name: "10y breakeven", line: { color: P[4], width: 1.4 }, hovertemplate: "10y %{y:.2f}%<extra></extra>" });
-    if (um.length) tr.push({ ...xy(cut(um)), name: "UMich 1-year (survey)", visible: "legendonly", mode: "lines+markers", line: { color: P[3], width: 1.6, dash: "dot" }, marker: { size: 4 }, hovertemplate: "UMich 1y %{y:.1f}%<extra></extra>" });
     const narrow = innerWidth < 600;
     plot("c-exp", tr, baseLayout({ yaxis: pctAxis(), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 100 } } : {}) }));
-    const l55 = lastV(b55), lu = lastV(um);
-    $("#exp-date").innerHTML = `<span class="muted">${l55 ? `5y5y ${l55.v.toFixed(2)}% (${md(l55.date)})` : ""}${lu ? ` · UMich 1y ${lu.v.toFixed(1)}% (${monthName(lu.date)})` : ""} · FRED T5YIFR, T5YIE, T10YIE, MICH</span>`;
+    const l55 = lastV(b55), l5 = lastV(b5);
+    $("#exp-date").innerHTML = `<span class="muted">${l55 ? `5y5y ${l55.v.toFixed(2)}% (${md(l55.date)})` : ""}${l5 ? ` · 5y ${l5.v.toFixed(2)}%` : ""} · FRED T5YIFR, T5YIE</span>`;
   }
 
   // Jobs 頁
@@ -1637,7 +1649,7 @@
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); renderGrowthCard(); },
     rates: () => { renderRatesTake(); renderYields(); renderFed(); renderAuctions(); renderFunding(); renderDecomp(); renderFomc(); renderSurIndex(); },
-    inflation: () => { renderInflation(); renderNowcast(); renderTrend(); renderParts(); renderWedge(); renderExp(); renderSurprisePanel("inflation"); },
+    inflation: () => { renderInflation(); renderNowcast(); renderSurprisePanel("inflation"); renderParts(); renderExp(); renderWedge(); renderPpi(); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     growth: () => renderGrowth(),
     calendar: () => renderCalendar(),
@@ -1674,8 +1686,6 @@
     bindSeg("#i-years", "iYears", renderInflation);
     bindSeg("#bd-index", "bdIdx", renderParts);
     bindSeg("#bd-views", "bdView", renderParts);
-    bindSeg("#w-views", "wView", renderWedge);
-    bindSeg("#e-range", "eRange", renderExp);
     bindSeg("#d-range", "dRange", renderDecomp);
     bindSeg("#d-views", "dView", renderDecomp);
     bindSeg("#fund-views", "fundView", renderFunding);
