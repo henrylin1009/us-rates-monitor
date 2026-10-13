@@ -1,0 +1,17 @@
+name: probe
+on:
+  push:
+    branches: [claude/probe-wi]
+permissions:
+  contents: write
+jobs:
+  p:
+    if: "!contains(github.event.head_commit.message, 'probe result')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install requests
+      - run: python probe/wi_probe.py
+      - run: |
+          git config user.name "rates-bot"; git config user.email "rates-bot@users.noreply.github.com"
+          git add probe; git commit -m "probe result" || true; git push
