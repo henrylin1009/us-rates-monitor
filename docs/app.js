@@ -16,6 +16,9 @@
 
   // ---------- 小工具 ----------
   const $ = (s) => document.querySelector(s);
+  // 標題列的資料日期那行會被截成一行（…），內容一變就把全文放進 title，滑過可看
+  const dlineTitles = new MutationObserver((ms) => ms.forEach((m) => { const el = m.target.closest ? m.target.closest(".dline") : m.target.parentElement.closest(".dline"); if (el) el.title = el.textContent.trim(); }));
+  document.querySelectorAll(".panel-head .dline").forEach((el) => dlineTitles.observe(el, { childList: true, subtree: true, characterData: true }));
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
   const rgba = (hex, a) => { const h = hex.replace("#", ""); const n = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
@@ -443,7 +446,7 @@
   function renderFomc() {
     $("#fomc-controls").innerHTML = ""; $("#fomc-table").innerHTML = "";
     $("#fomc-hint").textContent = FOMC_HINT[S.fomcView];
-    $("#fomc-range").style.display = S.fomcView === "past" ? "" : "none";
+    $("#fomc-range").style.visibility = S.fomcView === "past" ? "" : "hidden";
     if (S.fomcView === "hist") return renderOddsHistory();
     renderFomcChart(); renderFomcTable();
   }
@@ -1078,11 +1081,11 @@
     const P = palette(), f = (I_VIEWS[S.iView] || I_VIEWS.yoy)[1];
     $("#infl-take2").textContent = inflTakeaway();
     $("#infl-date2").innerHTML = dataLine("core_pce", "pce", "PCE", "Core PCE: ") + `<span class="muted"> &nbsp;|&nbsp; </span>` + dataLine("core_cpi", "cpi", "CPI", "Core CPI: ");
-    if (S.iView === "trend") { $("#i-years").style.display = ""; return renderTrend(); }
+    if (S.iView === "trend") { $("#i-years").style.visibility = ""; return renderTrend(); }
     const mm = S.iView === "mm";
     // m/m 柱子只看最近 2 年（業界常見的畫法；5 年 60 對柱子太擠），更長的歷史看 YoY / 年化的線
     const yrs = mm ? 2 : S.iYears;
-    $("#i-years").style.display = mm ? "none" : "";
+    $("#i-years").style.visibility = mm ? "hidden" : "";
     const pce = fromYears(f(ser("core_pce")), yrs), cpi = fromYears(f(ser("core_cpi")), yrs);
     // Cleveland Fed nowcast：把還沒公布月份的 m/m 接在最後一個指數後面，再用同一個轉換（YoY、年化）算，畫成延伸
     const now = (col) => {
@@ -1138,7 +1141,9 @@
     $("#bd-index").style.visibility = sup ? "hidden" : "";
     document.querySelector(".bd-super").hidden = !sup; $("#super-hint").hidden = !sup; $("#super-date").hidden = !sup;
     document.querySelector(".bd-cpi").hidden = sup || !cpi; document.querySelector(".bd-pce").hidden = sup || cpi;
-    $("#cpi-hint").hidden = sup || !cpi; $("#pce-hint").hidden = sup || cpi; $("#pce-date").hidden = sup || cpi;
+    $("#cpi-hint").hidden = sup || !cpi; $("#pce-hint").hidden = sup || cpi;
+    // CPI 沒有資料日期那行，用 visibility 佔位，切 CPI / PCE 時圖才不會上下跳
+    $("#pce-date").hidden = sup; $("#pce-date").style.visibility = cpi ? "hidden" : "";
     if (sup) return renderSuper();
     if (!cpi) return renderPceParts();
     if (!D.macro.length) return;
