@@ -1229,21 +1229,23 @@
 
   // core CPI − core PCE 的差距拆成幾塊（YoY，百分點）：每塊 = CPI 權重 × CPI 漲幅 − PCE 權重 × PCE 漲幅
   // CPI 權重是 BLS relative importance 的近似值（佔 core 的比例）；PCE 權重用一年前的名目支出佔 core 的比例
-  const CPI_W = { shelter: 35.4 / 80, med: 8.1 / 80 };
+  // 醫療用 CPI 醫療「服務」：PCE 的 health care 只有服務，藥品算在商品裡（兩邊的 core goods 都含藥品，不重複算）
+  const CPI_W = { shelter: 35.4 / 80, medsvc: 6.8 / 80, goods: 19.3 / 80 };
   function gapPieces() {
     const c = new Map(yoy(ser("core_cpi")).map((p) => [p.date, p.v])), pce = yoy(ser("core_pce"));
     const ys = (s) => new Map(yoy(s).map((p) => [p.date, p.v]));
-    const sh = ys(ser("cpi_shelter")), md_ = ys(ser("cpi_med")), hs = ys(pceSer("housing_p")), hc = ys(pceSer("health_p")), fn = ys(pceSer("finsvc_p"));
-    const wH = pceShare("housing_n", "core_n"), wC = pceShare("health_n", "core_n"), wF = pceShare("finsvc_n", "core_n");
+    const sh = ys(ser("cpi_shelter")), md_ = ys(ser("cpi_medsvc")), cg = ys(ser("cpi_goods")), hs = ys(pceSer("housing_p")), hc = ys(pceSer("health_p")), fn = ys(pceSer("finsvc_p")), pg = ys(pceSer("core_goods_p"));
+    const wH = pceShare("housing_n", "core_n"), wC = pceShare("health_n", "core_n"), wF = pceShare("finsvc_n", "core_n"), wG = pceShare("core_goods_n", "core_n");
     return pce.filter((p) => c.has(p.date)).map((p) => {
       const d = p.date, d12 = mBack(d, 12), gap = c.get(d) - p.v;
-      const ok = [sh, md_, hs, hc, fn].every((m) => m.has(d)) && [wH, wC, wF].every((m) => m.has(d12));
+      const ok = [sh, md_, cg, hs, hc, fn, pg].every((m) => m.has(d)) && [wH, wC, wF, wG].every((m) => m.has(d12));
       if (!ok) return { date: d, gap };
       const housing = CPI_W.shelter * sh.get(d) - wH.get(d12) * hs.get(d);
-      const health = CPI_W.med * md_.get(d) - wC.get(d12) * hc.get(d);
+      const health = CPI_W.medsvc * md_.get(d) - wC.get(d12) * hc.get(d);
+      const goods = CPI_W.goods * cg.get(d) - wG.get(d12) * pg.get(d);
       const fin = -wF.get(d12) * fn.get(d);
-      return { date: d, gap, housing, health, fin, other: gap - housing - health - fin,
-        info: { cpiSh: sh.get(d), pceHs: hs.get(d), cpiMed: md_.get(d), pceHc: hc.get(d), pceFin: fn.get(d), wH: wH.get(d12), wC: wC.get(d12), wF: wF.get(d12) } };
+      return { date: d, gap, housing, health, goods, fin, other: gap - housing - health - goods - fin,
+        info: { cpiSh: sh.get(d), pceHs: hs.get(d), cpiMed: md_.get(d), pceHc: hc.get(d), cpiG: cg.get(d), pceG: pg.get(d), pceFin: fn.get(d) } };
     });
   }
 
@@ -1256,9 +1258,9 @@
       const all = gapPieces();
       const base = all.filter((p) => p.date >= "2000-01-01" && p.date < "2020-01-01"), avg = base.reduce((a, p) => a + p.gap, 0) / (base.length || 1);
       const g = fromYears(all, 10).filter((p) => p.housing != null), l = lastV(all);
-      $("#wedge-hint").textContent = "Core CPI YoY minus core PCE YoY (diamond), split into what causes it. Each block is the item's weight in core CPI times its CPI inflation, minus its weight in core PCE times its PCE inflation, in percentage points. Housing: shelter is about 44% of core CPI but about 17% of core PCE, so when rents run hot CPI runs above PCE, and when they cool the gap shrinks. Health care: a small CPI item (out-of-pocket only) but about a fifth of core PCE (it counts what employers and Medicare pay). Financial services: almost only in PCE, and portfolio management fees rise with the stock market, which pushes PCE up. Everything else is the rest of the basket plus the formula difference. CPI averaged " + avg.toFixed(2) + "pt above PCE in 2000-19.";
-      const PIECES = [["housing", "Housing (shelter weight)"], ["health", "Health care"], ["fin", "Financial services (PCE only)"], ["other", "Everything else + formula"]];
-      const cols = [P[1], P[2], P[0], css("--muted")];
+      $("#wedge-hint").textContent = "Core CPI YoY minus core PCE YoY (diamond), split into what causes it. Each block is the item's weight in core CPI times its CPI inflation, minus its weight in core PCE times its PCE inflation, in percentage points. Housing: shelter is about 44% of core CPI but about 17% of core PCE, so when rents run hot CPI runs above PCE, and when they cool the gap shrinks. Health care: a small CPI item (out-of-pocket only) but about a fifth of core PCE (it counts what employers and Medicare pay). Core goods: about a quarter of both, so this block only shows up when the two measure goods prices differently (PCE goods include drugs paid for by insurers, for example). Financial services: almost only in PCE, and portfolio management fees rise with the stock market, which pushes PCE up. Other services + formula is what is left: transport (including car insurance, much bigger in CPI), recreation, restaurants, education and so on, plus the difference between CPI's fixed basket and PCE's chained formula. CPI averaged " + avg.toFixed(2) + "pt above PCE in 2000-19.";
+      const PIECES = [["housing", "Housing (shelter weight)"], ["health", "Health care services"], ["goods", "Core goods"], ["fin", "Financial services (PCE only)"], ["other", "Other services + formula"]];
+      const cols = [P[1], P[2], P[3], P[0], css("--muted")];
       const tr = PIECES.map(([k, n], i) => ({ x: g.map((p) => p.date), y: g.map((p) => p[k]), name: n, type: "bar", marker: { color: rgba(cols[i], 0.8) }, hovertemplate: `${n} %{y:+.2f}pt<extra></extra>` }));
       tr.push({ x: g.map((p) => p.date), y: g.map((p) => p.gap), name: "Core CPI − core PCE", mode: "markers", marker: { symbol: "diamond", size: 6, color: css("--ink") }, hovertemplate: "Total gap %{y:+.2f}pt<extra></extra>" });
       const h = hline(avg, ""); h.annotations = [{ xref: "paper", x: 1, y: avg, text: `2000-19 average ${avg >= 0 ? "+" : ""}${avg.toFixed(2)}pt`, showarrow: false, xanchor: "right", yanchor: "bottom", bgcolor: css("--surface"), font: { size: 11, color: css("--muted") } }];
@@ -1266,8 +1268,8 @@
         ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 110 } } : {}) }));
       const lp = lastV(g);
       const sg = (x) => (x >= 0 ? "+" : "") + x.toFixed(2);
-      $("#wedge-date").innerHTML = lp ? `<span class="muted">${monthName(lp.date)}: gap ${sg(lp.gap)}pt = housing ${sg(lp.housing)} · health care ${sg(lp.health)} · financial services ${sg(lp.fin)} · everything else ${sg(lp.other)}</span>`
-        + `<br><span class="muted">Housing YoY: CPI shelter ${lp.info.cpiSh.toFixed(1)}% vs PCE housing ${lp.info.pceHs.toFixed(1)}%. Health care: CPI ${lp.info.cpiMed.toFixed(1)}% vs PCE ${lp.info.pceHc.toFixed(1)}%. PCE financial services ${lp.info.pceFin.toFixed(1)}%.</span>`
+      $("#wedge-date").innerHTML = lp ? `<span class="muted">${monthName(lp.date)}: gap ${sg(lp.gap)}pt = housing ${sg(lp.housing)} · health care ${sg(lp.health)} · core goods ${sg(lp.goods)} · financial services ${sg(lp.fin)} · other services + formula ${sg(lp.other)}</span>`
+        + `<br><span class="muted">Housing YoY: CPI shelter ${lp.info.cpiSh.toFixed(1)}% vs PCE housing ${lp.info.pceHs.toFixed(1)}%. Health care services: CPI ${lp.info.cpiMed.toFixed(1)}% vs PCE ${lp.info.pceHc.toFixed(1)}%. Core goods: CPI ${lp.info.cpiG.toFixed(1)}% vs PCE ${lp.info.pceG.toFixed(1)}%. PCE financial services ${lp.info.pceFin.toFixed(1)}%.</span>`
         : (l ? `<span class="muted">${monthName(l.date)}: ${sg(l.gap)}pt</span>` : "");
     } else {
       const sc = yoy(ser("cpi_supercore")), sp = yoy(ser("pce_supercore"));
