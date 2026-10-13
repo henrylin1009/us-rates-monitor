@@ -11,7 +11,7 @@
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathBack: 7, pathHz: "2Y", pricedCmp: ["1W"], fundView: "repo", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pathHz: "2Y", gdpView: "growth", pricedCmp: ["1W"], fundView: "repo", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -1675,6 +1675,10 @@
       hovertemplate: `GDPNow ${qName(now.date)}: %{y:.1f}%<extra></extra>` });
     return tr;
   }
+  // CBO 潛在 GDP：潛在成長 = 潛在 GDP 的 q/q 年化；output gap = 實質 GDP ÷ 潛在 GDP − 1
+  const potLevels = () => (D.gq || []).filter((r) => r.potential).map((r) => ({ date: r.date, v: +r.potential }));
+  const potGrowth = () => { const p = potLevels(); return p.slice(1).map((x, i) => ({ date: x.date, v: (Math.pow(x.v / p[i].v, 4) - 1) * 100 })); };
+  const outputGap = () => { const pm = new Map(potLevels().map((p) => [p.date, p.v])); return (D.gq || []).filter((r) => r.gdp_lvl && pm.has(r.date)).map((r) => ({ date: r.date, v: (+r.gdp_lvl / pm.get(r.date) - 1) * 100 })); };
   function renderGrowthCard() {
     const el = $("#growth-take"); if (!el) return;
     const { lg, now } = gdpParts();
@@ -1695,8 +1699,24 @@
     $("#growth-take2").textContent = growthTakeaway();
     const n = nextEvt("gdp");
     $("#gdp-date").innerHTML = `<span class="muted">${qName(lg.date)} data${n ? ` · next: ${n.label} on ${md(n.date)}` : ""} · FRED A191RL1Q225SBEA, GDPNOW</span>`;
-    const tr = gdpTraces(5), sp = sepTrace("gdp", "Fed projection (Q4/Q4)", css("--ink"), lg.date); if (sp) tr.push(sp);
-    plot("c-gdp", tr, baseLayout({ barmode: "overlay", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {}) }));
+    const pg = potGrowth(), gap = outputGap(), lgp = lastV(gap), pNow = pg.filter((p) => p.date <= (lg.date > localToday() ? lg.date : localToday())).pop();
+    if (pNow || lgp) $("#gdp-date").innerHTML += `<br><span class="muted">${pNow ? `CBO potential growth ${f1(pNow.v)}%` : ""}${pNow && lgp ? " · " : ""}${lgp ? `output gap ${lgp.v >= 0 ? "+" : ""}${lgp.v.toFixed(1)}% in ${qName(lgp.date)}` : ""} · FRED GDPPOT, GDPC1</span>`;
+    const lgd = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
+    if (S.gdpView === "gap") {
+      // output gap：實際 GDP 水準比潛在高（+，偏熱）或低（−，有閒置產能），最近 10 年
+      const gs = fromYears(gap, 10);
+      if (!gs.length) empty("c-gdp", "Potential GDP loads after the next daily update.");
+      else
+      plot("c-gdp", [{ ...xy(gs), name: "Output gap (real GDP vs CBO potential)", type: "scatter", mode: "lines", fill: "tozeroy", line: { color: P[0], width: 2 }, fillcolor: rgba(P[0], 0.15),
+        customdata: gs.map((p) => qName(p.date)), hovertemplate: "%{customdata}: %{y:+.1f}% of potential<extra></extra>" }],
+        baseLayout({ ...lgd, showlegend: true, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--ink"), zerolinewidth: 1.2 }) }));
+    } else {
+      const tr = gdpTraces(5), sp = sepTrace("gdp", "Fed projection (Q4/Q4)", css("--ink"), lg.date); if (sp) tr.push(sp);
+      // 潛在成長畫到 GDPNow 那季為止（CBO 的預測再往後就不畫）
+      const end = tr.length > 1 && tr[1].x ? tr[1].x[0] : lg.date, ps = fromYears(pg, 5).filter((p) => p.date <= end);
+      if (ps.length) tr.push({ ...xy(ps), name: "Potential growth (CBO)", mode: "lines", line: { color: css("--ink"), width: 1.5, dash: "dash", shape: "hvh" }, hovertemplate: "Potential %{y:.1f}%<extra></extra>" });
+      plot("c-gdp", tr, baseLayout({ ...lgd, barmode: "overlay", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
+    }
 
     // 零售銷售：control group m/m（柱）+ headline m/m（點），最近 2 年
     const c = mom(rsControl()).slice(-24), hd = mom(ser("rs_total")).slice(-24);
@@ -1756,6 +1776,7 @@
     if (D.meta.updated) $("#updated").textContent = ` Last updated: ${D.meta.updated}.`;
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
+    bindSeg("#gdp-views", "gdpView", renderGrowth);
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#i-years", "iYears", renderInflation);
     bindSeg("#bd-index", "bdIdx", renderParts);
