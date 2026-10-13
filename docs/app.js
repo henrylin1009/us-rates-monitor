@@ -1544,7 +1544,14 @@
     const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => r.actual), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
     const fc = rs.filter((r) => r.forecast != null);
     if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
-    plot(`c-sur-${page}`, tr, baseLayout({ hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
+    // 下一次公布的預期值也畫上去（Henry：快公布了卻看不到預期）：橘色短線 + 標籤
+    const lr = rs[rs.length - 1], nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= localToday() && (!lr || c.date > lr.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+    const ann = [];
+    if (nx) {
+      tr.push({ x: [nx.date], y: [+nx.forecast], name: "Next release: survey", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--up"), line: { width: 3, color: css("--up") } }, hovertemplate: `${md(nx.date)} survey ${fmtU(m, +nx.forecast)}<extra></extra>` });
+      ann.push({ x: nx.date, y: +nx.forecast, text: `${md(nx.date)}: ${fmtU(m, +nx.forecast)}`, showarrow: false, yanchor: "bottom", yshift: 6, xanchor: "right", font: { size: 11, color: css("--up") } });
+    }
+    plot(`c-sur-${page}`, tr, baseLayout({ annotations: ann, hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
     let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Unrounded</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
     rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n muted">${unr(r)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
     el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
