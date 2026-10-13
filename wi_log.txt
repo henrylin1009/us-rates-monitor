@@ -1,6 +1,0 @@
-  近似 tail 2026-08-26 5y：high 4.393 vs 4.389（^FVX 5m） = +0.4bp
-  近似 tail 2026-09-09 10y：high 4.834 vs 4.845（^TNX 5m） = -1.1bp
-  近似 tail 2026-09-10 30y：high 5.308 vs 5.335（^TYX 5m） = -2.7bp
-  近似 tail 2026-09-23 5y：high 5.033 vs 4.999（^FVX 1m） = +3.4bp
-  近似 tail 2026-10-07 10y：high 5.3 vs 5.313（^TNX 1m） = -1.3bp
-  近似 tail 2026-10-08 30y：high 5.618 vs 5.617（^TYX 1m） = +0.1bp
