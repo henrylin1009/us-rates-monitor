@@ -11,7 +11,7 @@
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathBack: 7, pricedCmp: ["1W"], fundView: "repo", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pathHz: "2Y", pricedCmp: ["1W"], fundView: "repo", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -737,10 +737,16 @@
         { x: xl, y: cum, name: "Cumulative from today", type: "scatter", mode: "lines+markers+text", line: { color: P[0], width: 2.6 }, marker: { size: 7 },
           text: cum.map((b) => bp(b, 0)), textposition: "top left", cliponaxis: false,
           textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--ink") },
-          customdata: cum.map((b) => moves(b)), hovertemplate: "Cumulative %{y:+.1f}bp (%{customdata})<extra></extra>" },
+          customdata: cum.map((b) => [moves(b), start + b / 100]), hovertemplate: "Cumulative %{y:+.1f}bp (%{customdata[0]}) → %{customdata[1]:.2f}%<extra></extra>" },
       ];
-      plot(id, tr, baseLayout({ hovermode: "x unified", xaxis: { ...baseLayout().xaxis, type: "category" },
-        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } }));
+      // 右軸 = 絕對利率（今天的起點 + bp）：左右兩軸用同一個範圍換算，刻度才對得上
+      const ys = [...mv, ...cum, ...cmp.flatMap(([, , y]) => y)].filter((z) => z != null && isFinite(z));
+      const lo = Math.min(0, ...ys), hi = Math.max(0, ...ys), pad = Math.max(5, (hi - lo) * 0.1), yr = [lo - pad, hi + pad];
+      tr.push({ x: [xl[0]], y: [null], yaxis: "y2", showlegend: false, hoverinfo: "skip", type: "scatter" });
+      const narrow = innerWidth < 600;
+      plot(id, tr, baseLayout({ hovermode: "x unified", xaxis: { ...baseLayout().xaxis, type: "category" }, margin: { ...baseLayout().margin, r: narrow ? 44 : 56 },
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", range: yr, zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 },
+        yaxis2: { ...baseLayout().yaxis, overlaying: "y", side: "right", range: yr.map((z) => start + z / 100), tickformat: ".2f", ticksuffix: "%", showgrid: false, zeroline: false, title: narrow ? undefined : { text: "Implied rate", font: { size: 11, color: css("--muted") } } } }));
       // 表：每次會議 bp / 幾碼 / 累計 / 和一週、一個月前比
       const cols = [["1W", "Δ vs 1 week"], ["1M", "Δ vs 1 month"]].map(([k, n]) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); return a && a !== last ? [n, then(a, part)] : null; }).filter(Boolean);
       let h = "<table><thead><tr><th>FOMC</th><th>This meeting (bp)</th><th>Moves</th><th>Cumulative (bp)</th><th>Cumulative moves</th><th>Implied rate</th>"
@@ -791,13 +797,17 @@
         }
         // Fed 自己的預測（SEP 點陣圖中位數，目標區間中點），畫在每年年底
         const lastM = pathOn(last).slice(-1)[0], extEnd = extNow ? extNow.x[extNow.x.length - 1] : null;
-        const xEnd = extEnd || (lastM ? shiftDays(lastM.meeting, 45) : last);
+        // 預設只看到後年年底（含那年的點陣圖），5Y 才把整條 SR3 延伸畫出來
+        const fullEnd = extEnd || (lastM ? shiftDays(lastM.meeting, 45) : last), hzEnd = `${+last.slice(0, 4) + 2}-12-31`;
+        const xEnd = S.pathHz === "5Y" || fullEnd < hzEnd ? fullEnd : shiftDays(hzEnd, 60);
+        // 超出視窗的點先剪掉，y 軸才不會被看不到的部分撐開；階梯線補一點接到右邊界
+        tr.forEach((t) => { const k = t.x.findIndex((d) => d > xEnd); if (k > 0) { t.x = t.x.slice(0, k).concat(xEnd); t.y = t.y.slice(0, k).concat(t.y[k - 1]); if (t.customdata) t.customdata = t.customdata.slice(0, k).concat([t.customdata[k - 1]]); } });
         const dots = D.sep.filter((r) => r.fedfunds !== "" && `${r.year}-12-31` >= last && `${r.year}-12-31` <= xEnd);
         if (dots.length) tr.push({ x: dots.map((r) => `${r.year}-12-31`), y: dots.map((r) => +r.fedfunds), name: "Fed dots (SEP median)", mode: "markers",
           marker: { symbol: "diamond-open", size: 11, color: css("--ink"), line: { width: 2 } }, customdata: dots.map((r) => r.year),
           hovertemplate: "%{y:.2f}%: Fed median for end-%{customdata} (midpoint of the target range)<extra></extra>" });
         const shapes = [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: effrNow, y1: effrNow, line: { color: css("--muted"), width: 1, dash: "dash" } }];
-        const annotations = [{ xref: "paper", x: 1, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { size: 11, color: css("--muted") } }];
+        const annotations = [{ xref: "paper", x: 0.01, y: effrNow, text: `EFFR ${effrNow.toFixed(2)}%`, showarrow: false, xanchor: "left", yanchor: "top", font: { size: 11, color: css("--muted") } }];
         if (extNow) {
           // 資料來源切換的地方：左邊 ZQ（每次會議），右邊 SR3（每季平均）
           const sw = extNow.x[0];
@@ -812,9 +822,11 @@
             annotations.push({ x: t, yref: "paper", y: 0, text: `${n}y`, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 10.5, color: css("--muted") } });
           });
         }
-        const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, shapes, annotations });
+        const nw = innerWidth < 600 ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { ...baseLayout().margin, b: 150 } } : {};
+        const L = baseLayout({ ...nw, xaxis: { ...baseLayout().xaxis, range: [shiftDays(last, -20), xEnd] }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" }, shapes, annotations });
         plot(id, tr, L);
       };
+      ctl.append(chips("Horizon", [["2Y", "To end-" + (+last.slice(0, 4) + 2)], ["5Y", "5 years"]], S.pathHz, false, (v) => { S.pathHz = v; rr(); }));
       ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y"], part0, last), S.pathBack,
         (d) => { const [a] = d ? cmpAsof(A, shiftDays(last, -d)) : [null]; return a && a !== last ? `vs <b>${a}</b>` : "Today only"; }, draw));
       renderTable(pathOn(last));
