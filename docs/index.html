@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -21,6 +21,7 @@
     </div>
     <div class="top-right">
       <div class="asof" id="asof">Loading…</div>
+      <a class="theme-btn refresh-btn" id="refresh" href="https://github.com/henrylin1009/us-rates-monitor/actions/workflows/update.yml" target="_blank" rel="noopener" title="Refresh data: opens GitHub Actions, click &quot;Run workflow&quot; there; this page reloads by itself when the new data is published" aria-label="Refresh data"><span>↻</span></a>
       <button class="theme-btn" id="theme" type="button" title="Toggle dark / light mode" aria-label="Toggle dark / light mode">☾</button>
     </div>
   </div>
@@ -349,6 +350,6 @@
 </div>
 </main>
 
-<script src="app.js?v=40"></script>
+<script src="app.js?v=41"></script>
 </body>
 </html>
