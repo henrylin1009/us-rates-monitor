@@ -1765,6 +1765,39 @@
   // 只畫目前這頁：隱藏的頁面寬度是 0，Plotly 會畫錯
   function renderAll() { RENDER[S.page](); }
 
+  // 刷新資料：靜態網站不能放 GitHub token（誰都看得到），所以按鈕只是開 Actions 頁讓人按 Run workflow。
+  // 這頁同時用公開 API（不用 token、每小時 60 次）每 20 秒看那次 run：跑完、Pages 發布新的 meta.json 後自動重新載入。
+  let refreshTimer = null;
+  function watchRefresh(since) {
+    const btn = $("#refresh"), asof = $("#asof"), base = asof.textContent;
+    const set = (msg, cls) => { asof.textContent = msg; btn.classList.toggle("busy", cls === "busy"); btn.classList.toggle("fail", cls === "fail"); };
+    const stop = (msg, cls) => { clearInterval(refreshTimer); refreshTimer = null; try { sessionStorage.removeItem("refreshSince"); } catch {} set(msg, cls); };
+    clearInterval(refreshTimer);
+    try { sessionStorage.setItem("refreshSince", since); } catch {}
+    async function tick() {
+      const age = Date.now() - since;
+      try {
+        const runs = (await (await fetch("https://api.github.com/repos/henrylin1009/us-rates-monitor/actions/workflows/update.yml/runs?per_page=1", { cache: "no-store" })).json()).workflow_runs || [];
+        const run = runs.find((r) => Date.parse(r.created_at) >= since - 120e3);
+        if (!run) return age > 10 * 60e3 ? stop(base) : set("Waiting for “Run workflow” on GitHub…", "busy");
+        if (run.status !== "completed") return set("Fetching new data…", "busy");
+        if (run.conclusion !== "success") return stop("Update failed · see GitHub Actions", "fail");
+        const m = await (await fetch("data/meta.json?t=" + Date.now(), { cache: "no-store" })).json();
+        // meta.updated 是 fetch.py 寫的 "YYYY-MM-DD HH:MM UTC"：晚於 run 開始 = 這次 run 的資料已上線
+        const t = Date.parse((m.updated || "").replace(" UTC", "Z").replace(" ", "T"));
+        if (t >= Date.parse(run.created_at) - 60e3) {
+          if (m.updated === D.meta.updated) return stop(base);
+          stop("New data, reloading…"); return location.reload();
+        }
+        set("Publishing…", "busy");
+      } catch {}
+      if (age > 25 * 60e3) stop(base);
+    }
+    set("Waiting for “Run workflow” on GitHub…", "busy");
+    refreshTimer = setInterval(tick, 20e3);
+    tick();
+  }
+
   async function main() {
     [D.yields, D.effr, D.path, D.summ, D.macro, D.claims, D.be, D.sep, D.rel, D.con, D.conManual] = await Promise.all(
       ["yields.csv", "effr.csv", "fed_path.csv", "fed_summary.csv", "macro.csv", "claims.csv", "breakeven.csv", "sep.csv", "releases.csv", "consensus.csv", "consensus_manual.csv"].map(load));
@@ -1832,6 +1865,9 @@
       syncThemeBtn(); renderAll();
     });
     syncThemeBtn();
+    $("#refresh").addEventListener("click", () => watchRefresh(Date.now()));
+    // 重新整理過頁面也接著看同一次 run
+    try { const t = +sessionStorage.getItem("refreshSince"); if (t && Date.now() - t < 25 * 60e3) watchRefresh(t); } catch {}
   }
   main();
 })();

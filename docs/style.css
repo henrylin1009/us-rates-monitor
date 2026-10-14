@@ -64,6 +64,14 @@ h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
   border: 1px solid var(--line); background: var(--chip); color: var(--ink);
 }
 .theme-btn:hover { border-color: var(--muted); }
+/* 刷新資料：連到 Actions 的 Run workflow 頁；跑的時候圖示轉圈 */
+.refresh-btn { display: inline-grid; place-items: center; text-decoration: none; box-sizing: border-box; }
+.refresh-btn span { display: block; }
+.refresh-btn.busy { color: var(--muted); }
+.refresh-btn.busy span { animation: spin 1.2s linear infinite; }
+.refresh-btn.fail { border-color: #c0392b; color: #c0392b; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .refresh-btn.busy span { animation: none; } }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
 .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
