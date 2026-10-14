@@ -70,9 +70,11 @@
   // Plotly 2.35 的 hovertemplate 吃不下 "+.2f" 這種帶正號的格式，會直接印出完整小數 → 一律改成 ".2f"
   // 沒寫 hovertemplate 的線，hover 也預設到小數兩位（日期 / 類別軸不動）
   const fixFmt = (t) => (typeof t === "string" ? t.replace(/%\{([^}:]+):\+([^}]*)\}/g, "%{$1:$2}") : t);
+  // Henry：圖一律畫 unrounded，hover 的百分比（% 和 pt）統一到小數三位；機率 / 標售比例這類不是「數據」的，trace 設 keepFmt 不動
+  const fmt3 = (t) => (typeof t === "string" ? t.replace(/%\{([^}:]+):\.[0-2]f\}(%|pt)/g, "%{$1:.3f}$2") : t);
   function plot(id, traces, layout) {
-    traces.forEach((t) => { if (t) { t.hovertemplate = fixFmt(t.hovertemplate); t.texttemplate = fixFmt(t.texttemplate); } });
-    Object.keys(layout).filter((k) => /^yaxis\d*$/.test(k)).forEach((k) => { const a = layout[k]; if (a && !a.hoverformat && !["date", "category"].includes(a.type)) a.hoverformat = ".2f"; });
+    traces.forEach((t) => { if (t) { t.hovertemplate = t.keepFmt ? fixFmt(t.hovertemplate) : fmt3(fixFmt(t.hovertemplate)); t.texttemplate = fixFmt(t.texttemplate); delete t.keepFmt; } });
+    Object.keys(layout).filter((k) => /^[xy]axis\d*$/.test(k)).forEach((k) => { const a = layout[k]; if (a && !a.hoverformat && !["date", "category"].includes(a.type)) a.hoverformat = /%|pt/.test(a.ticksuffix || "") ? ".3f" : ".2f"; });
     Plotly.react(id, traces, layout, CFG);
   }
   function empty(id, msg) { Plotly.purge(id); $("#" + id).innerHTML = `<div class="empty">${msg}</div>`; }
@@ -288,7 +290,7 @@
     // 2y、10y 三個月
     const rows = inRange(y, "date", "3M");
     plot("c-mini", ["2y", "10y"].map((t, i) => ({ x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
-      line: { width: 2, color: P[i] }, hovertemplate: "%{y:.2f}%" })),
+      line: { width: 2, color: P[i] }, hovertemplate: "%{y:.2f}%", keepFmt: true })),
       baseLayout({ margin: { l: 40, r: 8, t: 6, b: 28 }, legend: { ...baseLayout().legend, y: 1.12 }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
 
     // 關鍵數字
@@ -348,7 +350,7 @@
     const eff = D.effr.filter((r) => r.date >= start && r.effr !== "");
     const ink = css("--ink"), acc = css("--s1"), muted = css("--muted");
     const decTxt = (d) => (d == null ? "–" : d > 0 ? `hike ${d}bp` : d < 0 ? `cut ${-d}bp` : "hold");
-    const traces = [{ x: eff.map((r) => r.date), y: eff.map((r) => num(r.effr)), name: "Actual (EFFR)", mode: "lines", line: { color: ink, width: 2, shape: "hv" }, hovertemplate: "%{y:.2f}%<extra>EFFR</extra>" }];
+    const traces = [{ x: eff.map((r) => r.date), y: eff.map((r) => num(r.effr)), name: "Actual (EFFR)", mode: "lines", line: { color: ink, width: 2, shape: "hv" }, hovertemplate: "%{y:.2f}%<extra>EFFR</extra>", keepFmt: true }];
     const sur = fomcSurprises().filter((x) => x.pricedRate != null && x.date >= start);
     if (sur.length) traces.push({
       x: sur.map((x) => x.date), y: sur.map((x) => x.pricedRate), name: "Priced day before", mode: "markers",
@@ -423,7 +425,7 @@
     const tr = levels.map((lo, j) => ({
       x: series.map((s) => s.a), y: series.map((s) => (s.out.get(lo) || 0) * 100), name: lab(lo) + (ks[j] === 0 ? " (today)" : ""),
       type: "scatter", mode: "lines", stackgroup: "p", line: { width: 0.5, color: css("--surface") }, fillcolor: levelColor(ks[j], ks),
-      hovertemplate: `${lab(lo)}%: %{y:.1f}%<extra></extra>`,
+      hovertemplate: `${lab(lo)}%: %{y:.1f}%<extra></extra>`, keepFmt: true,
     }));
     plot("c-fomc", tr, baseLayout({ legend: { ...baseLayout().legend, traceorder: "reversed" },
       yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
@@ -499,12 +501,12 @@
       const rows = inRange(D.yields, "date", S.range);
       const tr = TENORS.filter((t) => S.tenors.includes(t)).map((t, i) => ({
         x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
-        line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.2f}%",
+        line: { width: 1.8, color: P[i % P.length] }, hovertemplate: "%{y:.2f}%", keepFmt: true,
       }));
       // 疊 Fed：2y 主要反映對 Fed 的預期，和 EFFR、期貨隱含 12 個月後的利率比，差距大約是 term premium
       if (S.trendFed.includes("fed") && rows.length) {
         const start = rows[0].date, ef = D.effr.filter((r) => r.date >= start && r.effr !== ""), fs = D.summ.filter((r) => r.asof >= start && r.implied_12m !== "");
-        tr.push({ x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 1.4, shape: "hv" }, hovertemplate: "%{y:.2f}%" });
+        tr.push({ x: ef.map((r) => r.date), y: ef.map((r) => num(r.effr)), name: "EFFR", type: "scatter", mode: "lines", line: { color: css("--ink"), width: 1.4, shape: "hv" }, hovertemplate: "%{y:.2f}%", keepFmt: true });
         if (fs.length) tr.push({ x: fs.map((r) => r.asof), y: fs.map((r) => num(r.implied_12m)), name: "ZQ-implied 12m ahead", type: "scatter", mode: "lines", line: { color: css("--muted"), width: 1.6, dash: "dash" }, hovertemplate: "%{y:.2f}%" });
       }
       const L = baseLayout({ yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
@@ -517,7 +519,7 @@
       const Y = D.yields, last = Y[Y.length - 1];
       const curve = (n, r, w, c, dash) => ({
         x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers",
-        line: { width: w, color: c, dash }, marker: { size: w > 2 ? 6 : 4 }, hovertemplate: "%{y:.2f}%", connectgaps: true,
+        line: { width: w, color: c, dash }, marker: { size: w > 2 ? 6 : 4 }, hovertemplate: "%{y:.2f}%", keepFmt: true, connectgaps: true,
       });
       const baseAt = (d) => (d ? atOrBefore(Y, "date", shiftDays(last.date, -d)) : null);
       const draw = (d) => {
@@ -685,7 +687,7 @@
     plot("c-auct", [{ x: rs.map((r) => r.auction_date), y: rs.map((r) => num(r.dealer_pct)), name: "Dealer share", type: "bar",
         marker: { color: rs.map((r) => (tone("dealer_pct", num(r.dealer_pct), r.avg.dealer_pct) === "up" ? rgba(css("--up"), 0.7) : tone("dealer_pct", num(r.dealer_pct), r.avg.dealer_pct) === "down" ? rgba(css("--down"), 0.7) : rgba(css("--muted"), 0.45))) },
         customdata: rs.map((r) => [num(r.high_yield), num(r.indirect_pct), (r.reopening ? " (reopening)" : "") + (r.tail == null ? "" : ` · tail ≈ ${r.tail >= 0 ? "+" : "−"}${Math.abs(r.tail).toFixed(1)}bp`)]),
-        hovertemplate: "Dealers %{y:.1f}% · indirect %{customdata[1]:.1f}% · high yield %{customdata[0]:.3f}%%{customdata[2]}<extra></extra>" },
+        hovertemplate: "Dealers %{y:.1f}% · indirect %{customdata[1]:.1f}% · high yield %{customdata[0]:.3f}%%{customdata[2]}<extra></extra>", keepFmt: true },
       { x: rs.map((r) => r.auction_date), y: rs.map((r) => num(r.btc)), name: "Bid-to-cover (right)", yaxis: "y2", mode: "lines+markers", line: { color: css("--ink"), width: 1.6 }, marker: { size: 5 }, hovertemplate: "Bid-to-cover %{y:.2f}<extra></extra>" }],
       baseLayout({ hovermode: "x unified", margin: { l: 44, r: 44, t: 10, b: 40 }, bargap: 0.3, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" },
         yaxis2: { ...baseLayout().yaxis, overlaying: "y", side: "right", showgrid: false, tickformat: ".1f" } }));
@@ -805,7 +807,7 @@
           type: "bar", marker: { color: c, line: { color: css("--surface"), width: 1 } },
           text: dists.map((d) => ((d.get(k) || 0) >= 0.1 ? rangeLabel(base, k, true) + "<br>" + Math.round(d.get(k) * 100) + "%" : "")),
           textposition: "inside", insidetextanchor: "middle", textangle: 0, textfont: { color: Math.abs(k) >= 2 || k === 0 ? "#fff" : css("--ink"), size: 10.5 },
-          hovertemplate: `${rangeLabel(base, k)}%: %{y:.1f}%<extra></extra>` };
+          hovertemplate: `${rangeLabel(base, k)}%: %{y:.1f}%<extra></extra>`, keepFmt: true };
       });
       plot(id, tr, baseLayout({ barmode: "stack", hovermode: "x unified", legend: { ...baseLayout().legend, traceorder: "reversed" },
         xaxis: { ...baseLayout().xaxis, type: "category" }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%", range: [0, 100] } }));
@@ -945,6 +947,9 @@
   // 用日期找 k 個月前（不是往前數 k 筆）：2025 年 10 月政府關門，CPI 那個月沒資料
   const mBack = (iso, k) => { const n = +iso.slice(0, 4) * 12 + +iso.slice(5, 7) - 1 - k; return `${Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, "0")}-01`; };
   const rate = (s, k, ann) => { const v = new Map(s.map((p) => [p.date, p.v])); return s.filter((p) => v.has(mBack(p.date, k))).map((p) => { const b = v.get(mBack(p.date, k)); return { date: p.date, v: (ann ? Math.pow(p.v / b, 12 / k) - 1 : p.v / b - 1) * 100 }; }); };
+  // 失業率 unrounded = 失業人數 ÷ 勞動力（BLS 公布的 UNRATE 只到一位小數）；還沒有勞動力資料的月份用公布值
+  const urate = () => { const c = new Map(ser("clf").map((p) => [p.date, p.v])), u = new Map(ser("unemploy").map((p) => [p.date, p.v]));
+    return ser("unrate").map((p) => (c.get(p.date) && u.has(p.date) ? { date: p.date, v: (u.get(p.date) / c.get(p.date)) * 100, pub: p.v } : p)); };
   const yoy = (s) => rate(s, 12, false), mom = (s) => rate(s, 1, false), annK = (s, k) => rate(s, k, true);
   const diff = (s) => { const v = new Map(s.map((p) => [p.date, p.v])); return s.filter((p) => v.has(mBack(p.date, 1))).map((p) => ({ date: p.date, v: p.v - v.get(mBack(p.date, 1)) })); };
   const avgK = (s, k) => s.slice(k - 1).map((p, i) => ({ date: p.date, v: s.slice(i, i + k).reduce((a, x) => a + x.v, 0) / k }));
@@ -973,7 +978,7 @@
   const sepTrace = (col, name, color, after) => {
     const p = sepPts(col).filter((x) => !after || (x.date >= after && x.date <= shiftDays(after, 730)));
     return p.length ? { ...xy(p), name, mode: "markers", marker: { symbol: "diamond-open", size: 10, color, line: { width: 2 } },
-      customdata: p.map((x) => x.year), hovertemplate: `%{y:.1f}% (Fed median for end-%{customdata})<extra>${name}</extra>` } : null;
+      customdata: p.map((x) => x.year), hovertemplate: `%{y:.1f}% (Fed median for end-%{customdata})<extra>${name}</extra>`, keepFmt: true } : null;
   };
   const hline = (y, text) => ({ shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: y, y1: y, line: { color: css("--muted"), width: 1, dash: "dash" } }],
     annotations: text ? [{ xref: "paper", x: 0, y, text, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] : [] });
@@ -1010,10 +1015,10 @@
     const sp = sepTrace("core_pce", "Fed projection", P[0], lastV(pce).date); if (sp) ti.push(sp);
     plot("c-infl-mini", ti, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis(), ...hline(2, "2% target") }));
 
-    const u = ser("unrate"), uS = u.filter((p) => p.date >= start), pay = diff(ser("payems")), sahm = lastV(ser("sahm"));
+    const u = urate(), uS = u.filter((p) => p.date >= start), pay = diff(ser("payems")), sahm = lastV(ser("sahm"));
     $("#jobs-take").textContent = jobsTakeaway();
     $("#jobs-date").innerHTML = dataLine("unrate", "nfp", "NFP");
-    $("#jobs-k").innerHTML = `<span>Unemployment <b class="num">${f1(lastV(u).v)}%</b></span><span>Payrolls <b class="num">${bp(lastV(pay).v, 0)}k</b></span>`
+    $("#jobs-k").innerHTML = `<span>Unemployment <b class="num">${f1(lastV(u).pub ?? lastV(u).v)}%</b></span><span>Payrolls <b class="num">${bp(lastV(pay).v, 0)}k</b></span>`
       + (sahm ? `<span>Sahm <b class="num ${sahm.v >= 0.5 ? "up" : ""}">${sahm.v.toFixed(2)}</b></span>` : "") + lastSurpriseLine("jobs");
     const tj = [{ ...xy(uS), name: "Unemployment rate", line: { color: P[2], width: 2 } }];
     const su = sepTrace("unrate", "Fed projection", P[2], lastV(u).date); if (su) tj.push(su);
@@ -1178,7 +1183,7 @@
     const yrs = S.iYears;
     const narrow = innerWidth < 600;
     plot("c-infl", [{ ...xy(fromYears(core, yrs)), name: "Core PCE", line: { color: P[0], width: 2.2 }, hovertemplate: "Core PCE %{y:.2f}%<extra></extra>" },
-      { ...xy(fromYears(trim, yrs)), name: "Trimmed-mean PCE (Dallas Fed)", line: { color: P[2], width: 2 }, hovertemplate: "Trimmed-mean PCE %{y:.2f}%<extra></extra>" },
+      { ...xy(fromYears(trim, yrs)), name: "Trimmed-mean PCE (Dallas Fed)", line: { color: P[2], width: 2 }, hovertemplate: "Trimmed-mean PCE %{y:.2f}%<extra></extra>", keepFmt: true },
       { ...xy(fromYears(med, yrs)), name: "Median CPI (Cleveland Fed)", line: { color: P[3], width: 2 }, hovertemplate: "Median CPI %{y:.2f}%<extra></extra>" }],
       baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 100 } } : {}) }));
     $("#infl-date2").innerHTML += `<span class="muted"> &nbsp;|&nbsp; </span>` + [["trim_pce", "Trimmed-mean PCE"], ["median_cpi", "Median CPI"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n}: ${monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
@@ -1391,8 +1396,8 @@
     clearEmpty("c-exp");
     const end = lastV(b55.length ? b55 : b5).date, start = shiftDays(end, -RANGES["5Y"]), cut = (s) => s.filter((p) => p.date >= start);
     const tr = [];
-    if (b55.length) tr.push({ ...xy(cut(b55)), name: "5y5y forward", line: { color: P[0], width: 2.2 }, hovertemplate: "5y5y %{y:.2f}%<extra></extra>" });
-    if (b5.length) tr.push({ ...xy(cut(b5)), name: "5y breakeven", line: { color: P[2], width: 1.6 }, hovertemplate: "5y %{y:.2f}%<extra></extra>" });
+    if (b55.length) tr.push({ ...xy(cut(b55)), name: "5y5y forward", line: { color: P[0], width: 2.2 }, hovertemplate: "5y5y %{y:.2f}%<extra></extra>", keepFmt: true });
+    if (b5.length) tr.push({ ...xy(cut(b5)), name: "5y breakeven", line: { color: P[2], width: 1.6 }, hovertemplate: "5y %{y:.2f}%<extra></extra>", keepFmt: true });
     const narrow = innerWidth < 600;
     plot("c-exp", tr, baseLayout({ yaxis: pctAxis(), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 100 } } : {}) }));
     const l55 = lastV(b55), l5 = lastV(b5);
@@ -1406,9 +1411,9 @@
     $("#jobs-take2").textContent = jobsTakeaway();
     $("#jobs-date2").innerHTML = dataLine("unrate", "nfp", "NFP");
     // 右軸：參與率，或 25-54 歲就業率（prime-age EPOP）
-    const prime = S.uView === "prime", u = fromYears(ser("unrate"), 5), part = fromYears(ser(prime ? "epop_prime" : "civpart"), 5);
+    const prime = S.uView === "prime", u = fromYears(urate(), 5), part = fromYears(ser(prime ? "epop_prime" : "civpart"), 5);
     const tr = [{ ...xy(u), name: "Unemployment rate", line: { color: P[2], width: 2.2 }, hovertemplate: "%{y:.1f}%" },
-      { ...xy(part), name: `${prime ? "Prime-age (25-54) employment rate" : "Participation rate"} (right)`, yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "%{y:.1f}%" }];
+      { ...xy(part), name: `${prime ? "Prime-age (25-54) employment rate" : "Participation rate"} (right)`, yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "%{y:.1f}%", keepFmt: true }];
     const su = sepTrace("unrate", "Fed projection", P[2], lastV(u) ? lastV(u).date : null); if (su) tr.push(su);
     clearEmpty("c-jobs");
     const narrow = innerWidth < 600;
@@ -1436,7 +1441,7 @@
     const ahe = ser("ahe"), eci = yoy(ser("eci_wag")), atl = ser("atl_wage"), sc = yoy(ser("cpi_supercore"));
     const wt = [{ ...xy(fromYears(yoy(ahe), 5)), name: "Avg hourly earnings", line: { color: P[4], width: 2 }, hovertemplate: "AHE %{y:.1f}%<extra></extra>" }];
     if (eci.length) wt.push({ ...xy(fromYears(eci, 5)), name: "ECI wages (quarterly)", mode: "lines+markers", line: { color: P[0], width: 2 }, marker: { size: 6 }, hovertemplate: "ECI %{y:.1f}%<extra></extra>" });
-    if (atl.length) wt.push({ ...xy(fromYears(atl, 5)), name: "Atlanta Fed wage tracker", line: { color: P[2], width: 2 }, hovertemplate: "Atlanta Fed %{y:.1f}%<extra></extra>" });
+    if (atl.length) wt.push({ ...xy(fromYears(atl, 5)), name: "Atlanta Fed wage tracker", line: { color: P[2], width: 2 }, hovertemplate: "Atlanta Fed %{y:.1f}%<extra></extra>", keepFmt: true });
     wt.push({ ...xy(fromYears(sc, 5)), name: "Supercore CPI", line: { color: css("--muted"), width: 1.6, dash: "dash" }, hovertemplate: "Supercore %{y:.1f}%<extra></extra>" });
     plot("c-ahe", wt, baseLayout({ yaxis: pctAxis(), ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 40, r: 12, t: 10, b: 110 } } : {}) }));
     $("#wage-date").innerHTML = [["ahe", "AHE"], ["eci_wag", "ECI"], ["atl_wage", "Atlanta Fed"]].map(([c, n]) => { const l = lastV(ser(c)); return l ? `${n} ${c === "eci_wag" ? "Q" + (Math.floor((+l.date.slice(5, 7) - 1) / 3) + 1) + " " + l.date.slice(0, 4) : monthName(l.date)}` : ""; }).filter(Boolean).join(" · ");
@@ -1458,7 +1463,7 @@
     if (!vu.length && !qr.length) empty("c-jolts", "No JOLTS data yet");
     else clearEmpty("c-jolts"), plot("c-jolts", [
       { ...xy(vu), name: "Openings per unemployed", line: { color: P[0], width: 2 }, hovertemplate: "V/U %{y:.2f}<extra></extra>" },
-      { ...xy(qr), name: "Quits rate (right)", yaxis: "y2", line: { color: P[2], width: 1.8 }, hovertemplate: "Quits %{y:.1f}%<extra></extra>" }],
+      { ...xy(qr), name: "Quits rate (right)", yaxis: "y2", line: { color: P[2], width: 1.8 }, hovertemplate: "Quits %{y:.1f}%<extra></extra>", keepFmt: true }],
       baseLayout({ margin: { l: 44, r: 52, t: 10, b: 40 }, yaxis: { ...baseLayout().yaxis, tickformat: ".1f" },
         yaxis2: { ...pctAxis(), overlaying: "y", side: "right", showgrid: false },
         shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 1, y1: 1, line: { color: css("--muted"), width: 1, dash: "dot" } }] }));
@@ -1486,7 +1491,7 @@
     plot("c-decomp", [
       { x: rows.map((r) => r.date), y: rows.map(parts[0][1]), name: parts[0][0], stackgroup: "a", line: { color: P[0], width: 0.5 }, fillcolor: rgba(P[0], 0.35), hovertemplate: "%{y:.2f}%" },
       { x: rows.map((r) => r.date), y: rows.map(parts[1][1]), name: parts[1][0], stackgroup: "a", line: { color: P[1], width: 0.5 }, fillcolor: rgba(P[1], 0.3), hovertemplate: "%{y:.2f}%" },
-      { x: rows.map((r) => r.date), y: nom, name: "10y nominal", line: { color: css("--ink"), width: 1.6 }, hovertemplate: "%{y:.2f}%" },
+      { x: rows.map((r) => r.date), y: nom, name: "10y nominal", line: { color: css("--ink"), width: 1.6 }, hovertemplate: "%{y:.2f}%", keepFmt: true },
     ], baseLayout({ yaxis: pctAxis() }));
     const last = be[be.length - 1], short = tp ? ["Path (bp)", "Term premium (bp)"] : ["Real yield (bp)", "Breakeven (bp)"];
     let h = `<table><thead><tr><th>Change since</th><th>10y ${tp ? "fitted" : "nominal"} (bp)</th><th>${short[0]}</th><th>${short[1]}</th><th>Driven by</th></tr></thead><tbody>`;
@@ -1518,9 +1523,9 @@
   const fmtU = (m, v) => (v === "" || v == null || isNaN(v) ? "–" : (+v).toFixed(SM[m].dec) + SM[m].unit);
   // 手動 key 的預期值加一個小 m
   const manTag = (r) => (r && /manual/.test(r.src || "") ? `<sup class="man" title="Entered by hand: ${r.src}">m</sup>` : "");
-  // unrounded（從指數算，顯示到小數兩位，Henry 要的）：只有百分比類指標有
+  // unrounded（從指數算到小數三位）：只有百分比類指標有；柱子畫這個，公布的四捨五入數字放 hover
   const hasUnr = (r) => r && r.unrounded !== "" && r.unrounded != null;
-  const unr = (r) => (hasUnr(r) ? (+r.unrounded).toFixed(2) + "%" : "");
+  const unr = (r) => (hasUnr(r) ? (+r.unrounded).toFixed(3) + "%" : "");
   const fmtS = (m, v) => (v == null || isNaN(v) ? "–" : (v > 0 ? "+" : "") + v.toFixed(SM[m].dec) + SM[m].unit);
   // 預期值：手動的優先
   function consensus(date, m) {
@@ -1547,7 +1552,7 @@
   // ECO 風格表：每個指標最新一次公布 + 下次已有預期值的
   function ecoTable(measures) {
     const today = localToday();
-    let h = "<table><thead><tr><th>Date</th><th>Indicator</th><th>Period</th><th>Survey</th><th>Actual</th><th title='Actual to two decimals, computed from the index levels'>Unrounded</th><th>Prior</th><th>Revised</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
+    let h = "<table><thead><tr><th>Date</th><th>Indicator</th><th>Period</th><th>Survey</th><th>Actual</th><th title='Actual to three decimals, computed from the index levels'>Unrounded</th><th>Prior</th><th>Revised</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
     const up = [], last = [];
     measures.forEach((m) => {
       const rs = surRows(m), r = rs[rs.length - 1];
@@ -1580,8 +1585,8 @@
     el.innerHTML = fold(`eco-${page}`, "Release table: latest prints and what's next", ecoTable(ms)) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
-    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)}${unr(r) ? ` (${unr(r)} unrounded)` : ""} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
-    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => (hasUnr(r) ? +(+r.unrounded).toFixed(2) : r.actual)), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
+    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${unr(r) ? `${unr(r)} unrounded (published ${fmtU(m, r.actual)})` : fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
+    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => (hasUnr(r) ? +r.unrounded : r.actual)), name: hasUnr(rs[rs.length - 1]) ? "Actual (unrounded)" : "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
     const fc = rs.filter((r) => r.forecast != null);
     if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
     // 下一次公布的預期值也畫上去（Henry：快公布了卻看不到預期）：橘色短線 + 標籤
@@ -1591,7 +1596,7 @@
       tr.push({ x: [nx.date], y: [+nx.forecast], name: "Next release: survey", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--up"), line: { width: 3, color: css("--up") } }, hovertemplate: `${md(nx.date)} survey ${fmtU(m, +nx.forecast)}<extra></extra>` });
       ann.push({ x: nx.date, y: +nx.forecast, text: `${md(nx.date)}: ${fmtU(m, +nx.forecast)}`, showarrow: false, yanchor: "bottom", yshift: 6, xanchor: "right", font: { size: 11, color: css("--up") } });
     }
-    plot(`c-sur-${page}`, tr, baseLayout({ annotations: ann, hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, tickformat: SM[m].unit === "%" ? ".2f" : undefined, zeroline: true, zerolinecolor: css("--muted") } }));
+    plot(`c-sur-${page}`, tr, baseLayout({ annotations: ann, hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
     let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Unrounded</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
     rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n muted">${unr(r)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
     el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
@@ -1643,7 +1648,7 @@
           hovertemplate: `%{customdata}<br>${g} index now %{y:+.2f}σ<extra></extra>` });
       });
       const y2 = D.yields.filter((r) => r.date >= first && r["2y"] !== "");
-      tr.push({ x: y2.map((r) => r.date), y: y2.map((r) => +r["2y"]), name: "2y yield (right)", yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "2y %{y:.2f}%<extra></extra>" });
+      tr.push({ x: y2.map((r) => r.date), y: y2.map((r) => +r["2y"]), name: "2y yield (right)", yaxis: "y2", line: { color: css("--muted"), width: 1.4, dash: "dot" }, hovertemplate: "2y %{y:.2f}%<extra></extra>", keepFmt: true });
       const narrow = innerWidth < 600;
       plot("c-surix", tr, baseLayout({ hovermode: "closest", margin: { l: 44, r: 48, t: 10, b: narrow ? 90 : 40 }, ...(narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" } } : {}),
         yaxis: { ...baseLayout().yaxis, ticksuffix: "σ", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1.5 },
@@ -1657,7 +1662,10 @@
   // control group = 零售（不含餐飲）− 汽車 − 加油站 − 建材，網站自己減
   const rsControl = () => D.macro.filter((r) => r.rs_xfs && r.rs_mv && r.rs_gas && r.rs_bm).map((r) => ({ date: r.date, v: +r.rs_xfs - +r.rs_mv - +r.rs_gas - +r.rs_bm }));
   function gdpParts() {
-    const g = (D.gq || []).filter((r) => r.gdp !== "").map((r) => ({ date: r.date, v: +r.gdp }));
+    // unrounded：用實質 GDP 水準自己算 q/q 年化（BEA 公布的只到一位小數），算不出來就用公布值
+    const lv = new Map((D.gq || []).filter((r) => r.gdp_lvl).map((r) => [r.date, +r.gdp_lvl]));
+    const g = (D.gq || []).filter((r) => r.gdp !== "").map((r) => { const a = lv.get(r.date), b = lv.get(mBack(r.date, 3));
+      return a && b ? { date: r.date, v: (Math.pow(a / b, 4) - 1) * 100, pub: +r.gdp } : { date: r.date, v: +r.gdp }; });
     const lg = lastV(g), now = (D.gq || []).filter((r) => r.gdpnow !== "" && (!lg || r.date > lg.date)).map((r) => ({ date: r.date, v: +r.gdpnow })).pop() || null;
     return { g, lg, now };
   }
@@ -1665,7 +1673,7 @@
   function growthTakeaway() {
     const { lg, now } = gdpParts(), c = mom(rsControl()), lc = lastV(c);
     if (!lg) return "";
-    let t = `Real GDP grew ${f1(lg.v)}% annualized in ${qName(lg.date)}`;
+    let t = `Real GDP grew ${f1(lg.pub ?? lg.v)}% annualized in ${qName(lg.date)}`;
     t += now ? `; the Atlanta Fed's GDPNow tracks ${f1(now.v)}% for ${qName(now.date)}.` : ".";
     if (lc) {
       const a3 = lastV(avgK(c, 3));
@@ -1680,7 +1688,7 @@
     const tr = [{ ...xy(gs), name: "Real GDP, q/q annualized", type: "bar", width: gs.map(() => W), marker: { color: gs.map((p) => rgba(P[0], p.v < 0 ? 0.45 : 0.75)) },
       customdata: gs.map((p) => qName(p.date)), hovertemplate: "%{customdata}: %{y:.1f}%<extra></extra>" }];
     if (now) tr.push({ x: [now.date], y: [now.v], width: [W], name: `GDPNow ${qName(now.date)}`, type: "bar", marker: { color: "rgba(0,0,0,0)", line: { color: P[0], width: 2 } },
-      hovertemplate: `GDPNow ${qName(now.date)}: %{y:.1f}%<extra></extra>` });
+      hovertemplate: `GDPNow ${qName(now.date)}: %{y:.1f}%<extra></extra>`, keepFmt: true });
     return tr;
   }
   // CBO 潛在 GDP：潛在成長 = 潛在 GDP 的 q/q 年化；output gap = 實質 GDP ÷ 潛在 GDP − 1
@@ -1695,7 +1703,7 @@
     const n = nextEvt("gdp");
     $("#growth-date").innerHTML = `<span class="muted">${qName(lg.date)} data${n ? ` · next GDP ${md(n.date)}` : ""}</span>`;
     const lc = lastV(mom(rsControl()));
-    $("#growth-k").innerHTML = `<span>GDP <b class="num">${f1(lg.v)}%</b></span>` + (now ? `<span>GDPNow <b class="num">${f1(now.v)}%</b></span>` : "")
+    $("#growth-k").innerHTML = `<span>GDP <b class="num">${f1(lg.pub ?? lg.v)}%</b></span>` + (now ? `<span>GDPNow <b class="num">${f1(now.v)}%</b></span>` : "")
       + (lc ? `<span>Control group <b class="num">${lc.v >= 0 ? "+" : ""}${lc.v.toFixed(1)}%</b> m/m</span>` : "");
     const tg = gdpTraces(5), x0 = tg[0].x[0], x1 = shiftDays((now || lg).date, 75);
     plot("c-growth-mini", tg, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, barmode: "overlay", bargap: 0.25, xaxis: { ...baseLayout().xaxis, range: [shiftDays(x0, -45), x1] }, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
