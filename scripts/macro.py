@@ -24,6 +24,8 @@ MONTHLY = {
     "jolts": "JTSJOL", "sahm": "SAHMREALTIME",
     # JOLTS 主流看法：職缺 ÷ 失業人數（V/U）和離職率
     "unemploy": "UNEMPLOY", "quits_rate": "JTSQUR",
+    # 勞動力：失業人數 ÷ 勞動力 = unrounded 失業率（UNRATE 只公布到一位）
+    "clf": "CLF16OV",
     # CPI 細項（desk 常看的）：OER、房租、醫療服務、交通服務、機票、二手車
     "cpi_oer": "CUSR0000SEHC", "cpi_rent": "CUSR0000SEHA", "cpi_medsvc": "CUSR0000SAM2",
     "cpi_transvc": "CUSR0000SAS4", "cpi_med": "CPIMEDSL", "cpi_airfare": "CUSR0000SETG01", "cpi_usedcars": "CUSR0000SETA02",
