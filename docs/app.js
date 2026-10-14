@@ -1128,6 +1128,13 @@
         { ...xy(fromYears(f(ser("cpi")), yrs)), name: "Headline CPI", line: { color: rgba(P[3], 0.6), width: 1.2, dash: "dot" }, hovertemplate: "%{y:.2f}%" }];
       // nowcast 延伸：同色細虛線，從最後一個公布值接出去
       [[nP, "Core PCE", P[0]], [nC, "Core CPI", P[3]]].forEach(([s, n, c]) => { if (s.length > 1) tr.push({ ...xy(s), name: `${n} nowcast`, mode: "lines+markers", line: { color: c, width: 1.6, dash: "dash" }, marker: { size: 5, symbol: "circle-open", color: c }, hovertemplate: `${n} nowcast %{y:.2f}% (Cleveland Fed, ${nAsof})<extra></extra>` }); });
+      // 下一次公布的市場預期（y/y 由 m/m 預期推算）：短橫線（跟 Surprises 的預期同一種記號），畫在要公布的那個月
+      if (S.iView === "yoy") [["core_pce_yy", "Core PCE", P[0]], ["core_cpi_yy", "Core CPI", P[3]]].forEach(([m, n, c]) => {
+        const l = lastV(ser(SM[m].col)), nx = l && nextCon(m, surRows(m).length ? surRows(m)[surRows(m).length - 1].date : null); if (!nx) return;
+        const how = nx.src === "implied" ? "implied from the m/m survey" : "survey";
+        tr.push({ x: [nx.ref || mBack(l.date, -1)], y: [nx.v], name: `${n} survey y/y (next release)`, mode: "markers", marker: { size: 16, symbol: "line-ew", color: c, line: { width: 3, color: c } },
+          hovertemplate: `${n} ${monthName(nx.ref || mBack(l.date, -1))} survey %{y:.2f}% y/y (${how}, out ${md(nx.date)})<extra></extra>`, keepFmt: true });
+      });
       const sp = sepTrace("core_pce", "Fed projection (Core PCE)", P[0], lastV(pce) ? lastV(pce).date : null); if (sp) tr.push(sp);
       plot("c-infl", tr, baseLayout({ yaxis: pctAxis(), ...hline(2, "2% target"), ...lg }));
     }
@@ -1511,8 +1518,10 @@
   const SM = {
     core_cpi_mm: { name: "Core CPI m/m", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1 },
     cpi_mm: { name: "CPI m/m", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1 },
-    cpi_yy: { name: "CPI y/y", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1 },
+    cpi_yy: { name: "CPI y/y", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1, base: "cpi_mm", col: "cpi" },
+    core_cpi_yy: { name: "Core CPI y/y", unit: "%", dec: 1, page: "inflation", type: "cpi", sd: 0.1, sign: 1, base: "core_cpi_mm", col: "core_cpi", derived: true },
     core_pce_mm: { name: "Core PCE m/m", unit: "%", dec: 1, page: "inflation", type: "pce", sd: 0.1, sign: 1 },
+    core_pce_yy: { name: "Core PCE y/y", unit: "%", dec: 1, page: "inflation", type: "pce", sd: 0.1, sign: 1, base: "core_pce_mm", col: "core_pce", derived: true },
     core_ppi_mm: { name: "Core PPI m/m", unit: "%", dec: 1, page: "inflation", type: "ppi", sd: 0.2, sign: 1 },
     ppi_mm: { name: "PPI m/m", unit: "%", dec: 1, page: "inflation", type: "ppi", sd: 0.2, sign: 1 },
     nfp: { name: "Nonfarm payrolls", unit: "k", dec: 0, page: "jobs", type: "nfp", sd: 75, sign: 1 },
@@ -1522,23 +1531,41 @@
   };
   const fmtU = (m, v) => (v === "" || v == null || isNaN(v) ? "–" : (+v).toFixed(SM[m].dec) + SM[m].unit);
   // 手動 key 的預期值加一個小 m
-  const manTag = (r) => (r && /manual/.test(r.src || "") ? `<sup class="man" title="Entered by hand: ${r.src}">m</sup>` : "");
+  const manTag = (r) => (r && /manual/.test(r.src || "") ? `<sup class="man" title="Entered by hand: ${r.src}">m</sup>`
+    : r && r.src === "implied" ? `<sup class="man" title="Implied: the m/m survey applied to the index, compared with 12 months earlier">i</sup>` : "");
   // unrounded（從指數算到小數三位）：只有百分比類指標有；柱子畫這個，公布的四捨五入數字放 hover
   const hasUnr = (r) => r && r.unrounded !== "" && r.unrounded != null;
   const unr = (r) => (hasUnr(r) ? (+r.unrounded).toFixed(3) + "%" : "");
   const fmtS = (m, v) => (v == null || isNaN(v) ? "–" : (v > 0 ? "+" : "") + v.toFixed(SM[m].dec) + SM[m].unit);
-  // 預期值：手動的優先
-  function consensus(date, m) {
+  // 預期值：手動的優先；y/y 沒有預期時，用 m/m 預期推算（desk 也是這樣算：12 個月裡 11 個月已知，只差最新一個月）
+  function consensus(date, m, ref) {
     const f = (rows) => rows.find((r) => r.date === date && r.measure === m && r.forecast !== "");
     const r = f(D.conManual) || f(D.con);
-    return r ? { v: +r.forecast, src: r.source || "manual" } : null;
+    if (r) return { v: +r.forecast, src: r.source || "manual" };
+    const b = SM[m] && SM[m].base && ref ? consensus(date, SM[m].base) : null;
+    const v = b ? impliedYoY(SM[m].col, ref, b.v) : null;
+    return v == null ? null : { v, src: "implied" };
+  }
+  // ref 月的 y/y = 上個月指數 ×（1 + m/m 預期）÷ 12 個月前指數（用目前的指數，過去的季調修正會有幾個 bp 的差）
+  function impliedYoY(col, ref, mm) {
+    const v = new Map(ser(col).map((p) => [p.date, p.v])), a = v.get(mBack(ref, 1)), b = v.get(mBack(ref, 12));
+    return a && b ? +((a * (1 + mm / 100) / b - 1) * 100).toFixed(3) : null;
+  }
+  // 下一次公布的預期：有直接的就用，y/y 沒有就從 m/m 推算（ref = 指數最後一個月的下一個月）
+  function nextCon(m, after) {
+    const today = localToday(), first = (mm) => [...D.conManual, ...D.con].filter((c) => c.measure === mm && c.forecast !== "" && c.date >= today && (!after || c.date > after)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+    const c = first(m);
+    if (c) return { date: c.date, v: +c.forecast, src: c.source || "" };
+    const b = SM[m].base && first(SM[m].base); if (!b) return null;
+    const l = lastV(ser(SM[m].col)), v = l ? impliedYoY(SM[m].col, mBack(l.date, -1), +b.forecast) : null;
+    return v == null ? null : { date: b.date, v, src: "implied", ref: mBack(l.date, -1) };
   }
   // 某個 measure 的每次公布，舊到新；z = 標準化 surprise（正 = 比預期熱 / 鷹）
   const _sur = {};
   function surRows(m) {
     if (_sur[m]) return _sur[m];
     const rows = D.rel.filter((r) => r.measure === m).map((r) => {
-      const c = consensus(r.date, m), a = +r.actual, s = c ? +(a - c.v).toFixed(4) : null, re = reaction(r.date);
+      const c = consensus(r.date, m, r.ref), a = +r.actual, s = c ? +(a - c.v).toFixed(4) : null, re = reaction(r.date);
       return { ...r, actual: a, forecast: c ? c.v : null, src: c ? c.src : "", surprise: s, d2: re ? re.d2 : null, fed: re ? re.fed : null };
     });
     const ss = rows.filter((r) => r.surprise != null).map((r) => r.surprise);
@@ -1556,8 +1583,8 @@
     const up = [], last = [];
     measures.forEach((m) => {
       const rs = surRows(m), r = rs[rs.length - 1];
-      const nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= today && (!r || c.date > r.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
-      if (nx) up.push([nx.date, `<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, +nx.forecast)}</b></td><td class="n muted">–</td><td></td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`]);
+      const nx = nextCon(m, r && r.date);
+      if (nx) up.push([nx.date, `<tr class="upcoming"><td class="n">${md(nx.date)}</td><td>${SM[m].name}</td><td class="muted">next</td><td class="n"><b>${fmtU(m, nx.v)}</b>${manTag(nx)}</td><td class="n muted">–</td><td></td><td class="n">${fmtU(m, r ? r.actual : "")}</td><td></td><td></td><td></td></tr>`]);
       else {
         // 還沒有預期：先從 events.json 列出下一次公布日，預期出來（公布當週）會自動換成上面那種
         const ev = D.events.find((e) => e.type === SM[m].type && e.date >= today && (!r || e.date > r.date));
@@ -1573,7 +1600,7 @@
     return `<div class="table-wrap eco">${h}${up.map((x) => x[1]).join("")}${last.map((x) => x[1]).join("")}</tbody></table></div>`;
   }
   function conStart() { const d = [...D.con, ...D.conManual].map((r) => r.date).sort(); return d[0] || null; }
-  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. It only lists the current week, so later releases show "not out yet" until their week starts. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
+  const conNote = () => { const s = (D.con.map((r) => r.date).sort()[0]) || null; return `Forecasts come from the ForexFactory weekly calendar${s ? `, collected automatically since ${s}` : ""}. It only lists the current week, so later releases show "not out yet" until their week starts. Forecasts marked <sup class="man">m</sup> were entered by hand from Investing.com's release history (Jan–Sep 2026), each checked against our first-print actual and prior before it went in. Core CPI y/y and Core PCE y/y have no published survey here, so <sup class="man">i</sup> marks a y/y implied from the m/m survey (last month's index × (1 + m/m survey) ÷ the index 12 months earlier), the way desks back out a y/y forecast; it can be a few bp off because past months have since been revised and the m/m survey is rounded to 0.1. Actuals are the first print (ALFRED). σ = surprise in standard deviations, signed so + means hotter / more hawkish than expected.`; };
 
   // 一個指標的歷史：柱子 = 實際、點 = 預期
   function renderSurprisePanel(page) {
@@ -1585,26 +1612,28 @@
     el.innerHTML = fold(`eco-${page}`, "Release table: latest prints and what's next", ecoTable(ms)) + `<div class="sur-ctl"></div><div class="chart short" id="c-sur-${page}"></div><div class="sur-hist"></div><p class="hint note">${conNote()}</p>`;
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
-    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${unr(r) ? `${unr(r)} unrounded (published ${fmtU(m, r.actual)})` : fmtU(m, r.actual)} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
+    const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${unr(r) ? `${unr(r)} unrounded (published ${fmtU(m, r.actual)})` : fmtU(m, r.actual)} · survey ${r.src === "implied" ? `${(+r.forecast).toFixed(2)}% (implied from m/m)` : fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
     const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => (hasUnr(r) ? +r.unrounded : r.actual)), name: hasUnr(rs[rs.length - 1]) ? "Actual (unrounded)" : "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
     const fc = rs.filter((r) => r.forecast != null);
     if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
     // 下一次公布的預期值也畫上去（Henry：快公布了卻看不到預期）：橘色短線 + 標籤
-    const lr = rs[rs.length - 1], nx = [...D.conManual, ...D.con].filter((c) => c.measure === m && c.date >= localToday() && (!lr || c.date > lr.date)).sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+    const lr = rs[rs.length - 1], nx = nextCon(m, lr && lr.date);
     const ann = [];
     if (nx) {
-      tr.push({ x: [nx.date], y: [+nx.forecast], name: "Next release: survey", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--up"), line: { width: 3, color: css("--up") } }, hovertemplate: `${md(nx.date)} survey ${fmtU(m, +nx.forecast)}<extra></extra>` });
-      ann.push({ x: nx.date, y: +nx.forecast, text: `${md(nx.date)}: ${fmtU(m, +nx.forecast)}`, showarrow: false, yanchor: "bottom", yshift: 6, xanchor: "right", font: { size: 11, color: css("--up") } });
+      const nt = nx.src === "implied" ? `${nx.v.toFixed(2)}% (implied from m/m)` : fmtU(m, nx.v);
+      tr.push({ x: [nx.date], y: [nx.v], name: "Next release: survey", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--up"), line: { width: 3, color: css("--up") } }, hovertemplate: `${md(nx.date)} survey ${nt}<extra></extra>` });
+      ann.push({ x: nx.date, y: nx.v, text: `${md(nx.date)}: ${nx.src === "implied" ? "≈" + nx.v.toFixed(2) + "%" : fmtU(m, nx.v)}`, showarrow: false, yanchor: "bottom", yshift: 6, xanchor: "right", font: { size: 11, color: css("--up") } });
     }
     plot(`c-sur-${page}`, tr, baseLayout({ annotations: ann, hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
     let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Unrounded</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
-    rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n muted">${unr(r)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
+    const fcU = (r) => (r.src === "implied" ? (+r.forecast).toFixed(2) + "%" : fmtU(m, r.forecast));
+    rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fcU(r)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n muted">${unr(r)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
     el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
   }
 
   // 首頁卡片：這一類最近一次公布
   function lastSurpriseLine(page) {
-    const all = Object.keys(SM).filter((m) => SM[m].page === page && m !== "claims").flatMap((m) => surRows(m).slice(-1).map((r) => ({ ...r, m })));
+    const all = Object.keys(SM).filter((m) => SM[m].page === page && m !== "claims" && !SM[m].derived).flatMap((m) => surRows(m).slice(-1).map((r) => ({ ...r, m })));
     if (!all.length) return "";
     all.sort((a, b) => (a.date < b.date ? 1 : -1));
     const d = all[0].date, same = all.filter((r) => r.date === d);
@@ -1613,7 +1642,7 @@
   }
 
   // Rates：surprise 指數（類似 Citi）和數據對 2y 的影響
-  function allSurprises() { return Object.keys(SM).flatMap((m) => surRows(m).filter((r) => r.z != null).map((r) => ({ ...r, m }))); }
+  function allSurprises() { return Object.keys(SM).filter((m) => !SM[m].derived).flatMap((m) => surRows(m).filter((r) => r.z != null).map((r) => ({ ...r, m }))); }
   function renderSurIndex() {
     const el = $("#c-surix"); if (!el) return;
     const all = allSurprises().sort((a, b) => (a.date < b.date ? -1 : 1));
