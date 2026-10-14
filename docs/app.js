@@ -1518,8 +1518,9 @@
   const fmtU = (m, v) => (v === "" || v == null || isNaN(v) ? "–" : (+v).toFixed(SM[m].dec) + SM[m].unit);
   // 手動 key 的預期值加一個小 m
   const manTag = (r) => (r && /manual/.test(r.src || "") ? `<sup class="man" title="Entered by hand: ${r.src}">m</sup>` : "");
-  // unrounded（小數三位）：只有百分比類指標有
-  const unr = (r) => (r && r.unrounded !== "" && r.unrounded != null ? (+r.unrounded).toFixed(3) + "%" : "");
+  // unrounded（從指數算，顯示到小數兩位，Henry 要的）：只有百分比類指標有
+  const hasUnr = (r) => r && r.unrounded !== "" && r.unrounded != null;
+  const unr = (r) => (hasUnr(r) ? (+r.unrounded).toFixed(2) + "%" : "");
   const fmtS = (m, v) => (v == null || isNaN(v) ? "–" : (v > 0 ? "+" : "") + v.toFixed(SM[m].dec) + SM[m].unit);
   // 預期值：手動的優先
   function consensus(date, m) {
@@ -1546,7 +1547,7 @@
   // ECO 風格表：每個指標最新一次公布 + 下次已有預期值的
   function ecoTable(measures) {
     const today = localToday();
-    let h = "<table><thead><tr><th>Date</th><th>Indicator</th><th>Period</th><th>Survey</th><th>Actual</th><th title='Actual to three decimals, computed from the index levels'>Unrounded</th><th>Prior</th><th>Revised</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
+    let h = "<table><thead><tr><th>Date</th><th>Indicator</th><th>Period</th><th>Survey</th><th>Actual</th><th title='Actual to two decimals, computed from the index levels'>Unrounded</th><th>Prior</th><th>Revised</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
     const up = [], last = [];
     measures.forEach((m) => {
       const rs = surRows(m), r = rs[rs.length - 1];
@@ -1580,7 +1581,7 @@
     el.querySelector(".sur-ctl").append(chips("Indicator", ms.map((m) => [m, SM[m].name]), S[key], false, (v) => { S[key] = v; renderSurprisePanel(page); }));
     const m = S[key], rs = surRows(m).slice(m === "claims" ? -52 : -24), P = palette();
     const hov = rs.map((r) => `${refLabel(m, r.ref)}<br>Actual ${fmtU(m, r.actual)}${unr(r) ? ` (${unr(r)} unrounded)` : ""} · survey ${fmtU(m, r.forecast)}${/manual/.test(r.src) ? " (manual)" : ""}${r.surprise == null ? "" : ` · surprise ${fmtS(m, r.surprise)} (${r.z > 0 ? "+" : ""}${r.z.toFixed(1)}σ)`}<br>2y that day ${bp(r.d2, 1)}bp`);
-    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => r.actual), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
+    const tr = [{ x: rs.map((r) => r.date), y: rs.map((r) => (hasUnr(r) ? +(+r.unrounded).toFixed(2) : r.actual)), name: "Actual (first print)", type: "bar", marker: { color: rgba(P[0], 0.7) }, text: hov, hovertemplate: "%{text}<extra></extra>", textposition: "none" }];
     const fc = rs.filter((r) => r.forecast != null);
     if (fc.length) tr.push({ x: fc.map((r) => r.date), y: fc.map((r) => r.forecast), name: "Forecast", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--ink"), line: { width: 3, color: css("--ink") } }, hoverinfo: "skip" });
     // 下一次公布的預期值也畫上去（Henry：快公布了卻看不到預期）：橘色短線 + 標籤
@@ -1590,7 +1591,7 @@
       tr.push({ x: [nx.date], y: [+nx.forecast], name: "Next release: survey", mode: "markers", marker: { symbol: "line-ew", size: 18, color: css("--up"), line: { width: 3, color: css("--up") } }, hovertemplate: `${md(nx.date)} survey ${fmtU(m, +nx.forecast)}<extra></extra>` });
       ann.push({ x: nx.date, y: +nx.forecast, text: `${md(nx.date)}: ${fmtU(m, +nx.forecast)}`, showarrow: false, yanchor: "bottom", yshift: 6, xanchor: "right", font: { size: 11, color: css("--up") } });
     }
-    plot(`c-sur-${page}`, tr, baseLayout({ annotations: ann, hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, zeroline: true, zerolinecolor: css("--muted") } }));
+    plot(`c-sur-${page}`, tr, baseLayout({ annotations: ann, hovermode: "closest", bargap: 0.35, yaxis: { ...baseLayout().yaxis, ticksuffix: SM[m].unit, tickformat: SM[m].unit === "%" ? ".2f" : undefined, zeroline: true, zerolinecolor: css("--muted") } }));
     let h = "<table><thead><tr><th>Release</th><th>Period</th><th>Survey</th><th>Actual</th><th>Unrounded</th><th>Surprise</th><th>2y (bp)</th></tr></thead><tbody>";
     rs.slice().reverse().forEach((r) => { h += `<tr><td class="n">${r.date}</td><td>${refLabel(m, r.ref)}</td><td class="n">${fmtU(m, r.forecast)}${manTag(r)}</td><td class="n">${fmtU(m, r.actual)}</td><td class="n muted">${unr(r)}</td><td class="n">${r.surprise == null ? "–" : fmtS(m, r.surprise) + " · " + zTxt(r.z)}</td><td class="n ${cls(r.d2)}">${bp(r.d2, 1)}</td></tr>`; });
     el.querySelector(".sur-hist").innerHTML = fold(`surH-${page}`, `${SM[m].name}: all releases`, `<div class="table-wrap">${h}</tbody></table></div>`);
