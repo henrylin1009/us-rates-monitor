@@ -25,7 +25,9 @@ MEASURES = {
     "cpi_mm": ("CPIAUCSL", "pct1", "CPI m/m"),
     "core_cpi_mm": ("CPILFESL", "pct1", "Core CPI m/m"),
     "cpi_yy": ("CPIAUCNS", "pct12", "CPI y/y"),            # 官方 y/y 用未季調
+    "core_cpi_yy": ("CPILFENS", "pct12", "Core CPI y/y"),       # FF 沒有這項：網站用 m/m 預期推算 y/y 預期
     "core_pce_mm": ("PCEPILFE", "pct1", "Core PCE Price Index m/m"),
+    "core_pce_yy": ("PCEPILFE", "pct12", "Core PCE Price Index y/y"),  # PCE 只有季調版，官方 y/y 也用這個
     "ppi_mm": ("PPIFIS", "pct1", "PPI m/m"),
     "core_ppi_mm": ("PPIFES", "pct1", "Core PPI m/m"),
     "nfp": ("PAYEMS", "diff", "Non-Farm Employment Change"),
