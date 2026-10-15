@@ -11,7 +11,7 @@
     curveBack: 7,
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathBack: 7, pathHz: "2Y", gdpView: "growth", pricedCmp: ["1W"], fundView: "repo", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pathHz: "2Y", gdpView: "growth", pricedCmp: ["1W"], fundView: "repo", crView: "carry", crHz: "3M", fundRange: "1Y", dView: "be", auctTerm: "10y", uView: "part", histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -567,6 +567,98 @@
       renderReactions($("#y-table"));
     }
 
+  }
+
+  // ---------- Carry & roll、曲線 RV ----------
+  // 用財政部 par curve 近似：DV01 = par 債的 modified duration；repo 用 SOFR；roll = 曲線不變下，n 年債變成 n − h 年的殖利率差（線性內插）
+  const TY = { "1m": 1 / 12, "2m": 2 / 12, "3m": 0.25, "4m": 1 / 3, "6m": 0.5, "1y": 1, "2y": 2, "3y": 3, "5y": 5, "7y": 7, "10y": 10, "20y": 20, "30y": 30 };
+  const CR_TENORS = ["2y", "3y", "5y", "7y", "10y", "20y", "30y"];
+  const CR_HZ = { "1M": [1 / 12, 21], "3M": [0.25, 63] };
+  // 曲線 RV：兩個天期 = 長 − 短；三個 = 蝴蝶 2 × 中間 − 兩翼
+  const RV_DEFS = { "2s10s": ["2y", "10y"], "2s5s": ["2y", "5y"], "5s30s": ["5y", "30y"], "10s30s": ["10y", "30y"], "2s5s10s": ["2y", "5y", "10y"], "5s10s30s": ["5y", "10y", "30y"] };
+  const CR_HINT = {
+    carry: "What a long position in each tenor earns if nothing moves, in bp of yield, over the horizon picked on the right. Carry = coupon income minus the cost of financing the bond in repo (SOFR here), divided by duration so it reads in bp. Roll-down = the curve stays put but the bond gets shorter, so its yield slides to the shorter point on the curve: positive where the curve slopes up, negative where it is inverted. Carry + roll is the breakeven: yields can rise that many bp over the horizon before a long loses money (a short pays it). Desks compare it with how much yields usually move: Vol is the typical move over the same horizon from the last 3 months of daily changes, and Carry ÷ vol says how much of that cushion you get per unit of risk. DV01 is the dollar P&L per 1bp per $1mm face. Approximations: par yields from the Treasury curve, not individual bonds; SOFR stands in for general collateral repo.",
+    rv: "Is each curve spread or butterfly rich or cheap against its own past year? Level in bp (spread = long tenor − short tenor; butterfly = 2 × belly − both wings), its change over 1 week and 1 month, and the z-score: how many standard deviations today's level sits from its 1-year average (bars). |z| above about 2 is stretched. The last column is the carry + roll of a DV01-neutral trade that gains when the spread rises (a steepener; for a butterfly, short the belly against the wings): positive means time works for that trade, negative means it pays to wait. It is the same carry + roll as the other view, combined across the legs.",
+  };
+  function crCalc(row, repo, h) {
+    const pts = Object.keys(TY).map((t) => [TY[t], num(row[t])]).filter((p) => p[1] != null);
+    const at = (x) => { for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [a, ya] = pts[i - 1], [b, yb] = pts[i]; return ya + ((yb - ya) * (x - a)) / (b - a); } return null; };
+    const out = {};
+    CR_TENORS.forEach((t) => {
+      const y = num(row[t]); if (y == null) return;
+      const n = TY[t], r = y / 100, dur = r ? (1 - Math.pow(1 + r / 2, -2 * n)) / r : n; // par 債：modified duration = 年金因子
+      const carry = repo == null ? null : ((y - repo) * 100 * h) / dur, rl = at(n - h), roll = rl == null ? null : (y - rl) * 100;
+      out[t] = { y, dur, dv01: dur * 100, carry, roll, total: carry == null || roll == null ? null : carry + roll };
+    });
+    return out;
+  }
+  function renderCarry() {
+    const id = "c-cr"; if (!$("#" + id)) return;
+    $("#cr-hint").textContent = CR_HINT[S.crView]; $("#cr-table").innerHTML = "";
+    const Y = D.yields; if (!Y.length) { $("#cr-date").innerHTML = ""; return empty(id, "No yield data yet."); }
+    clearEmpty(id);
+    const P = palette(), last = Y[Y.length - 1], [h, hd] = CR_HZ[S.crHz];
+    const fr = atOrBefore((D.fund || []).filter((r) => r.sofr !== ""), "date", last.date), repo = fr ? num(fr.sofr) : null;
+    const C = crCalc(last, repo, h);
+    $("#cr-date").innerHTML = `<span class="muted">Treasury curve ${md(last.date)} · repo = SOFR ${repo == null ? "n/a" : repo.toFixed(2) + "%"}${fr ? ` (${md(fr.date)})` : ""} · ${S.crHz} horizon · Treasury par yields, FRED SOFR</span>`;
+    // 波動：最近 63 個交易日的日變動標準差 × √(期間交易日)
+    const vol = (f) => {
+      const v = Y.slice(-64).map(f), d = [];
+      for (let i = 1; i < v.length; i++) if (v[i] != null && v[i - 1] != null) d.push((v[i] - v[i - 1]) * 100);
+      if (d.length < 20) return null;
+      const m = d.reduce((a, x) => a + x, 0) / d.length;
+      return Math.sqrt(d.reduce((a, x) => a + (x - m) ** 2, 0) / (d.length - 1)) * Math.sqrt(hd);
+    };
+    const f1 = (x, s = true) => (x == null ? "–" : s ? bp(x, 1) : x.toFixed(1));
+    const tone = (x) => (x == null || Math.abs(x) < 0.05 ? "" : x > 0 ? "down" : "up"); // 正 carry 對多頭有利 = 殖利率往下的方向色
+
+    if (S.crView === "carry") {
+      const T = CR_TENORS.filter((t) => C[t]);
+      plot(id, [
+        { x: T, y: T.map((t) => C[t].carry), name: "Carry", type: "bar", marker: { color: rgba(P[0], 0.8) }, hovertemplate: "Carry %{y:.1f}bp<extra></extra>", keepFmt: true },
+        { x: T, y: T.map((t) => C[t].roll), name: "Roll-down", type: "bar", marker: { color: rgba(P[2], 0.8) }, hovertemplate: "Roll %{y:.1f}bp<extra></extra>", keepFmt: true },
+        { x: T, y: T.map((t) => C[t].total), name: "Carry + roll", type: "scatter", mode: "markers+text", marker: { symbol: "diamond", size: 9, color: css("--ink") },
+          text: T.map((t) => f1(C[t].total)), textposition: "top center", textfont: { family: "IBM Plex Mono, monospace", size: 10.5, color: css("--muted") }, cliponaxis: false,
+          hovertemplate: "Carry + roll %{y:.1f}bp<extra></extra>", keepFmt: true },
+      ], baseLayout({ barmode: "relative", bargap: 0.35, xaxis: { ...baseLayout().xaxis, type: "category" },
+        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1 } }));
+      let t = `<table><thead><tr><th>Tenor</th><th>Yield</th><th title="$ per 1bp per $1mm face">DV01</th><th>Carry</th><th>Roll</th><th title="= breakeven: bp yields can rise before a long loses">Carry + roll</th><th title="Typical yield move over the horizon (last 3 months)">Vol</th><th>Carry ÷ vol</th></tr></thead><tbody>`;
+      T.forEach((k) => {
+        const c = C[k], v = vol((r) => num(r[k]));
+        t += `<tr><td>${k}</td><td class="n">${c.y.toFixed(2)}%</td><td class="n">$${Math.round(c.dv01)}</td><td class="n">${f1(c.carry)}</td><td class="n">${f1(c.roll)}</td>`
+          + `<td class="n ${tone(c.total)}"><b>${f1(c.total)}</b></td><td class="n">${f1(v, false)}</td><td class="n">${c.total == null || !v ? "–" : (c.total / v).toFixed(2)}</td></tr>`;
+      });
+      $("#cr-table").innerHTML = `<div class="table-wrap">${t}</tbody></table></div><p class="hint note">All in bp of yield over ${S.crHz}, for a long position (a short has the same numbers with the sign flipped). Example: 10y DV01 $${C["10y"] ? Math.round(C["10y"].dv01) : "–"} means $10mm of 10s moves about $${C["10y"] ? Math.round(C["10y"].dv01 * 10).toLocaleString() : "–"} per bp.</p>`;
+      return;
+    }
+
+    // 曲線 RV
+    const val = (r, k) => { const v = RV_DEFS[k].map((t) => num(r[t])); if (v.some((z) => z == null)) return null; return (v.length === 3 ? 2 * v[1] - v[0] - v[2] : v[1] - v[0]) * 100; };
+    const Y1 = Y.slice(-252), keys = Object.keys(RV_DEFS);
+    const rows = keys.map((k) => {
+      const lv = val(last, k), hs = Y1.map((r) => val(r, k)).filter((x) => x != null);
+      const m = hs.reduce((a, x) => a + x, 0) / hs.length, sd = Math.sqrt(hs.reduce((a, x) => a + (x - m) ** 2, 0) / (hs.length - 1));
+      const ago = (d) => { const b = atOrBefore(Y, "date", shiftDays(last.date, -d)), x = b ? val(b, k) : null; return lv == null || x == null ? null : lv - x; };
+      const legs = RV_DEFS[k].map((t) => (C[t] ? C[t].total : null));
+      const cr = legs.some((x) => x == null) ? null : legs.length === 3 ? legs[0] + legs[2] - 2 * legs[1] : legs[0] - legs[1];
+      return { k, lv, w: ago(7), mo: ago(30), z: sd ? (lv - m) / sd : null, lo: Math.min(...hs), hi: Math.max(...hs), cr };
+    });
+    const zs = rows.map((r) => r.z);
+    plot(id, [{ y: keys, x: zs, type: "bar", orientation: "h", marker: { color: zs.map((z) => rgba(P[0], z != null && Math.abs(z) >= 2 ? 0.95 : 0.5)) },
+      text: zs.map((z) => (z == null ? "" : bp(z, 2))), textposition: "outside", cliponaxis: false, textfont: { family: "IBM Plex Mono, monospace", size: 10.5, color: css("--muted") },
+      hovertemplate: "%{y}: z = %{x:.2f}<extra></extra>", keepFmt: true }],
+      baseLayout({ hovermode: "closest", showlegend: false, margin: { l: 70, r: 30, t: 10, b: 40 },
+        yaxis: { ...baseLayout().yaxis, type: "category", autorange: "reversed", tickfont: { color: css("--muted") } },
+        xaxis: { ...baseLayout().xaxis, title: { text: "z-score vs past year", font: { size: 11.5, color: css("--muted") } }, range: [Math.min(-3, ...zs.filter((z) => z != null)) - 0.4, Math.max(3, ...zs.filter((z) => z != null)) + 0.4],
+          zeroline: true, zerolinecolor: css("--muted"), zerolinewidth: 1,
+          tickvals: [-3, -2, -1, 0, 1, 2, 3], ticktext: ["−3", "−2", "−1", "0", "+1", "+2", "+3"] },
+        shapes: [-2, 2].map((x) => ({ type: "line", x0: x, x1: x, yref: "paper", y0: 0, y1: 1, layer: "below", line: { color: css("--muted"), width: 1, dash: "dot" } })) }));
+    let t = `<table><thead><tr><th></th><th>Level</th><th>1W</th><th>1M</th><th>1Y range</th><th>1Y z</th><th title="Carry + roll of a DV01-neutral trade that gains when the spread rises">C+R long spread (${S.crHz})</th></tr></thead><tbody>`;
+    rows.forEach((r) => {
+      t += `<tr><td>${r.k}</td><td class="n">${r.lv == null ? "–" : r.lv.toFixed(0)}</td><td class="n">${bp(r.w, 0)}</td><td class="n">${bp(r.mo, 0)}</td><td class="n muted">${r.lo.toFixed(0)} to ${r.hi.toFixed(0)}</td>`
+        + `<td class="n">${r.z == null ? "–" : bp(r.z, 2)}</td><td class="n">${f1(r.cr)}</td></tr>`;
+    });
+    $("#cr-table").innerHTML = `<div class="table-wrap">${t}</tbody></table></div><p class="hint note">Levels and changes in bp; z-score and range over the last 252 trading days. Long the spread = a steepener (long the short tenor, short the long tenor, equal DV01); for a butterfly, short 2 units of belly DV01 against 1 of each wing.</p>`;
   }
 
   // ---------- 資金面：repo 利率 vs IORB、準備金 / RRP / TGA、bill − OIS ----------
@@ -1787,7 +1879,7 @@
   const PAGES = ["overview", "rates", "inflation", "jobs", "growth", "calendar"];
   const RENDER = {
     overview: () => { renderNext(); renderHero(); renderMacroCards(); renderGrowthCard(); },
-    rates: () => { renderRatesTake(); renderYields(); renderFed(); renderAuctions(); renderFunding(); renderDecomp(); renderFomc(); renderSurIndex(); },
+    rates: () => { renderRatesTake(); renderYields(); renderFed(); renderCarry(); renderAuctions(); renderFunding(); renderDecomp(); renderFomc(); renderSurIndex(); },
     inflation: () => { renderInflation(); renderSurprisePanel("inflation"); renderParts(); renderExp(); renderWedge(); renderPpi(); },
     jobs: () => { renderJobs(); renderSurprisePanel("jobs"); },
     growth: () => renderGrowth(),
@@ -1865,6 +1957,8 @@
     bindSeg("#d-range", "dRange", renderDecomp);
     bindSeg("#d-views", "dView", renderDecomp);
     bindSeg("#fund-views", "fundView", renderFunding);
+    bindSeg("#cr-views", "crView", renderCarry);
+    bindSeg("#cr-hz", "crHz", renderCarry);
     bindSeg("#u-views", "uView", renderJobs);
     // Overview 卡片整張可點；在圖上拖曳（縮放）或點到裡面的連結 / 按鈕時不跳頁
     document.querySelectorAll(".panel.go").forEach((el) => {
