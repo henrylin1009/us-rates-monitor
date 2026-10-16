@@ -1,6 +1,6 @@
 {
  "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar; data releases from FRED; ISM computed (1st / 3rd business day); Chair speeches, testimony and Beige Book from the Fed's calendar; coupon auctions from Treasury once announced. Past events keep their existing labels.",
- "updated": "2026-10-15",
+ "updated": "2026-10-16",
  "events": [
   {
    "date": "2025-01-03",
@@ -2306,6 +2306,16 @@
    "date": "2026-10-16",
    "type": "ip",
    "label": "Industrial production (Sep 2026)"
+  },
+  {
+   "date": "2026-10-21",
+   "type": "auction",
+   "label": "20y auction ($13bn, reopening)"
+  },
+  {
+   "date": "2026-10-22",
+   "type": "auction",
+   "label": "5y TIPS auction ($26bn)"
   },
   {
    "date": "2026-10-23",
