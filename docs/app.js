@@ -456,7 +456,7 @@
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
-    curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them.",
+    curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them. Right of Today (+3M … +2Y) the slider looks ahead: the dashed line is the forward curve implied by today's curve, i.e. where each tenor would have to be on that date for a long bought today to do no better than rolling the shorter bond. Desks read it as two scenarios side by side: the curve stays unchanged (solid; you earn carry + roll) versus forwards are realized (dashed; carry + roll is wiped out). The bars are forward − today, the move the market already prices; your view is whether yields move more or less than that. Forwards include term premium, so they are not a forecast and tend to overstate rises when the curve slopes up. Computed from Treasury par yields (bootstrapped to zeros); tenors whose end date lies past 30 years are left blank. The bars are close to, but not the same as, the Carry & roll breakeven, which finances at SOFR rather than the curve's own front end.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted. 2s5s10s is a butterfly (2 × 5y − 2y − 10y): it rises when the 5y cheapens against the two wings, usually when the market prices more Fed hikes (or fewer cuts) over the next few years, since the belly carries most of that.",
   };
   const BILLS_HINT = "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).";
@@ -521,32 +521,50 @@
         x: TENORS, y: TENORS.map((t) => num(r[t])), name: n, type: "scatter", mode: "lines+markers",
         line: { width: w, color: c, dash }, marker: { size: w > 2 ? 6 : 4 }, hovertemplate: "%{y:.2f}%", keepFmt: true, connectgaps: true,
       });
-      const baseAt = (d) => (d ? atOrBefore(Y, "date", shiftDays(last.date, -d)) : null);
+      // d > 0：往回比較某一天；d < 0：往未來，畫今天曲線隱含的遠期曲線（Henry：時間軸可以往未來拉）
+      const FWD = { 91: "3M", 182: "6M", 365: "1Y", 730: "2Y" };
+      const baseAt = (d) => (d > 0 ? atOrBefore(Y, "date", shiftDays(last.date, -d)) : null);
+      const fwdAt = (d) => {
+        if (!(d < 0)) return null;
+        const DF = zeroCurve(last); if (!DF) return null;
+        const h = -d / 365, r = { date: shiftDays(last.date, -d) };
+        TENORS.forEach((t) => { const f = fwdRate(DF, h, TY[t]); r[t] = f == null ? "" : f.toFixed(4); });
+        return r;
+      };
+      const fwdName = (d) => (FWD[-d] || Math.round(-d / 30.4) + "M") + " forward";
       const draw = (d) => {
         S.curveBack = d;
-        const base = baseAt(d), tr = [curve("Today " + last.date, last, 2.6, P[0], "solid")];
-        if (base) tr.push(curve(base.date, base, 1.8, P[1], "dot"));
+        const fw = fwdAt(d), base = baseAt(d) || fw;
+        const tr = [curve("Today " + last.date + (fw ? " (unchanged)" : ""), last, 2.6, P[0], "solid")];
+        if (fw) { const c = curve(fwdName(d) + " (priced)", fw, 2, P[1], "dash"); c.hovertemplate = "%{y:.3f}%"; delete c.keepFmt; tr.push(c); }
+        else if (base) tr.push(curve(base.date, base, 1.8, P[1], "dot"));
         const L = baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
           yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
         if (base) {
-          // 下面一排：每個天期從比較日到今天變了幾 bp（Bloomberg GC 的排法）
-          const ys = TENORS.map((t) => (num(last[t]) == null || num(base[t]) == null ? null : +((num(last[t]) - num(base[t])) * 100).toFixed(1)));
-          const d2 = chg(last, base, "2y"), d10 = chg(last, base, "10y");
-          tr.push({ x: TENORS, y: ys, yaxis: "y2", type: "bar", showlegend: false, marker: { color: ys.map((x) => rgba(css(x >= 0 ? "--up" : "--down"), 0.7)) },
+          // 下面一排：每個天期從比較日到今天變了幾 bp（Bloomberg GC 的排法）；往未來時 = 遠期 − 今天，市場已經 price 的變動
+          const ys = TENORS.map((t) => (num(last[t]) == null || num(base[t]) == null ? null : +((fw ? num(base[t]) - num(last[t]) : num(last[t]) - num(base[t])) * 100).toFixed(fw ? 3 : 1)));
+          const d2 = fw ? chg(fw, last, "2y") : chg(last, base, "2y"), d10 = fw ? chg(fw, last, "10y") : chg(last, base, "10y");
+          tr.push({ x: TENORS, y: ys, yaxis: "y2", type: "bar", showlegend: false, marker: { color: ys.map((x) => rgba(css(x >= 0 ? "--up" : "--down"), fw ? 0.45 : 0.7)) },
             text: ys.map((x) => (x == null ? "" : bp(x, 0))), textposition: "outside", cliponaxis: false,
-            textfont: { family: "IBM Plex Mono, monospace", size: 10.5, color: css("--muted") }, hovertemplate: `%{x}: %{y:+.1f}bp since ${base.date}<extra></extra>` });
+            textfont: { family: "IBM Plex Mono, monospace", size: 10.5, color: css("--muted") },
+            hovertemplate: fw ? `%{x}: %{y:+.3f}bp priced over the next ${FWD[-d] || ""}<extra></extra>` : `%{x}: %{y:+.1f}bp since ${base.date}<extra></extra>` });
           const lo = Math.min(0, ...ys.filter((x) => x != null)), hi = Math.max(0, ...ys.filter((x) => x != null)), pad = Math.max(4, (hi - lo) * 0.3);
           L.yaxis = { ...L.yaxis, domain: [0.36, 1] };
           L.yaxis2 = { ...baseLayout().yaxis, domain: [0, 0.24], anchor: "x", ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted"), range: [lo - pad, hi + pad], nticks: 3 };
           L.xaxis = { ...L.xaxis, anchor: "y2" };
           L.annotations = [{ xref: "paper", yref: "paper", x: 0, y: 0.27, xanchor: "left", yanchor: "bottom", showarrow: false, font: { size: 11.5, color: css("--muted") },
-            text: `Change since ${base.date} (bp)${d2 == null || d10 == null || innerWidth < 600 ? "" : ` · ${regime(d2, d10)} · 2s10s ${bp(d10 - d2, 0)}bp`}` }];
+            text: (fw ? `Priced change by ${fw.date}: forward − today (bp)` : `Change since ${base.date} (bp)`)
+              + (d2 == null || d10 == null || innerWidth < 600 ? "" : ` · ${regime(d2, d10)} · 2s10s ${bp(d10 - d2, 0)}bp`) }];
           L.hovermode = "closest";
         }
         plot(id, tr, L);
       };
-      ctl.append(tickSlider(backTicks(["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "5Y"], Y[0].date, last.date, Y[0].date.slice(0, 4)), S.curveBack,
-        (d) => { const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
+      // 手機上刻度太擠：往回少放幾個
+      const ticks = [...backTicks(innerWidth < 600 ? ["1W", "1M", "3M", "1Y", "5Y"] : ["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "5Y"], Y[0].date, last.date, Y[0].date.slice(0, 4)),
+        ...Object.keys(FWD).map((k) => ["+" + FWD[k], -k])];
+      if (S.curveBack < -730) S.curveBack = -730;
+      ctl.append(tickSlider(ticks, S.curveBack,
+        (d) => { if (d < 0) return `<b>${fwdName(d)}</b> · ${shiftDays(last.date, -d)}`; const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
     }
 
     if (v === "spread") {
@@ -572,6 +590,32 @@
   // ---------- Carry & roll、曲線 RV ----------
   // 用財政部 par curve 近似：DV01 = par 債的 modified duration；repo 用 SOFR；roll = 曲線不變下，n 年債變成 n − h 年的殖利率差（線性內插）
   const TY = { "1m": 1 / 12, "2m": 2 / 12, "3m": 0.25, "4m": 1 / 3, "6m": 0.5, "1y": 1, "2y": 2, "3y": 3, "5y": 5, "7y": 7, "10y": 10, "20y": 20, "30y": 30 };
+  // 遠期曲線：par curve 拔靴法成 zero curve（半年複利），再算 h 年後每個天期的遠期利率
+  // ≤1y 是票券（含 52 週），直接當 zero rate；之後每半年一個節點，par 線性內插；h + 天期 > 30 年算不出來（null）
+  function zeroCurve(row) {
+    const pts = Object.keys(TY).map((t) => [TY[t], num(row[t])]).filter((p) => p[1] != null);
+    if (pts.length < 4 || pts[pts.length - 1][0] < 30) return null;
+    const par = (x) => { if (x <= pts[0][0]) return pts[0][1]; for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [a, ya] = pts[i - 1], [b, yb] = pts[i]; return ya + ((yb - ya) * (x - a)) / (b - a); } return null; };
+    const Z = [[0, pts[0][1] / 100]];
+    pts.filter((p) => p[0] <= 1).forEach((p) => Z.push([p[0], p[1] / 100]));
+    const df = {}; let sum = 0; // df[k] = 第 k 個半年的折現因子
+    for (let k = 1; k <= 60; k++) {
+      const t = k / 2;
+      if (t <= 1) { const z = par(t) / 100; df[k] = Math.pow(1 + z / 2, -2 * t); }
+      else { const c = par(t) / 100; df[k] = (1 - (c / 2) * sum) / (1 + c / 2); Z.push([t, 2 * (Math.pow(df[k], -1 / (2 * t)) - 1)]); }
+      sum += df[k];
+    }
+    const z = (t) => { for (let i = 1; i < Z.length; i++) if (t <= Z[i][0] + 1e-9) { const [a, ya] = Z[i - 1], [b, yb] = Z[i]; return b === a ? yb : ya + ((yb - ya) * (t - a)) / (b - a); } return null; };
+    return (t) => (t <= 0 ? 1 : t > 30 + 1e-9 ? null : Math.pow(1 + z(t) / 2, -2 * t));
+  }
+  // h 年後的 m 年期：≤1y 用遠期 zero（跟票券同一種報價），>1y 用遠期 par（半年付息）；單位 %
+  function fwdRate(DF, h, m) {
+    if (!DF) return null;
+    const a = DF(h), b = DF(h + m); if (b == null) return null;
+    if (m <= 1 + 1e-9) return 200 * (Math.pow(a / b, 1 / (2 * m)) - 1);
+    let ann = 0; for (let k = 1; k <= Math.round(2 * m); k++) ann += DF(h + k / 2);
+    return (200 * (a - b)) / ann;
+  }
   const CR_TENORS = ["2y", "3y", "5y", "7y", "10y", "20y", "30y"];
   const CR_HZ = { "1M": [1 / 12, 21], "3M": [0.25, 63] };
   // 曲線 RV：兩個天期 = 長 − 短；三個 = 蝴蝶 2 × 中間 − 兩翼
