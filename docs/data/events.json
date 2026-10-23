@@ -1,6 +1,6 @@
 {
  "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar; data releases from FRED; ISM computed (1st / 3rd business day); Chair speeches, testimony and Beige Book from the Fed's calendar; coupon auctions from Treasury once announced. Past events keep their existing labels.",
- "updated": "2026-10-22",
+ "updated": "2026-10-23",
  "events": [
   {
    "date": "2025-01-03",
@@ -2471,16 +2471,6 @@
    "date": "2026-12-30",
    "type": "minutes",
    "label": "FOMC minutes (Dec meeting)"
-  },
-  {
-   "date": "2027-01-04",
-   "type": "ism_m",
-   "label": "ISM manufacturing (Dec 2026)"
-  },
-  {
-   "date": "2027-01-06",
-   "type": "ism_s",
-   "label": "ISM services (Dec 2026)"
   },
   {
    "date": "2027-01-27",
