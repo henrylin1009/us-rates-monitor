@@ -10,3 +10,7 @@ date,measure,forecast,previous,source
 2026-10-22,claims,200,199,ff
 2026-10-29,claims,198,194,ff
 2026-10-29,core_pce_mm,0.3,0.2,ff
+2026-11-05,claims,197,194,ff
+2026-11-06,ahe_mm,0.3,0.1,ff
+2026-11-06,nfp,65,29,ff
+2026-11-06,unrate,4.2,4.2,ff
