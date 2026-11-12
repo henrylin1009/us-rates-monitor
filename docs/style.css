@@ -283,3 +283,21 @@ details.panel.more h3.sub { margin: 18px 0 2px; }
 .cal-ev.tier1 .cal-l { font-weight: 600; }
 .cal-ev.blk .cal-l { color: var(--muted); font-style: italic; }
 .subhead { margin: 16px 0 6px; font-size: 14px; }
+
+/* 新聞版 Inflation / Jobs：最上面 CPI|PCE 切換、最新一期 2×2 卡片 */
+.page-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; font-size: 13px; }
+.page-switch .seg button { font-size: 14px; padding: 6px 18px; }
+.lat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.lat-cell { background: var(--chip); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.lat-lab { font-size: 13px; font-weight: 600; }
+.lat-big { font-size: 28px; font-weight: 600; margin: 4px 0 2px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+.lat-unr { font-size: 13px; font-weight: 400; color: var(--muted); }
+.lat-sub { font-size: 13px; color: var(--muted); }
+.lat-sur { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.lat-sur.up { color: var(--up); } .lat-sur.down { color: var(--down); }
+.lat-foot { list-style: none; padding: 0; margin: 12px 0 2px; font-size: 13.5px; line-height: 1.6; }
+.lat-foot b.up { color: var(--up); } .lat-foot b.down { color: var(--down); }
+.sur-line { font-size: 13.5px; margin: 8px 0 0; }
+.sur-line b.up { color: var(--up); } .sur-line b.down { color: var(--down); }
+.chart.tall { height: 470px; }
+@media (max-width: 640px) { .lat-big { font-size: 22px; } .lat-cell { padding: 10px; } .chart.tall { height: 470px; } }
