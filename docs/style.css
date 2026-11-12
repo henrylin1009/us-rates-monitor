@@ -328,3 +328,7 @@ details.tools > summary::before { content: "▸"; color: var(--muted); font-size
 details.tools[open] > summary::before { content: "▾"; }
 details.tools > summary h2 { font-size: 16px; margin: 0; }
 details.tools > summary .muted { font-size: 13px; }
+.cal-ev:not(.fomc):not(.tier1):not(.blk) .cal-l { color: var(--muted); }
+.cal-nums { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+.cal-nums b { color: var(--ink); font-weight: 600; }
+.cal-nums .up { color: var(--up); } .cal-nums .down { color: var(--down); }
