@@ -87,7 +87,7 @@ def td_rows(get) -> list[dict]:
             print(f"⚠ TreasuryDirect {path} 抓不到：{e}")
             continue
         n = len(data) if isinstance(data, list) else f"{type(data).__name__} {str(data)[:200]}"
-        print(f"TreasuryDirect {path}: {n}" + (f" · e.g. {next(({k: v for k, v in d.items() if re.search('(?i)type|term|date|reopen|float|tips|inflation|cusip|amount|yield|cover|accepted', k) and v} for d in data if 'Bill' not in str(d.get('type', '')) + str(d.get('securityType', ''))), None)}" if isinstance(data, list) and data else ""))
+        print(f"TreasuryDirect {path}: {n}" + (f" · e.g. {next(({k: v for k, v in d.items() if re.search('(?i)bidder|dealer|auctiondate|competitiveaccepted|tendered|indirect|direct', k) and not k.endswith(('BidsAccepted', 'InsideOfOfferingAmount'))} for d in data if 'Bill' not in str(d.get('type', '')) + str(d.get('securityType', ''))), None)}" if isinstance(data, list) and data else ""))
         out += [x for x in (to_row(td_to_fiscal(d)) for d in (data if isinstance(data, list) else [])) if x and x["auction_date"]]
     return out
 
