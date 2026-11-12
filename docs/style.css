@@ -301,3 +301,37 @@ details.panel.more h3.sub { margin: 18px 0 2px; }
 .sur-line b.up { color: var(--up); } .sur-line b.down { color: var(--down); }
 .chart.tall { height: 470px; }
 @media (max-width: 640px) { .lat-big { font-size: 22px; } .lat-cell { padding: 10px; } .chart.tall { height: 470px; } }
+
+/* ---------- Overview：morning sheet ---------- */
+.ov-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.ov-tile { background: var(--chip); border-radius: 10px; padding: 12px 14px 8px; min-width: 0; }
+.ov-lab { font-size: 13px; font-weight: 600; }
+.ov-lab .muted { font-weight: 400; font-size: 12px; }
+.ov-big { font-size: 26px; font-weight: 600; margin: 4px 0 2px; font-family: "IBM Plex Mono", ui-monospace, monospace; white-space: nowrap; }
+.ov-note { font-size: 12.5px; font-weight: 400; color: var(--muted); margin-left: 6px; font-family: inherit; }
+.ov-chg { display: flex; gap: 12px; font-size: 12.5px; color: var(--muted); }
+.ov-chg b { color: var(--ink); font-weight: 600; }
+.ov-chg b.up { color: var(--up); } .ov-chg b.down { color: var(--down); }
+.ov-spark { display: block; width: 100%; height: 28px; margin-top: 6px; }
+.ov-spark polyline { fill: none; stroke: var(--muted); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.ov-list { margin-top: 8px; }
+.ov-it { display: grid; grid-template-columns: 92px 1fr; gap: 0 12px; padding: 8px 0; border-bottom: 1px solid var(--grid); font-size: 13.5px; color: var(--ink); text-decoration: none; }
+.ov-it:last-child { border-bottom: 0; }
+a.ov-it:hover .ov-l { color: var(--accent); }
+.ov-d { grid-row: span 2; font-size: 12.5px; color: var(--ink); display: flex; flex-direction: column; }
+.ov-d .muted { font-size: 12px; }
+.ov-l { font-weight: 500; }
+.ov-it:not(.top) .ov-l { font-weight: 400; color: var(--muted); }
+#ov-recent .ov-it .ov-l { font-weight: 500; color: var(--ink); }
+.ov-x { font-size: 13px; color: var(--muted); }
+.ov-x b { color: var(--ink); font-weight: 600; }
+.ov-x .up, .ov-x b.up { color: var(--up); } .ov-x .down, .ov-x b.down { color: var(--down); }
+.ov-more { font-size: 12.5px; margin: 8px 0 0; }
+.ov-rows { margin-top: 8px; }
+.ov-r { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 13.5px; align-items: baseline; }
+.ov-r:last-child { border-bottom: 0; }
+.ov-r b { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 15px; text-align: right; }
+.ov-rs { grid-column: 1 / -1; font-size: 12.5px; }
+.ov-rs .up { color: var(--up); } .ov-rs .down { color: var(--down); }
+@media (max-width: 860px) { .ov-tiles { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .ov-big { font-size: 22px; } .ov-tile { padding: 10px; } .ov-it { grid-template-columns: 74px 1fr; } }

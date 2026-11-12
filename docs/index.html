@@ -39,72 +39,39 @@
 </nav>
 <main class="wrap">
 <div class="page" id="pg-overview" data-page="overview">
-  <section class="panel next go" id="p-next" data-href="#calendar" tabindex="0" role="link" aria-label="Open Calendar">
-    <div class="panel-head">
-      <h2>Next 2 weeks</h2>
-    </div>
-    <div class="next-list" id="next"></div>
-  </section>
   <section class="panel hero go" id="p-hero" data-href="#rates" tabindex="0" role="link" aria-label="Open Rates">
     <div class="panel-head">
       <div class="hero-title">
         <h2>Rates</h2>
         <span class="badge" id="hero-regime"></span>
+        <p class="dline muted" id="hero-asof"></p>
         <p class="takeaway" id="hero-take"></p>
       </div>
     </div>
-    <div class="hero-grid">
-      <div class="hero-col">
-        <h3>2y and 10y, last 3 months</h3>
-        <div class="mini" id="c-mini"></div>
-      </div>
-      <div class="hero-col">
-        <h3>Key numbers</h3>
-        <div id="k-table"></div>
-      </div>
-      <div class="hero-col">
-        <h3>Fed priced <span class="muted">cumulative bp, next 4 FOMC</span></h3>
-        <div class="mini" id="c-fedbars"></div>
-        <div class="hero-fed" id="hero-fed"></div>
-      </div>
-    </div>
+    <div class="ov-tiles" id="ov-tiles"></div>
   </section>
+  <div class="duo">
+    <section class="panel" id="p-recent">
+      <div class="panel-head"><h2>Recent releases</h2></div>
+      <div class="ov-list" id="ov-recent"></div>
+    </section>
+    <section class="panel next go" id="p-next" data-href="#calendar" tabindex="0" role="link" aria-label="Open Calendar">
+      <div class="panel-head"><h2>Next 2 weeks</h2></div>
+      <div class="ov-list" id="next"></div>
+    </section>
+  </div>
   <div class="duo trio">
     <section class="panel card go" id="p-infl-card" data-href="#inflation" tabindex="0" role="link" aria-label="Open Inflation">
-      <div class="panel-head">
-        <div class="hero-title">
-          <h2>Inflation</h2>
-          <p class="takeaway" id="infl-take"></p>
-          <p class="dline" id="infl-date"></p>
-        </div>
-      </div>
-      <div class="kline" id="infl-k"></div>
-      <h3>Core PCE and Core CPI, YoY, last 5 years</h3>
-      <div class="mini" id="c-infl-mini"></div>
+      <div class="panel-head"><div class="hero-title"><h2>Inflation</h2><p class="dline muted" id="infl-date"></p></div></div>
+      <div class="ov-rows" id="infl-k"></div>
     </section>
     <section class="panel card go" id="p-jobs-card" data-href="#jobs" tabindex="0" role="link" aria-label="Open Jobs">
-      <div class="panel-head">
-        <div class="hero-title">
-          <h2>Jobs</h2>
-          <p class="takeaway" id="jobs-take"></p>
-          <p class="dline" id="jobs-date"></p>
-        </div>
-      </div>
-      <div class="kline" id="jobs-k"></div>
-      <h3>Unemployment rate, last 5 years</h3>
-      <div class="mini" id="c-jobs-mini"></div>
+      <div class="panel-head"><div class="hero-title"><h2>Jobs</h2><p class="dline muted" id="jobs-date"></p></div></div>
+      <div class="ov-rows" id="jobs-k"></div>
     </section>
     <section class="panel card go" id="p-growth-card" data-href="#growth" tabindex="0" role="link" aria-label="Open Growth">
-      <div class="panel-head">
-        <div class="hero-title">
-          <h2>Growth</h2>
-          <p class="takeaway" id="growth-take"></p>
-          <p class="dline" id="growth-date"></p>
-        </div>
-      </div>
-      <div class="kline" id="growth-k"></div>
-      <h3>Real GDP, q/q annualized, last 5 years</h3>
-      <div class="mini" id="c-growth-mini"></div>
+      <div class="panel-head"><div class="hero-title"><h2>Growth</h2><p class="dline muted" id="growth-date"></p></div></div>
+      <div class="ov-rows" id="growth-k"></div>
     </section>
   </div>
 </div>
