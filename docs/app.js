@@ -11,7 +11,7 @@
     yCmp: "1W", fCmp: "1W",
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathBack: 7, pathHz: "2Y", gdpView: "growth", fundView: "repo", crView: "carry", crHz: "3M", fundRange: "1Y", dView: "be", auctTerm: "10y", histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pathHz: "2Y", fundView: "repo", crView: "carry", crHz: "3M", fundRange: "1Y", dView: "be", auctTerm: "10y", histMeeting: null, calAll: false, calAuct: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -1019,7 +1019,7 @@
     const el = $("#cal"); if (!el) return;
     const today = lastYieldDate() || new Date().toISOString().slice(0, 10), m0 = today.slice(0, 7);
     const horizon = S.calAll ? "9999" : shiftDays(today, 92);
-    const evs = D.events.filter((e) => e.date.slice(0, 7) >= m0 && e.date <= horizon);
+    const evs = D.events.filter((e) => e.date.slice(0, 7) >= m0 && e.date <= horizon && (S.calAuct || e.type !== "auction"));
     // FOMC 會議 → 那次會議 price 了多少 bp（最新一天的路徑）
     const A = asofs(), priced = new Map(A.length ? pathOn(A[A.length - 1]).map((r) => [r.meeting, r]) : []);
     const mon = (ym) => new Date(ym + "-01T00:00:00Z").toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
@@ -1039,7 +1039,11 @@
           if (["03", "06", "09", "12"].includes(e.date.slice(5, 7))) extra += ` <span class="badge" title="Summary of Economic Projections (dot plot)">SEP</span>`;
           const r = priced.get(e.date);
           if (r && !past) extra += ` <span class="cal-priced ${num(r.move_bp) > 0.05 ? "up" : num(r.move_bp) < -0.05 ? "down" : ""}">priced ${bp(num(r.move_bp), 1)}bp · ${moves(num(r.move_bp))}</span>`;
+          if (past) { const dec = fomcDecision(e.date); if (dec) extra += ` <span class="cal-priced">${dec}</span>`; }
         }
+        // ECO 風格：公布前 = 預期（survey）和前值；公布後 = 實際 vs 預期
+        const nums = calNums(e, past);
+        if (nums) extra += `<span class="cal-nums">${nums}</span>`;
         return `<div class="cal-ev${isF ? " fomc" : TOP.has(e.type) ? " tier1" : ""}${e.type === "blackout" ? " blk" : ""}${past ? " past" : ""}${e.date === today ? " today" : ""}">`
           + `<span class="cal-d">${d}<small>${isF ? "" : " " + dow(e.date)}</small></span>`
           + `<span class="cal-g" style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span>`
@@ -1048,6 +1052,25 @@
     });
     el.innerHTML = h || `<div class="empty">No upcoming events.</div>`;
     $("#cal-all").textContent = S.calAll ? "Next 3 months" : "Show all";
+  }
+
+  function calNums(e, past) {
+    const ms = EVT_M[e.type]; if (!ms) return "";
+    return ms.map(([m, n]) => {
+      const rs = surRows(m);
+      const r = rs.find((x) => x.date === e.date);
+      if (r) {
+        const d = r.forecast == null ? null : +(r.actual - r.forecast).toFixed(SM[m].dec);
+        return `${n} <b>${signed(m, r.actual)}</b>` + (r.forecast == null ? "" : ` vs ${signed(m, r.forecast)} exp. <span class="${dirCls(m, d)}">${d === 0 ? "in line" : dirWord(m, d)}</span>`);
+      }
+      const c = nextCon(m), pr = rs.filter((x) => x.date < e.date).pop();
+      const exp = c && c.date === e.date && c.src !== "implied" ? `exp. <b>${signed(m, c.v)}</b>` : "";
+      // 前值只放下一次公布那一行，再後面的月份前值還不知道
+      const nx = D.events.find((x) => x.type === e.type && x.date >= localToday());
+      if (past) return null;
+      const prior = pr && nx && nx.date === e.date ? `prior ${signed(m, pr.actual)}` : "";
+      return exp || prior ? `${n} ${[exp, prior].filter(Boolean).join(", ")}` : null;
+    }).filter(Boolean).join(" · ");
   }
 
   // Fed 靜默期：會議第一天之前的第二個週六開始，到會後隔天結束（會議都是兩天，決議日 = 第二天）
@@ -1704,17 +1727,6 @@
     return { g, lg, now };
   }
   function nextEvt(type) { const t = localToday(); return D.events.find((e) => e.type === type && e.date >= t); }
-  function growthTakeaway() {
-    const { lg, now } = gdpParts(), c = mom(rsControl()), lc = lastV(c);
-    if (!lg) return "";
-    let t = `Real GDP grew ${f1(lg.pub ?? lg.v)}% annualized in ${qName(lg.date)}`;
-    t += now ? `; the Atlanta Fed's GDPNow tracks ${f1(now.v)}% for ${qName(now.date)}.` : ".";
-    if (lc) {
-      const a3 = lastV(avgK(c, 3));
-      t += ` Retail sales control group ${lc.v >= 0 ? "rose" : "fell"} ${f1(Math.abs(lc.v))}% in ${monthName(lc.date).slice(0, 3)} (3-month average ${a3 ? (a3.v >= 0 ? "+" : "") + a3.v.toFixed(1) : "–"}%).`;
-    }
-    return t;
-  }
   function gdpTraces(years) {
     const P = palette(), { g, now } = gdpParts(), gs = fromYears(g, years);
     // 季資料畫在季初那天：柱寬固定 2 個月，GDPNow 那根才不會因為只有一個點而變成一條線
@@ -1729,28 +1741,43 @@
   const potLevels = () => (D.gq || []).filter((r) => r.potential).map((r) => ({ date: r.date, v: +r.potential }));
   const potGrowth = () => { const p = potLevels(); return p.slice(1).map((x, i) => ({ date: x.date, v: (Math.pow(x.v / p[i].v, 4) - 1) * 100 })); };
   const outputGap = () => { const pm = new Map(potLevels().map((p) => [p.date, p.v])); return (D.gq || []).filter((r) => r.gdp_lvl && pm.has(r.date)).map((r) => ({ date: r.date, v: (+r.gdp_lvl / pm.get(r.date) - 1) * 100 })); };
+  // Growth 最上面：跟 Inflation / Jobs 一樣的最新一期卡片（GDP、GDPNow、零售 headline、control group）
+  // GDP 和零售目前沒有預期值（ForexFactory 那邊還沒接），所以只放前值
+  function renderLatestGrowth() {
+    const el = $("#glat-card"), { g, lg, now } = gdpParts(); if (!el) return;
+    if (!lg) { el.innerHTML = `<p class="hint">Growth data load after the next daily update.</p>`; return; }
+    const cell = (lab, sub, big, line2, line3) => `<div class="lat-cell"><div class="lat-lab">${lab} <span class="muted">${sub}</span></div><div class="lat-big num">${big}</div><div class="lat-sub">${line2}</div><div class="lat-sub">${line3 || "&nbsp;"}</div></div>`;
+    const sg = (v, d = 1) => (v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(d) + "%");
+    const pg = g[g.length - 2], pot = potGrowth().filter((p) => p.date <= lg.date).pop();
+    const cells = [cell("Real GDP", `${qName(lg.date)}, annualized q/q`, `${f1(lg.pub ?? lg.v)}%`, `prior ${pg ? f1(pg.pub ?? pg.v) + "%" : "–"}`, pot ? `CBO potential growth ${f1(pot.v)}%` : "")];
+    cells.push(now ? cell("GDPNow", `${qName(now.date)}, Atlanta Fed model`, `${f1(now.v)}%`, "quarter not yet published", "updates after each release") : cell("GDPNow", "", "–", "no estimate", ""));
+    const rt = mom(ser("rs_total")), rc = mom(rsControl()), lt = lastV(rt), lc = lastV(rc), pt = rt[rt.length - 2], pc = rc[rc.length - 2];
+    if (lt) cells.push(cell("Retail sales", `${monthName(lt.date)}, m/m`, sg(lt.v), `prior ${sg(pt && pt.v)}`, "headline: swings with cars and gasoline"));
+    if (lc) cells.push(cell("Control group", `${monthName(lc.date)}, m/m`, sg(lc.v), `prior ${sg(pc && pc.v)}`, "what feeds into GDP"));
+    const nx = ["gdp", "retail"].map((t) => nextEvt(t)).filter(Boolean).sort((a, b) => (a.date < b.date ? -1 : 1));
+    $("#glat-date").textContent = nx.length ? "Next: " + nx.map((e) => `${e.label} ${dow(e.date)} ${md(e.date)}`).join(" · ") : "";
+    el.innerHTML = `<div class="lat-grid">${cells.join("")}</div><p class="hint" style="margin-top:8px">No forecasts for GDP and retail sales in the site's data yet, so there is no "vs expected" here.</p>`;
+  }
+  function renderGap() {
+    const P = palette(), gs = fromYears(outputGap(), 10);
+    if (!gs.length) return empty("c-gap", "Potential GDP loads after the next daily update.");
+    plot("c-gap", [{ ...xy(gs), name: "Output gap (real GDP vs CBO potential)", type: "scatter", mode: "lines", fill: "tozeroy", line: { color: P[0], width: 2 }, fillcolor: rgba(P[0], 0.15),
+      customdata: gs.map((p) => qName(p.date)), hovertemplate: "%{customdata}: %{y:+.1f}% of potential<extra></extra>" }],
+      baseLayout({ showlegend: false, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--ink"), zerolinewidth: 1.2 }) }));
+  }
   function renderGrowth() {
     const { lg } = gdpParts(), P = palette(), narrow = innerWidth < 600;
+    renderLatestGrowth();
     if (!lg) return empty("c-gdp", "Growth data load after the next daily update.");
     clearEmpty("c-gdp");
-    $("#growth-take2").textContent = growthTakeaway();
     const n = nextEvt("gdp");
     $("#gdp-date").innerHTML = `<span class="muted">${qName(lg.date)} data${n ? ` · next: ${n.label} on ${md(n.date)}` : ""} · FRED A191RL1Q225SBEA, GDPNOW</span>`;
-    const pg = potGrowth(), gap = outputGap(), lgp = lastV(gap), pNow = pg.filter((p) => p.date <= (lg.date > localToday() ? lg.date : localToday())).pop();
-    if (pNow || lgp) $("#gdp-date").innerHTML += `<br><span class="muted">${pNow ? `CBO potential growth ${f1(pNow.v)}%` : ""}${pNow && lgp ? " · " : ""}${lgp ? `output gap ${lgp.v >= 0 ? "+" : ""}${lgp.v.toFixed(1)}% in ${qName(lgp.date)}` : ""} · FRED GDPPOT, GDPC1</span>`;
+    const pg = potGrowth();
     const lgd = narrow ? { legend: { ...baseLayout().legend, y: -0.12, yanchor: "top" }, margin: { l: 44, r: 12, t: 10, b: 90 } } : {};
-    if (S.gdpView === "gap") {
-      // output gap：實際 GDP 水準比潛在高（+，偏熱）或低（−，有閒置產能），最近 10 年
-      const gs = fromYears(gap, 10);
-      if (!gs.length) empty("c-gdp", "Potential GDP loads after the next daily update.");
-      else
-      plot("c-gdp", [{ ...xy(gs), name: "Output gap (real GDP vs CBO potential)", type: "scatter", mode: "lines", fill: "tozeroy", line: { color: P[0], width: 2 }, fillcolor: rgba(P[0], 0.15),
-        customdata: gs.map((p) => qName(p.date)), hovertemplate: "%{customdata}: %{y:+.1f}% of potential<extra></extra>" }],
-        baseLayout({ ...lgd, showlegend: true, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--ink"), zerolinewidth: 1.2 }) }));
-    } else {
+    {
       const tr = gdpTraces(5), sp = sepTrace("gdp", "Fed projection (Q4/Q4)", css("--ink"), lg.date); if (sp) tr.push(sp);
       // 潛在成長畫到 GDPNow 那季為止（CBO 的預測再往後就不畫）
-      const end = tr.length > 1 && tr[1].x ? tr[1].x[0] : lg.date, ps = fromYears(pg, 5).filter((p) => p.date <= end);
+      const end = tr.length > 1 && tr[1].x ? tr[1].x[0] : lg.date, ps = pg.filter((p) => p.date >= tr[0].x[0] && p.date <= end); // CBO 有到 2036，先切範圍再畫
       if (ps.length) tr.push({ ...xy(ps), name: "Potential growth (CBO)", mode: "lines", line: { color: css("--ink"), width: 1.5, dash: "dash", shape: "hvh" }, hovertemplate: "Potential %{y:.1f}%<extra></extra>" });
       plot("c-gdp", tr, baseLayout({ ...lgd, barmode: "overlay", bargap: 0.25, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
     }
@@ -1763,6 +1790,8 @@
     const lc = lastV(c), nr = nextEvt("retail");
     $("#rs-date").innerHTML = lc ? `<span class="muted">${monthName(lc.date)} data${nr ? ` · next ${md(nr.date)}` : ""} · FRED RSAFS, RSXFS less RSMVPD, RSGASS, RSBMGESD</span>` : "";
 
+    if (!$("#p-gmore").open) return;
+    renderGap();
     // 工業生產 YoY（左）+ Philly / Empire 現況指數（右）
     const ip = fromYears(yoy(ser("indpro")), 5), ph = fromYears(ser("philly"), 5), em = fromYears(ser("empire"), 5);
     plot("c-ip", [{ ...xy(ip), name: "Industrial production YoY", line: { color: P[0], width: 2.2 }, hovertemplate: "IP %{y:.1f}% YoY<extra></extra>" },
@@ -1849,7 +1878,6 @@
     if (D.meta.updated) $("#updated").textContent = ` Last updated: ${D.meta.updated}.`;
     bindSeg("#y-views", "yView", renderYields);
     bindSeg("#f-views", "fView", renderFed);
-    bindSeg("#gdp-views", "gdpView", renderGrowth);
     bindSeg("#i-views", "iView", renderInflation);
     bindSeg("#inf-idx", "infIdx", renderAll);
     bindSeg("#d-range", "dRange", renderDecomp);
@@ -1885,6 +1913,7 @@
       panel.querySelector("h2").appendChild(b);
     });
     $("#cal-all").addEventListener("click", () => { S.calAll = !S.calAll; renderCalendar(); });
+    $("#cal-auct").addEventListener("click", () => { S.calAuct = !S.calAuct; $("#cal-auct").classList.toggle("on", S.calAuct); renderCalendar(); });
     window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
     route();
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) { syncThemeBtn(); renderAll(); } });
