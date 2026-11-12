@@ -24,13 +24,13 @@ assert term_label({"security_type": "Bill", "security_term": "6-Week"}) is None
 
 # TreasuryDirect 的格式（同一場 30y reopening）→ 跟 Fiscal Data 一樣的結果
 td = {"cusip": "912810UW6", "securityType": "Bond", "securityTerm": "29-Year 10-Month", "originalSecurityTerm": "30-Year", "reopening": "Yes",
-      "type": "Bond", "auctionDate": "2026-10-08T00:00:00", "issueDate": "2026-10-15T00:00:00", "offeringAmount": "22000000000",
-      "highYield": "5.618000", "bidToCoverRatio": "2.540000", "competitiveAccepted": "21939603600", "indirectBidderAccepted": "15866059500",
-      "directBidderAccepted": "4583044100", "primaryDealerAccepted": "1490500000", "floatingRate": "No", "inflationIndexSecurity": "No", "tips": "No"}
+      "type": "Bond", "competitiveAuctionCloseDate": "2026-10-08T00:00:00", "issueDate": "2026-10-15T00:00:00", "offeringAmount": "22000000000",
+      "highYield": "5.618", "bidToCoverRatio": "2.54", "indirectBiddersCompetitiveParAwarded": "15866059500",
+      "directBiddersCompetitiveParAwarded": "4583044100", "primaryDealersCompetitiveParAwarded": "1490500000", "floatingRate": "No", "inflationProtected": "No"}
 assert to_row(td_to_fiscal(td)) == row, (to_row(td_to_fiscal(td)), row)
-tdu = to_row(td_to_fiscal({**td, "highYield": "", "bidToCoverRatio": "", "competitiveAccepted": "", "indirectBidderAccepted": ""}))
+tdu = to_row(td_to_fiscal({**td, "highYield": "", "bidToCoverRatio": "", "indirectBiddersCompetitiveParAwarded": ""}))
 assert tdu["btc"] == "" and tdu["high_yield"] == "", tdu
-assert to_row(td_to_fiscal({**td, "securityType": "Note", "type": "TIPS", "securityTerm": "5-Year", "reopening": "No", "originalSecurityTerm": ""}))["term"] == "5y TIPS"
+assert to_row(td_to_fiscal({**td, "securityType": "Note", "inflationProtected": "Yes", "securityTerm": "5-Year", "reopening": "No", "originalSecurityTerm": ""}))["term"] == "5y TIPS"
 assert to_row(td_to_fiscal({**td, "floatingRate": "Yes"})) is None
 # 合併：有結果的蓋掉沒結果的，反過來不會
 assert merge_rows([up], [row]) == [row] and merge_rows([row], [up]) == [row]

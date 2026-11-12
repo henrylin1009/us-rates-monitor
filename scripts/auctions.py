@@ -60,19 +60,22 @@ TD = "https://www.treasurydirect.gov/TA_WS/securities/"
 TD_KEYS = {"securityTerm": "security_term", "originalSecurityTerm": "original_security_term", "reopening": "reopening",
            "floatingRate": "floating_rate", "inflationIndexSecurity": "inflation_index_security", "cusip": "cusip",
            "offeringAmount": "offering_amt", "highYield": "high_yield", "bidToCoverRatio": "bid_to_cover_ratio",
-           "competitiveAccepted": "comp_accepted", "indirectBidderAccepted": "indirect_bidder_accepted",
-           "directBidderAccepted": "direct_bidder_accepted", "primaryDealerAccepted": "primary_dealer_accepted"}
+           "indirectBiddersCompetitiveParAwarded": "indirect_bidder_accepted",
+           "directBiddersCompetitiveParAwarded": "direct_bidder_accepted", "primaryDealersCompetitiveParAwarded": "primary_dealer_accepted"}
 
 
 def td_to_fiscal(d: dict) -> dict:
     """TreasuryDirect 一筆 → Fiscal Data 的格式（日期 '2026-10-08T00:00:00' 只留日期，空字串當 null）。"""
     r = {v: (d.get(k) if d.get(k) not in ("", None) else "null") for k, v in TD_KEYS.items()}
-    tips = d.get("inflationIndexSecurity") == "Yes" or d.get("tips") == "Yes" or d.get("type") == "TIPS"
+    tips = "Yes" in (d.get("inflationProtected"), d.get("inflationIndexSecurity"), d.get("tips")) or d.get("type") == "TIPS"
+    # competitive accepted = 三類投標人得標的 competitive 部分加總（和 Fiscal Data 的 comp_accepted 一樣）
+    parts = [r["indirect_bidder_accepted"], r["direct_bidder_accepted"], r["primary_dealer_accepted"]]
+    r["comp_accepted"] = "null" if "null" in parts else str(sum(float(x) for x in parts))
     st = d.get("securityType") or d.get("type") or ""
     r["security_type"] = ("TIPS " + st) if tips and st in ("Note", "Bond") else st
     if tips:
         r["inflation_index_security"] = "Yes"
-    r["auction_date"] = (d.get("auctionDate") or "")[:10]
+    r["auction_date"] = (d.get("auctionDate") or d.get("competitiveAuctionCloseDate") or "")[:10]
     r["issue_date"] = (d.get("issueDate") or "")[:10]
     return r
 
@@ -86,8 +89,6 @@ def td_rows(get) -> list[dict]:
         except Exception as e:  # noqa: BLE001
             print(f"⚠ TreasuryDirect {path} 抓不到：{e}")
             continue
-        n = len(data) if isinstance(data, list) else f"{type(data).__name__} {str(data)[:200]}"
-        print(f"TreasuryDirect {path}: {n}" + (f" · e.g. {next(({k: v for k, v in d.items() if re.search('(?i)bidder|dealer|auctiondate|competitiveaccepted|tendered|indirect|direct', k) and not k.endswith(('BidsAccepted', 'InsideOfOfferingAmount'))} for d in data if 'Bill' not in str(d.get('type', '')) + str(d.get('securityType', ''))), None)}" if isinstance(data, list) and data else ""))
         out += [x for x in (to_row(td_to_fiscal(d)) for d in (data if isinstance(data, list) else [])) if x and x["auction_date"]]
     return out
 
