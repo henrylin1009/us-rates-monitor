@@ -8,10 +8,10 @@
   const S = {
     page: "overview", yView: "curve", fView: "priced", iView: "yoy", infIdx: "cpi", jView: "nfp", dRange: "1Y", fomcRange: "2Y", fomcView: "past", sIn: "core_cpi_mm", sJob: "nfp",
     tenors: ["2y", "10y", "30y"], range: "1Y",
-    curveBack: 7,
+    yCmp: "1W", fCmp: "1W",
     spreads: ["2s10s", "5s30s"], trendFed: [],
     events: ["fomc", "cpi", "nfp"], reactSort: "recent",
-    pathBack: 7, pathHz: "2Y", gdpView: "growth", pricedCmp: ["1W"], fundView: "repo", crView: "carry", crHz: "3M", fundRange: "1Y", dView: "be", auctTerm: "10y", histMeeting: null, calAll: false, folds: {},
+    pathBack: 7, pathHz: "2Y", gdpView: "growth", fundView: "repo", crView: "carry", crHz: "3M", fundRange: "1Y", dView: "be", auctTerm: "10y", histMeeting: null, calAll: false, folds: {},
   };
 
   // ---------- 小工具 ----------
@@ -472,40 +472,20 @@
   // ---------- 圖一：殖利率 ----------
   const Y_HINT = {
     tenor: "Yields by tenor over time. Markers along the bottom are key events; hover to see that day's market reaction. The grey band on the right shows events in the next two weeks. Turn on the Fed overlay to compare the 2y with EFFR and the policy rate futures imply 12 months out: the 2y mostly reflects Fed expectations, so the gap is roughly term premium.",
-    curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Drag the Compare slider or click a tick (1D, 1W, 1M…) to pick the date; the ticks are evenly spaced, not to scale, and you can stop anywhere between them. Right of Today (+3M … +2Y) the slider looks ahead: the dashed line is the forward curve implied by today's curve, i.e. where each tenor would have to be on that date for a long bought today to do no better than rolling the shorter bond. Desks read it as two scenarios side by side: the curve stays unchanged (solid; you earn carry + roll) versus forwards are realized (dashed; carry + roll is wiped out). The bars are forward − today, the move the market already prices; your view is whether yields move more or less than that. Forwards include term premium, so they are not a forecast and tend to overstate rises when the curve slopes up. Computed from Treasury par yields (bootstrapped to zeros); tenors whose end date lies past 30 years are left blank. The bars are close to, but not the same as, the Carry & roll breakeven, which finances at SOFR rather than the curve's own front end.",
+    curve: "Today's curve against an earlier date (top), and how many bp each tenor moved since that date (bars, Bloomberg GC style). Orange bars = yields up, teal = down. Whether the front or the long end moved more tells bull/bear steepening from flattening. Compare picks the earlier date (same buttons as Fed pricing). Forward (+3M, +6M, +1Y) looks ahead instead: the dashed line is the forward curve implied by today's curve, i.e. where each tenor would have to be on that date for a long bought today to do no better than rolling the shorter bond. Desks read it as two scenarios side by side: the curve stays unchanged (solid; you earn carry + roll) versus forwards are realized (dashed; carry + roll is wiped out). The bars are forward − today, the move the market already prices; your view is whether yields move more or less than that. Forwards include term premium, so they are not a forecast and tend to overstate rises when the curve slopes up. Computed from Treasury par yields (bootstrapped to zeros); tenors whose end date lies past 30 years are left blank. The bars are close to, but not the same as, the Carry & roll breakeven, which finances at SOFR rather than the curve's own front end.",
     spread: "Term spreads. Up = steepening, down = flattening; below 0 is inverted. 2s5s10s is a butterfly (2 × 5y − 2y − 10y): it rises when the 5y cheapens against the two wings, usually when the market prices more Fed hikes (or fewer cuts) over the next few years, since the belly carries most of that.",
   };
   const BILLS_HINT = "Bill minus OIS: the bill's yield minus what you would expect to earn rolling overnight money (EFFR) over the same weeks, taken from the ZQ path. Both carry the same Fed expectations, so this gap is the bill's own richness or cheapness. Up = bills cheapening (heavy supply, less cash chasing them); down or below 0 = bills rich (scarce, money funds crowding in). Bill yields are converted from Treasury's bond-equivalent basis to money-market (×360/365). Desks usually quote it against SOFR OIS; SOFR runs about a bp below EFFR, so the level differs slightly but the moves are the same. ZQ-based history starts 2026-09-16; the grey line is the 1m bill minus today's EFFR for longer context (it ignores meetings priced inside the month).";
-  // ---------- 比較日期拉桿 ----------
-  // Henry：不要 Compare 按鈕，只用一條拉桿；刻度 1D / 1W / 1M… 之間等距（不是線性時間），刻度之間也能停在任何一天
-  // ticks：[[標籤, 往回幾天]]，由遠到近，最後一個是 ["Today", 0]；back = 現在往回幾天；show(back) 給右邊顯示的字；onChange(back) 重畫圖
-  function tickSlider(ticks, back, show, onChange) {
-    const n = ticks.length - 1, U = 100, el = document.createElement("div");
-    el.className = "tick-slider";
-    el.innerHTML = `<div class="ts-row"><span>Compare</span><div class="ts-track"><input type="range" min="0" max="${n * U}" step="1" aria-label="Compare date">`
-      + `<div class="ts-ticks">${ticks.map(([t], j) => `<button type="button" style="left:${(j / n) * 100}%">${t}</button>`).join("")}</div></div>`
-      + `<span class="ts-date num"></span></div>`;
-    const range = el.querySelector("input"), dateEl = el.querySelector(".ts-date"), btns = el.querySelectorAll(".ts-ticks button");
-    const toBack = (v) => { const j = Math.min(n - 1, Math.floor(v / U)), f = v / U - j; return Math.round(ticks[j][1] + (ticks[j + 1][1] - ticks[j][1]) * f); };
-    const toVal = (d) => {
-      if (d >= ticks[0][1]) return 0;
-      for (let j = 0; j < n; j++) { const x = ticks[j][1], y = ticks[j + 1][1]; if (d <= x && d >= y) return Math.round((j + (x - d) / (x - y)) * U); }
-      return n * U;
-    };
-    const set = (d) => { range.value = toVal(d); btns.forEach((x, j) => x.classList.toggle("on", ticks[j][1] === d)); dateEl.innerHTML = show(d); onChange(d); };
-    // 靠近刻度就吸過去
-    range.oninput = () => { const v = +range.value, k = Math.round(v / U); set(Math.abs(v - k * U) <= 6 ? ticks[k][1] : toBack(v)); };
-    btns.forEach((x, j) => { x.onclick = () => set(ticks[j][1]); });
-    set(back);
-    return el;
+  // ---------- 比較日期：Yields 和 Fed pricing 共用同一排按鈕 ----------
+  // Henry（11/12）：兩張圖在做同一件事（現在 vs 之前），控制要長得一樣。照 Bloomberg GC / WIRP、FedWatch：一排按鈕、單選、預設 1W
+  // ok(k)：那個比較點有沒有資料，沒有就灰掉
+  function cmpChips(label, keys, sel, ok, onPick, names) {
+    const w = chips(label, keys.map((k) => [k, names ? names[k] : k]), sel, false, onPick);
+    w.classList.add("cmp");
+    w.querySelectorAll("button").forEach((b) => { if (!ok(b.dataset.v)) { b.disabled = true; b.title = "Not enough history yet"; } });
+    return w;
   }
-  // 刻度：只放資料夠得到的（earliest = 最早有資料的日期）；最遠再加一個「最早」
-  function backTicks(keys, earliest, last, maxLabel) {
-    const span = daysBetween(earliest, last), DAYS = { "1D": 1, "1W": 7, "1M": 30, "3M": 91, "6M": 182, "1Y": 365, "2Y": 730, "5Y": 1826 };
-    const t = keys.filter((k) => DAYS[k] <= span).map((k) => [k, DAYS[k]]);
-    if (maxLabel && span > (t.length ? t[t.length - 1][1] : 0) * 1.2) t.push([maxLabel, span]);
-    return [...t.reverse(), ["Today", 0]];
-  }
+  const CMP_KEYS = ["1D", "1W", "1M", "3M", "1Y"];
   function renderYields() {
     const id = "c-yields", ctl = $("#y-controls"); ctl.innerHTML = ""; $("#y-hint").textContent = Y_HINT[S.yView]; $("#y-table").innerHTML = "";
     if (!D.yields.length) return empty(id, "No yield data yet. For the first run, trigger the GitHub Action manually with backfill checked.");
@@ -549,11 +529,10 @@
       };
       const fwdName = (d) => (FWD[-d] || Math.round(-d / 30.4) + "M") + " forward";
       const draw = (d) => {
-        S.curveBack = d;
         const fw = fwdAt(d), base = baseAt(d) || fw;
-        const tr = [curve("Today " + last.date + (fw ? " (unchanged)" : ""), last, 2.6, P[0], "solid")];
+        const tr = [curve(`Today (${last.date})` + (fw ? " unchanged" : ""), last, 2.6, P[0], "solid")];
         if (fw) { const c = curve(fwdName(d) + " (priced)", fw, 2, P[1], "dash"); c.hovertemplate = "%{y:.3f}%"; delete c.keepFmt; tr.push(c); }
-        else if (base) tr.push(curve(base.date, base, 1.8, P[1], "dot"));
+        else if (base) tr.push(curve(`${cmpLabel[S.yCmp] || "Then"} (${base.date})`, base, 1.8, P[1], "dot"));
         const L = baseLayout({ xaxis: { ...baseLayout().xaxis, type: "category" },
           yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } });
         if (base) {
@@ -575,12 +554,12 @@
         }
         plot(id, tr, L);
       };
-      // 手機上刻度太擠：往回少放幾個
-      const ticks = [...backTicks(innerWidth < 600 ? ["1W", "1M", "3M", "1Y", "5Y"] : ["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "5Y"], Y[0].date, last.date, Y[0].date.slice(0, 4)),
-        ...Object.keys(FWD).map((k) => ["+" + FWD[k], -k])];
-      if (S.curveBack < -730) S.curveBack = -730;
-      ctl.append(tickSlider(ticks, S.curveBack,
-        (d) => { if (d < 0) return `<b>${fwdName(d)}</b> · ${shiftDays(last.date, -d)}`; const b = baseAt(d); return b ? `vs <b>${b.date}</b>` : "Today only"; }, draw));
+      const FK = { "+3M": -91, "+6M": -182, "+1Y": -365 }, back = (k) => (k in FK ? FK[k] : cmpDays[k]);
+      if (!(S.yCmp in FK) && !CMP_KEYS.includes(S.yCmp)) S.yCmp = "1W";
+      const pick = (k) => { S.yCmp = k; rr(); };
+      ctl.append(cmpChips("Compare", CMP_KEYS, S.yCmp, (k) => daysBetween(Y[0].date, last.date) >= cmpDays[k], pick),
+        cmpChips("Forward", Object.keys(FK), S.yCmp, () => !!zeroCurve(last), pick));
+      draw(back(S.yCmp));
     }
 
     if (v === "spread") {
@@ -878,15 +857,16 @@
 
     if (v === "priced") {
       // WIRP 式：每次會議 price 了多少 bp（柱）＋從今天起累計（線），可疊一週 / 一個月前的累計來看 repricing
-      ctl.append(chips("Horizon", [["2Y", "To end-" + (+last.slice(0, 4) + 2)], ["5Y", "5 years"]], S.pathHz, false, (h) => { S.pathHz = h; rr(); }));
-      ctl.append(chips("Compare", ["1W", "1M", "3M"].map((k) => [k, cmpLabel[k]]), S.pricedCmp, true, rr));
+      if (!CMP_KEYS.includes(S.fCmp)) S.fCmp = "1W";
+      ctl.append(cmpChips("Compare", CMP_KEYS, S.fCmp, (k) => { const [a] = cmpAsof(A, shiftDays(last, -cmpDays[k])); return a && a !== last; }, (k) => { S.fCmp = k; rr(); }),
+        chips("Horizon", [["2Y", "To end-" + (+last.slice(0, 4) + 2)], ["5Y", "5 years"]], S.pathHz, false, (h) => { S.pathHz = h; rr(); }));
       const rows = pathOn(last), x = rows.map((r) => r.meeting), start = rows.length ? num(rows[0].pre) : effrNow;
       const mon = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) + " '" + iso.slice(2, 4);
       const xl = x.map(mon);
       // 舊日期的累計：用那天的會議後隱含利率減今天的起點，同一把尺才比得起來（中間開過會也不會錯位）
       const then = (a, part) => { const m = new Map(pathAt(a, part).map((r) => [r.meeting, num(r.post)])); return x.map((d) => (m.has(d) ? (m.get(d) - start) * 100 : null)); };
       const cmp = [];
-      S.pricedCmp.forEach((k) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) cmp.push([k, a, then(a, part)]); });
+      [S.fCmp].forEach((k) => { const [a, part] = cmpAsof(A, shiftDays(last, -cmpDays[k])); if (a && a !== last) cmp.push([k, a, then(a, part)]); });
       const mv = rows.map((r) => num(r.move_bp)), cum = rows.map((r) => num(r.cum_bp));
       // SR3 的格子名稱尾巴加不換行空白，免得跟 ZQ 同月份的會議（例如 Dec '27）撞成同一格
       // ZQ 大約只到 15 個月；之後接 SR3（3 個月 SOFR 期貨，已扣 SOFR−EFFR 的 basis），每季一格，拆不到單次會議
@@ -909,7 +889,7 @@
           text: mv.map((b) => (!dense && Math.abs(b) >= 5 ? bp(b, 1) : "")), textposition: "inside", insidetextanchor: "end", textangle: 0, textfont: { size: 10.5, color: css("--ink") },
           customdata: mv.map((b) => moves(b)), hovertemplate: "This meeting %{y:+.1f}bp (%{customdata})<extra></extra>" },
         ...cmp.map(([k, a, y], j) => ({ x: xAll, y: y.concat(sr3Then(a)), name: `Cumulative ${cmpLabel[k]} (${a})`, type: "scatter", mode: "lines+markers",
-          line: { color: [P[3], P[4]][j % 2], width: 1.6, dash: "dot" }, marker: { size: 5 }, hovertemplate: `${cmpLabel[k]}: %{y:+.1f}bp<extra></extra>` })),
+          line: { color: P[1], width: 1.8, dash: "dot" }, marker: { size: 5 }, hovertemplate: `${cmpLabel[k]}: %{y:+.1f}bp<extra></extra>` })),
         { x: xl, y: cum, name: "Cumulative from today", type: "scatter", mode: "lines+markers+text", line: { color: P[0], width: 2.6 }, marker: { size: 7 },
           text: cum.map((b) => (narrow ? "" : bp(b, 0))), textposition: "top left", cliponaxis: false,
           textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--ink") },
