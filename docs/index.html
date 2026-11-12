@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 </head>
 <body>
@@ -112,52 +112,8 @@
     <div class="table-wrap" id="f-table"></div>
   </section>
 
-  <section class="panel" id="p-cr">
-    <div class="panel-head">
-      <div>
-        <h2>Carry, roll and curve RV <span class="tag">computed</span></h2>
-        <p class="hint" id="cr-hint"></p>
-        <p class="dline" id="cr-date"></p>
-      </div>
-      <div class="seg-col">
-        <div class="seg" role="tablist" id="cr-views"><button data-v="carry" class="on">Carry &amp; roll</button><button data-v="rv">Curve RV</button></div>
-        <div class="seg" id="cr-hz"><button data-v="1M">1M</button><button data-v="3M" class="on">3M</button></div>
-      </div>
-    </div>
-    <div class="chart short" id="c-cr"></div>
-    <div id="cr-table"></div>
-  </section>
 
-  <section class="panel" id="p-auct">
-    <div class="panel-head">
-      <div>
-        <h2>Treasury auctions <span class="tag">coupons</span></h2>
-        <p class="hint">How each note and bond auction went, the way sell-side auction recaps score it. Bid-to-cover is bids divided by the amount sold. Indirect bidders are mostly foreign central banks and funds bidding through dealers; direct bidders bid for themselves; primary dealers are obliged to bid and take whatever is left, so a high dealer share means weak demand. Each number is compared with the average of the previous 6 auctions of the same tenor: orange = weaker than usual (more for dealers, lower cover), which tends to push yields up; teal = stronger. Tail ≈ is the first number desks look at: the high yield minus where the bond traded just before the 1pm close. Positive = tail (buyers needed a higher yield than the market, weak, orange); negative = stop-through (strong, teal). Real when-issued quotes aren't free, so this uses the CBOE 5y/10y/30y yield index at 1:00pm as a stand-in, only for those three tenors, kept from mid-August 2026 onward. Upcoming rows appear once Treasury announces the auction, usually a week before.</p>
-        <p class="dline" id="auct-date"></p>
-      </div>
-    </div>
-    <div class="controls" id="auct-controls"></div>
-    <div class="chart short" id="c-auct"></div>
-    <div id="auct-table"></div>
-  </section>
 
-  <section class="panel" id="p-fund">
-    <div class="panel-head">
-      <div>
-        <h2>Funding and liquidity</h2>
-        <p class="hint" id="fund-hint"></p>
-        <p class="dline" id="fund-date"></p>
-      </div>
-      <div class="seg" role="tablist" id="fund-views">
-        <button data-v="repo" class="on">Repo vs IORB</button>
-        <button data-v="liq">Reserves, RRP, TGA</button>
-        <button data-v="bills">Bills–OIS</button>
-        <button data-v="curve">Reserves vs repo</button>
-      </div>
-    </div>
-    <div class="controls" id="fund-controls"></div>
-    <div class="chart" id="c-fund"></div>
-  </section>
 
   <section class="panel" id="p-decomp">
     <div class="panel-head">
@@ -173,25 +129,72 @@
     <div class="chart" id="c-decomp"></div>
     <div id="decomp-table"></div>
   </section>
-  <section class="panel" id="p-fomc">
-    <div class="panel-head">
-      <div>
-        <h2>FOMC meeting history</h2>
-        <p class="hint" id="fomc-hint"></p>
+  <details class="more tools" id="desk-tools" data-fold="tools">
+    <summary><h2>Desk tools</h2><span class="muted">carry and roll, auctions, funding, FOMC history, data surprises</span></summary>
+    <section class="panel" id="p-cr">
+      <div class="panel-head">
+        <div>
+          <h2>Carry, roll and curve RV <span class="tag">computed</span></h2>
+          <p class="hint" id="cr-hint"></p>
+          <p class="dline" id="cr-date"></p>
+        </div>
+        <div class="seg-col">
+          <div class="seg" role="tablist" id="cr-views"><button data-v="carry" class="on">Carry &amp; roll</button><button data-v="rv">Curve RV</button></div>
+          <div class="seg" id="cr-hz"><button data-v="1M">1M</button><button data-v="3M" class="on">3M</button></div>
+        </div>
       </div>
-      <div class="seg-col">
-        <div class="seg" id="fomc-views"><button data-v="past" class="on">Priced vs decision</button><button data-v="hist">Odds history</button></div>
-        <div class="seg" id="fomc-range"><button data-v="6M">6M</button><button data-v="1Y">1Y</button><button data-v="2Y" class="on">2Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+      <div class="chart short" id="c-cr"></div>
+      <div id="cr-table"></div>
+    </section>
+    <section class="panel" id="p-auct">
+      <div class="panel-head">
+        <div>
+          <h2>Treasury auctions <span class="tag">coupons</span></h2>
+          <p class="hint">How each note and bond auction went, the way sell-side auction recaps score it. Bid-to-cover is bids divided by the amount sold. Indirect bidders are mostly foreign central banks and funds bidding through dealers; direct bidders bid for themselves; primary dealers are obliged to bid and take whatever is left, so a high dealer share means weak demand. Each number is compared with the average of the previous 6 auctions of the same tenor: orange = weaker than usual (more for dealers, lower cover), which tends to push yields up; teal = stronger. Tail ≈ is the first number desks look at: the high yield minus where the bond traded just before the 1pm close. Positive = tail (buyers needed a higher yield than the market, weak, orange); negative = stop-through (strong, teal). Real when-issued quotes aren't free, so this uses the CBOE 5y/10y/30y yield index at 1:00pm as a stand-in, only for those three tenors, kept from mid-August 2026 onward. Upcoming rows appear once Treasury announces the auction, usually a week before.</p>
+          <p class="dline" id="auct-date"></p>
+        </div>
       </div>
-    </div>
-    <div class="controls" id="fomc-controls"></div>
-    <div class="chart" id="c-fomc"></div>
-    <div id="fomc-table"></div>
-  </section>
-  <details class="panel more" id="p-surix" data-fold="surix">
-    <summary><h2>Data surprises and the 2y</h2> <span class="muted">secondary · forecasts only go back to Jan 2026</span></summary>
-    <p class="hint" id="surix-note"></p>
-    <div class="chart" id="c-surix"></div>
+      <div class="controls" id="auct-controls"></div>
+      <div class="chart short" id="c-auct"></div>
+      <div id="auct-table"></div>
+    </section>
+    <section class="panel" id="p-fund">
+      <div class="panel-head">
+        <div>
+          <h2>Funding and liquidity</h2>
+          <p class="hint" id="fund-hint"></p>
+          <p class="dline" id="fund-date"></p>
+        </div>
+        <div class="seg" role="tablist" id="fund-views">
+          <button data-v="repo" class="on">Repo vs IORB</button>
+          <button data-v="liq">Reserves, RRP, TGA</button>
+          <button data-v="bills">Bills–OIS</button>
+          <button data-v="curve">Reserves vs repo</button>
+        </div>
+      </div>
+      <div class="controls" id="fund-controls"></div>
+      <div class="chart" id="c-fund"></div>
+    </section>
+    <section class="panel" id="p-fomc">
+      <div class="panel-head">
+        <div>
+          <h2>FOMC meeting history</h2>
+          <p class="hint" id="fomc-hint"></p>
+        </div>
+        <div class="seg-col">
+          <div class="seg" id="fomc-views"><button data-v="past" class="on">Priced vs decision</button><button data-v="hist">Odds history</button></div>
+          <div class="seg" id="fomc-range"><button data-v="6M">6M</button><button data-v="1Y">1Y</button><button data-v="2Y" class="on">2Y</button><button data-v="5Y">5Y</button><button data-v="All">All</button></div>
+        </div>
+      </div>
+      <div class="controls" id="fomc-controls"></div>
+      <div class="chart" id="c-fomc"></div>
+      <div id="fomc-table"></div>
+    </section>
+    <details class="panel more" id="p-surix" data-fold="surix">
+      <summary><h2>Data surprises and the 2y</h2> <span class="muted">secondary · forecasts only go back to Jan 2026</span></summary>
+      <p class="hint" id="surix-note"></p>
+      <div class="chart" id="c-surix"></div>
+    </details>
   </details>
   <section class="notes">
     <details>
@@ -333,6 +336,6 @@
 </div>
 </main>
 
-<script src="app.js?v=42"></script>
+<script src="app.js?v=43"></script>
 </body>
 </html>
