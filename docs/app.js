@@ -242,19 +242,51 @@
   const sprd = (r, x, y) => (r && num(r[x]) != null && num(r[y]) != null ? (num(r[y]) - num(r[x])) * 100 : null);
 
   // 接下來 2 週：每個事件一格，FOMC 那格放 priced bp
+  // ---------- Overview：desk 早上的 morning sheet（昨天發生什麼、市場怎麼動、接下來看什麼）----------
+  // 只留重要的事件（desk ECO 上的一級數據 + PPI）；其他的在 Calendar
+  const OV_EVT = new Set([...TOP, "ppi"]);
+  // 每種公布在 Overview 上看哪幾個數字
+  const EVT_M = { cpi: [["core_cpi_mm", "Core m/m"], ["cpi_mm", "headline m/m"]], nfp: [["nfp", "payrolls"], ["unrate", "unemployment"]],
+    pce: [["core_pce_mm", "Core m/m"]], ppi: [["core_ppi_mm", "Core m/m"]] };
+  const EVT_PAGE = { cpi: "inflation", pce: "inflation", ppi: "inflation", nfp: "jobs", fomc: "rates", chair: "rates", retail: "growth", gdp: "growth", ism_m: "growth", ism_s: "growth" };
+  const signed = (m, v) => (m === "nfp" && v > 0 ? "+" : "") + fmtU(m, v);
   function renderNext() {
     const el = $("#next"); if (!el) return;
     // 用瀏覽器的今天（資料是前一個交易日收盤，但「還有幾天」要從真正的今天算）
-    const now = new Date(), today = new Date(now.getTime() - now.getTimezoneOffset() * 6e4).toISOString().slice(0, 10), horizon = shiftDays(today, LOOKAHEAD);
-    let evs = D.events.filter((e) => e.date >= today && e.date <= horizon);
-    if (!evs.length) evs = D.events.filter((e) => e.date >= today).slice(0, 3);
+    const today = localToday(), horizon = shiftDays(today, LOOKAHEAD), all = D.events.filter((e) => e.date >= today && e.date <= horizon);
+    let evs = all.filter((e) => OV_EVT.has(e.type));
+    if (!evs.length) evs = D.events.filter((e) => e.date >= today && OV_EVT.has(e.type)).slice(0, 3);
     const A = asofs(), priced = new Map(A.length ? pathOn(A[A.length - 1]).map((r) => [r.meeting, r]) : []);
-    el.innerHTML = evs.length ? evs.map((e) => {
+    const rows = evs.map((e) => {
       const n = daysBetween(today, e.date), r = e.type === "fomc" ? priced.get(e.date) : null;
-      const extra = r ? `<div class="nx-x ${cls(num(r.move_bp))}">priced ${bp(num(r.move_bp), 1)}bp · ${moves(num(r.move_bp))}</div>` : "";
-      return `<div class="nx ${e.type}"><div class="nx-d">${dow(e.date)} ${md(e.date)} <span class="muted">· ${n === 0 ? "today" : `in ${n} day${n === 1 ? "" : "s"}`}</span></div>`
-        + `<div class="nx-l"><span style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span> ${e.label}</div>${extra}</div>`;
-    }).join("") : `<p class="hint">No scheduled events.</p>`;
+      let x = "";
+      if (r) x = `priced <b class="${cls(num(r.move_bp))}">${bp(num(r.move_bp), 1)}bp</b> · ${moves(num(r.move_bp))}`;
+      else if (EVT_M[e.type]) x = EVT_M[e.type].map(([m, n]) => { const c = nextCon(m); return c && c.date === e.date ? `${n} <b>${signed(m, c.v)}</b>` : null; }).filter(Boolean).join(" · ");
+      return `<div class="ov-it${TOP.has(e.type) ? " top" : ""}"><div class="ov-d">${dow(e.date)} ${md(e.date)}<span class="muted">${n === 0 ? "today" : `in ${n}d`}</span></div>`
+        + `<div class="ov-l"><span style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span> ${e.label}</div><div class="ov-x">${x ? (r ? x : `expected ${x}`) : ""}</div></div>`;
+    });
+    const more = all.length - evs.length;
+    el.innerHTML = (rows.length ? rows.join("") : `<p class="hint">No major events scheduled.</p>`)
+      + (more > 0 ? `<p class="ov-more muted">+${more} smaller release${more === 1 ? "" : "s"} and Fed events on the Calendar ›</p>` : "");
+  }
+  // 最近兩週公布了什麼：數字 vs 預期 + 當天 2y 怎麼動（Henry：Overview 要先回答「昨天發生什麼」）
+  function renderRecent() {
+    const el = $("#ov-recent"); if (!el) return;
+    const today = localToday(), from = shiftDays(today, -14), ly = lastYieldDate();
+    const evs = D.events.filter((e) => OV_EVT.has(e.type) && e.date >= from && e.date <= ly).reverse().slice(0, 5);
+    el.innerHTML = evs.length ? evs.map((e) => {
+      const parts = [];
+      if (e.type === "fomc") { const d = fomcDecision(e.date); if (d) parts.push(`<b>${d}</b>`); }
+      (EVT_M[e.type] || []).forEach(([m, n]) => {
+        const r = surRows(m).find((x) => x.date === e.date); if (!r) return;
+        const d = r.forecast == null ? null : +(r.actual - r.forecast).toFixed(SM[m].dec);
+        parts.push(`${n} <b>${signed(m, r.actual)}</b>` + (d == null ? "" : ` vs ${signed(m, r.forecast)} <span class="${dirCls(m, d)}">${d === 0 ? "in line" : dirWord(m, d)}</span>`));
+      });
+      const re = reaction(e.date);
+      if (re && re.d2 != null) parts.push(`2y <b class="${cls(re.d2)}">${bp(re.d2, 0)}bp</b>`);
+      return `<a class="ov-it" href="#${EVT_PAGE[e.type] || "calendar"}"><div class="ov-d">${dow(e.date)} ${md(e.date)}</div>`
+        + `<div class="ov-l"><span style="color:${evtColor(e.type)}">${EVT[e.type].glyph}</span> ${e.label}</div><div class="ov-x">${parts.join(" · ")}</div></a>`;
+    }).join("") : `<p class="hint">No major releases in the last two weeks.</p>`;
   }
 
   // 一句結論：最近一週 2y / 10y 怎麼動、曲線型態、年底前定價變了多少
@@ -280,53 +312,36 @@
     el.textContent = ratesTakeaway().text + (f && f.cum_yearend_bp !== "" ? ` Futures price ${bp(num(f.cum_yearend_bp), 0)}bp (${moves(num(f.cum_yearend_bp))}) by year-end.` : "");
   }
 
+  // 3 個月小走勢線（SVG，不用 Plotly，四格才不會拖慢首頁）
+  function spark(vals) {
+    const v = vals.filter((x) => x != null && !isNaN(x)); if (v.length < 2) return "";
+    const lo = Math.min(...v), hi = Math.max(...v), k = hi - lo || 1;
+    const pts = v.map((x, i) => `${((i / (v.length - 1)) * 100).toFixed(2)},${(26 - ((x - lo) / k) * 24).toFixed(2)}`).join(" ");
+    return `<svg class="ov-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" /></svg>`;
+  }
   function renderHero() {
     const y = D.yields; if (y.length < 2) return;
-    const a = y[y.length - 1], b = y[y.length - 2], w = ago(7), P = palette();
-    const tk = ratesTakeaway();
+    const a = y[y.length - 1], b = y[y.length - 2], w = ago(7), tk = ratesTakeaway();
     $("#hero-take").textContent = tk.text;
     $("#hero-regime").textContent = tk.regime ? `1W: ${tk.regime}` : "";
     $("#hero-regime").hidden = !tk.regime;
-
-    // 2y、10y 三個月
-    const rows = inRange(y, "date", "3M");
-    plot("c-mini", ["2y", "10y"].map((t, i) => ({ x: rows.map((r) => r.date), y: rows.map((r) => num(r[t])), name: t, type: "scatter", mode: "lines",
-      line: { width: 2, color: P[i] }, hovertemplate: "%{y:.2f}%", keepFmt: true })),
-      baseLayout({ margin: { l: 40, r: 8, t: 6, b: 28 }, legend: { ...baseLayout().legend, y: 1.12 }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%" } }));
-
-    // 關鍵數字
-    const row = (k, lv, d1, d7, unit) => `<tr><td>${k}</td><td class="n">${lv}</td><td class="n ${cls(d1)}">${bp(d1, 1)}</td><td class="n ${cls(d7)}">${bp(d7, 1)}</td></tr>`;
-    let h = `<table class="ktab"><thead><tr><th></th><th>Level</th><th>1D bp</th><th>1W bp</th></tr></thead><tbody>`;
-    // 最上面一列放 Fed 在哪：EFFR 和目標區間（desk 早報第一行）
     const ef = D.effr.filter((r) => r.effr !== ""), e0 = ef[ef.length - 1];
-    if (e0) {
-      const e1 = ef[ef.length - 2], e7 = atOrBefore(ef, "date", shiftDays(e0.date, -7)), d = (x) => (x ? (num(e0.effr) - num(x.effr)) * 100 : null);
-      const tgt = e0.target_low !== "" ? ` <small class="muted">${(+e0.target_low).toFixed(2)}–${(+e0.target_high).toFixed(2)}</small>` : "";
-      h += row(`EFFR${tgt}`, num(e0.effr).toFixed(2) + "%", d(e1), d(e7));
+    $("#hero-asof").innerHTML = `Treasury close ${dow(a.date)} ${md(a.date)}`
+      + (e0 ? ` · EFFR ${num(e0.effr).toFixed(2)}%${e0.target_low !== "" ? ` (target ${(+e0.target_low).toFixed(2)}–${(+e0.target_high).toFixed(2)})` : ""}` : "");
+    const r3 = inRange(y, "date", "3M");
+    const tile = (lab, sub, lv, d1, d7, vals) => `<div class="ov-tile"><div class="ov-lab">${lab} <span class="muted">${sub}</span></div>`
+      + `<div class="ov-big num">${lv}</div><div class="ov-chg num"><span>1D <b class="${cls(d1)}">${bp(d1, 0)}</b></span><span>1W <b class="${cls(d7)}">${bp(d7, 0)}</b></span><span class="muted">bp</span></div>${spark(vals)}</div>`;
+    let h = ["2y", "10y"].map((t) => tile(t, "Treasury", num(a[t]) == null ? "–" : num(a[t]).toFixed(2) + "%", chg(a, b, t), chg(a, w, t), r3.map((r) => num(r[t])))).join("");
+    const s0 = sprd(a, "2y", "10y"), s1 = sprd(b, "2y", "10y"), s7 = sprd(w, "2y", "10y");
+    h += tile("2s10s", "curve", s0 == null ? "–" : bp(s0, 0) + "bp", s0 == null || s1 == null ? null : s0 - s1, s0 == null || s7 == null ? null : s0 - s7, r3.map((r) => sprd(r, "2y", "10y")));
+    const f = D.summ[D.summ.length - 1];
+    if (f && f.cum_yearend_bp !== "") {
+      const f1r = D.summ[D.summ.length - 2], fW = atOrBefore(D.summ, "asof", shiftDays(f.asof, -7)), v = num(f.cum_yearend_bp);
+      const dd = (x) => (x && x !== f && x.cum_yearend_bp !== "" ? v - num(x.cum_yearend_bp) : null);
+      const s3 = D.summ.filter((r) => r.asof >= shiftDays(f.asof, -92) && r.cum_yearend_bp !== "").map((r) => num(r.cum_yearend_bp));
+      h += tile("Fed", `priced by ${md(f.yearend_meeting)}`, `${bp(v, 0)}bp`, dd(f1r), dd(fW), s3).replace("</div><div class=\"ov-chg", `<span class="ov-note">${moves(v)}</span></div><div class="ov-chg`);
     }
-    ["2y", "5y", "10y", "30y"].forEach((t) => { h += row(t, num(a[t]) == null ? "–" : num(a[t]).toFixed(2) + "%", chg(a, b, t), chg(a, w, t)); });
-    [["2s10s", "2y", "10y"], ["5s30s", "5y", "30y"]].forEach(([k, x, z]) => {
-      const s0 = sprd(a, x, z), s1 = sprd(b, x, z), s7 = sprd(w, x, z);
-      h += row(k, s0 == null ? "–" : bp(s0, 0) + "bp", s0 == null || s1 == null ? null : s0 - s1, s0 == null || s7 == null ? null : s0 - s7);
-    });
-    $("#k-table").innerHTML = h + "</tbody></table>";
-
-    // Fed：下 4 次會議累計 bp
-    const A = asofs(); if (!A.length) { $("#hero-fed").innerHTML = `<p class="hint">No Fed pricing yet.</p>`; return; }
-    const last = A[A.length - 1], pr = pathOn(last).slice(0, 4), cum = pr.map((r) => num(r.cum_bp));
-    plot("c-fedbars", [{ x: pr.map((r) => md(r.meeting)), y: cum, type: "bar", marker: { color: cum.map((v) => rgba(css(v >= 0 ? "--up" : "--down"), 0.55)) },
-      text: cum.map((v) => bp(v, 0)), textposition: "outside", cliponaxis: false, textfont: { family: "IBM Plex Mono, monospace", size: 11, color: css("--ink") },
-      hovertemplate: "%{x}: %{y:+.1f}bp<extra></extra>" }],
-      baseLayout({ margin: { l: 40, r: 8, t: 18, b: 28 }, showlegend: false, hovermode: "closest", xaxis: { ...baseLayout().xaxis, type: "category" },
-        yaxis: { ...baseLayout().yaxis, ticksuffix: "bp", zeroline: true, zerolinecolor: css("--muted") } }));
-    const f = D.summ[D.summ.length - 1], fA = atOrBefore(D.summ, "asof", shiftDays(f.asof, -7));
-    const dYe = fA && fA !== f ? num(f.cum_yearend_bp) - num(fA.cum_yearend_bp) : null;
-    let fh = `<div>By year-end: <b class="num">${bp(num(f.cum_yearend_bp), 0)}bp</b> · ${moves(num(f.cum_yearend_bp))}`
-      + (dYe == null ? "" : ` · <span class="${cls(dYe)}">${bp(dYe, 0)}bp vs 1W</span>`) + "</div>";
-    const s = fomcSurprises().filter((x) => x.surprise != null).pop();
-    // 還沒有會前定價的會議就不顯示這行（第一次是 2026-10-28 會議之後）
-    if (s) fh += `<div class="sur">● Last FOMC surprise (${md(s.date)}): <b class="num ${cls(s.surprise)}">${bp(s.surprise, 1)}bp</b> · 2y ${bp(s.d2, 1)}bp</div>`;
-    $("#hero-fed").innerHTML = fh;
+    $("#ov-tiles").innerHTML = h;
   }
 
   // FOMC surprise：決議（EFFR 目標上緣變化）減會前一天期貨 price 的 bp
@@ -1121,45 +1136,31 @@
     annotations: text ? [{ xref: "paper", x: 0, y, text, showarrow: false, xanchor: "left", yanchor: "bottom", font: { size: 11, color: css("--muted") } }] : [] });
   const pctAxis = (extra = {}) => ({ ...baseLayout().yaxis, ticksuffix: "%", ...extra });
 
-  // 一句結論
-  function inflTakeaway() {
-    const pce = ser("core_pce"); if (pce.length < 13) return "";
-    const y = lastV(yoy(pce)).v, a3 = lastV(annK(pce, 3)).v;
-    let streak = 0; const ys = yoy(pce); for (let i = ys.length - 1; i >= 0 && ys[i].v >= 2.05; i--) streak++;
-    const mom3 = a3 > y + 0.2 ? "running hotter than the yearly rate, so momentum is building" : a3 < y - 0.2 ? "running cooler than the yearly rate, so momentum is easing" : "in line with the yearly rate";
-    return `Core PCE is ${f1(y)}% YoY; the 3-month annualized rate is ${f1(a3)}%, ${mom3}.`
-      + (streak >= 3 ? ` YoY has been above the 2% target for ${streak} months in a row.` : "");
+  // Overview 三張卡：每個指標一行（最新一期、vs 預期），長段文字和小圖都拿掉，細節點進去看
+  function ovRow(m, label) {
+    const rs = surRows(m), r = rs[rs.length - 1]; if (!r) return "";
+    const dec = SM[m].dec, d = r.forecast == null ? null : +(r.actual - r.forecast).toFixed(dec);
+    const s = d == null ? `<span class="muted">no forecast</span>` : d === 0 ? `<span>as expected</span>`
+      : `<span class="${dirCls(m, d)}">${d > 0 ? "+" : ""}${d.toFixed(dec)}${SM[m].unit === "k" ? "k" : ""} ${dirWord(m, d)}</span>`;
+    return ovLine(label, refLabel(m, r.ref).replace(/ \d{4}$/, ""), signed(m, r.actual), s);
   }
-  function jobsTakeaway() {
-    const u = ser("unrate"), p = diff(ser("payems")); if (u.length < 4 || p.length < 3) return "";
-    const du = u[u.length - 1].v - u[u.length - 4].v, p3 = lastV(avgK(p, 3)).v;
-    const sahm = lastV(ser("sahm"));
-    return `Unemployment is ${f1(lastV(u).v)}%, ${Math.abs(du) < 0.05 ? "unchanged" : (du > 0 ? "up " : "down ") + f1(Math.abs(du)) + "pt"} over 3 months; payrolls are adding ${p3.toFixed(0)}k a month on a 3-month average.`
-      + (sahm ? ` The Sahm rule reads ${sahm.v.toFixed(2)}${sahm.v >= 0.5 ? ", above the 0.5 recession trigger." : " (trigger is 0.5)."}` : "");
-  }
-
-  // 首頁兩張卡
-  function renderMacroCards() {
-    if (!D.macro.length) { ["#infl-take", "#jobs-take"].forEach((s) => ($(s).textContent = "Inflation and jobs data load after the next daily update.")); return; }
-    const P = palette(), pce = yoy(ser("core_pce")), cpi = yoy(ser("core_cpi")), start = shiftDays(lastV(pce).date, -365 * 5);
-    $("#infl-take").textContent = inflTakeaway();
-    $("#infl-date").innerHTML = dataLine("core_pce", "pce", "PCE");
-    const be = D.be.filter((r) => r.be10 !== "").pop();
-    $("#infl-k").innerHTML = `<span>Core PCE <b class="num">${f1(lastV(pce).v)}%</b></span><span>Core CPI <b class="num">${f1(lastV(cpi).v)}%</b></span>`
-      + (be ? `<span>10y breakeven <b class="num">${(+be.be10).toFixed(2)}%</b></span>` : "") + lastSurpriseLine("inflation");
-    const ti = [{ ...xy(pce.filter((p) => p.date >= start)), name: "Core PCE YoY", line: { color: P[0], width: 2 } },
-      { ...xy(cpi.filter((p) => p.date >= start)), name: "Core CPI YoY", line: { color: P[3], width: 1.6 } }];
-    const sp = sepTrace("core_pce", "Fed projection", P[0], lastV(pce).date); if (sp) ti.push(sp);
-    plot("c-infl-mini", ti, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis(), ...hline(2, "2% target") }));
-
-    const u = urate(), uS = u.filter((p) => p.date >= start), pay = diff(ser("payems")), sahm = lastV(ser("sahm"));
-    $("#jobs-take").textContent = jobsTakeaway();
-    $("#jobs-date").innerHTML = dataLine("unrate", "nfp", "NFP");
-    $("#jobs-k").innerHTML = `<span>Unemployment <b class="num">${f1(lastV(u).pub ?? lastV(u).v)}%</b></span><span>Payrolls <b class="num">${bp(lastV(pay).v, 0)}k</b></span>`
-      + (sahm ? `<span>Sahm <b class="num ${sahm.v >= 0.5 ? "up" : ""}">${sahm.v.toFixed(2)}</b></span>` : "") + lastSurpriseLine("jobs");
-    const tj = [{ ...xy(uS), name: "Unemployment rate", line: { color: P[2], width: 2 } }];
-    const su = sepTrace("unrate", "Fed projection", P[2], lastV(u).date); if (su) tj.push(su);
-    plot("c-jobs-mini", tj, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, yaxis: pctAxis() }));
+  const ovLine = (label, per, val, note) => `<div class="ov-r"><span class="ov-rl">${label} <span class="muted">${per}</span></span><b class="num">${val}</b><span class="ov-rs">${note}</span></div>`;
+  const nextLine = (types) => { const t = localToday(), e = D.events.find((x) => types.includes(x.type) && x.date >= t); return e ? `Next: ${e.label.replace(/ \(.*\)$/, "")} ${dow(e.date)} ${md(e.date)}` : ""; };
+  function renderOvCards() {
+    if (D.macro.length) {
+      $("#infl-k").innerHTML = ovRow("core_cpi_mm", "Core CPI m/m") + ovRow("cpi_mm", "CPI m/m") + ovRow("core_pce_mm", "Core PCE m/m") + ovRow("core_pce_yy", "Core PCE y/y");
+      $("#infl-date").textContent = nextLine(["cpi", "pce"]);
+      $("#jobs-k").innerHTML = ovRow("nfp", "Payrolls") + ovRow("unrate", "Unemployment") + ovRow("ahe_mm", "Wages m/m") + ovRow("claims", "Jobless claims");
+      $("#jobs-date").textContent = nextLine(["nfp"]);
+    }
+    const { lg, now } = gdpParts(); let g = "";
+    if (lg) g += ovLine("Real GDP", qName(lg.date).replace(/ \d{4}$/, ""), `${f1(lg.pub ?? lg.v)}%`, `<span class="muted">annualized</span>`);
+    if (now) g += ovLine("GDPNow", qName(now.date).replace(/ \d{4}$/, ""), `${f1(now.v)}%`, `<span class="muted">Atlanta Fed tracking</span>`);
+    const rt = lastV(mom(ser("rs_total"))), rc = lastV(mom(rsControl())), sg = (v) => (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
+    if (rt) g += ovLine("Retail sales m/m", monthName(rt.date).slice(0, 3), sg(rt.v), `<span class="muted">headline</span>`);
+    if (rc) g += ovLine("Control group m/m", monthName(rc.date).slice(0, 3), sg(rc.v), `<span class="muted">feeds into GDP</span>`);
+    $("#growth-k").innerHTML = g || `<p class="hint">Growth data load after the next daily update.</p>`;
+    $("#growth-date").textContent = nextLine(["gdp", "retail"]);
   }
 
   // 一年 2% 換成每個月的速度：1.02^(1/12) − 1 ≈ 0.165%
@@ -1167,7 +1168,7 @@
   // ---------- 新聞版：最新一期卡片（Inflation / Jobs 共用）----------
   // Henry：網站要跟新聞對得起來。新聞先講 headline、core 的 m/m 和 y/y，再跟預期比 → 一張 2×2 卡片
   // 字眼跟著數字的方向（高 → 第一個字）；顏色跟著對利率的意義（SM.sign：失業率高 = 鴿 = 藍綠）
-  const WORDS = { inflation: ["hotter", "cooler"], nfp: ["stronger", "weaker"], unrate: ["higher", "lower"], ahe_mm: ["hotter", "cooler"] };
+  const WORDS = { inflation: ["hotter", "cooler"], nfp: ["stronger", "weaker"], unrate: ["higher", "lower"], ahe_mm: ["hotter", "cooler"], claims: ["higher", "lower"] };
   const dirWord = (m, d) => { const w = WORDS[m] || WORDS.inflation; return d === 0 ? "in line" : d > 0 ? w[0] : w[1]; };
   const dirCls = (m, d) => (d === 0 ? "" : (SM[m] ? SM[m].sign : 1) * d > 0 ? "up" : "down");
   // 一格：先找那天的公布紀錄（有預期、前值），沒有就用指數自己算
@@ -1748,19 +1749,6 @@
   const potLevels = () => (D.gq || []).filter((r) => r.potential).map((r) => ({ date: r.date, v: +r.potential }));
   const potGrowth = () => { const p = potLevels(); return p.slice(1).map((x, i) => ({ date: x.date, v: (Math.pow(x.v / p[i].v, 4) - 1) * 100 })); };
   const outputGap = () => { const pm = new Map(potLevels().map((p) => [p.date, p.v])); return (D.gq || []).filter((r) => r.gdp_lvl && pm.has(r.date)).map((r) => ({ date: r.date, v: (+r.gdp_lvl / pm.get(r.date) - 1) * 100 })); };
-  function renderGrowthCard() {
-    const el = $("#growth-take"); if (!el) return;
-    const { lg, now } = gdpParts();
-    if (!lg) { el.textContent = "Growth data load after the next daily update."; return; }
-    el.textContent = growthTakeaway();
-    const n = nextEvt("gdp");
-    $("#growth-date").innerHTML = `<span class="muted">${qName(lg.date)} data${n ? ` · next GDP ${md(n.date)}` : ""}</span>`;
-    const lc = lastV(mom(rsControl()));
-    $("#growth-k").innerHTML = `<span>GDP <b class="num">${f1(lg.pub ?? lg.v)}%</b></span>` + (now ? `<span>GDPNow <b class="num">${f1(now.v)}%</b></span>` : "")
-      + (lc ? `<span>Control group <b class="num">${lc.v >= 0 ? "+" : ""}${lc.v.toFixed(1)}%</b> m/m</span>` : "");
-    const tg = gdpTraces(5), x0 = tg[0].x[0], x1 = shiftDays((now || lg).date, 75);
-    plot("c-growth-mini", tg, baseLayout({ margin: { l: 40, r: 8, t: 34, b: 28 }, barmode: "overlay", bargap: 0.25, xaxis: { ...baseLayout().xaxis, range: [shiftDays(x0, -45), x1] }, yaxis: pctAxis({ zeroline: true, zerolinecolor: css("--muted") }) }));
-  }
   function renderGrowth() {
     const { lg } = gdpParts(), P = palette(), narrow = innerWidth < 600;
     if (!lg) return empty("c-gdp", "Growth data load after the next daily update.");
@@ -1810,7 +1798,7 @@
   // ---------- 分頁：#overview / #rates / #calendar（舊的 #events 也導到 calendar）----------
   const PAGES = ["overview", "rates", "inflation", "jobs", "growth", "calendar"];
   const RENDER = {
-    overview: () => { renderNext(); renderHero(); renderMacroCards(); renderGrowthCard(); },
+    overview: () => { renderHero(); renderRecent(); renderNext(); renderOvCards(); },
     rates: () => { renderRatesTake(); renderYields(); renderFed(); renderCarry(); renderAuctions(); renderFunding(); renderDecomp(); renderFomc(); renderSurIndex(); },
     inflation: () => { renderLatestInfl(); renderInflation(); renderMoved(); renderSurprisePanel("inflation"); renderExp(); if ($("#p-deep").open) { renderCoreYoy(S.infIdx); renderSuper(); renderWedge(); renderPpi(); } },
     jobs: () => { renderLatestJobs(); renderJobs(); renderSurprisePanel("jobs"); },
