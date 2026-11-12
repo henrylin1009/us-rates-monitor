@@ -2323,9 +2323,24 @@
    "label": "UMich sentiment (Oct 2026)"
   },
   {
+   "date": "2026-10-26",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-10-27",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
    "date": "2026-10-28",
    "type": "fomc",
    "label": "FOMC decision"
+  },
+  {
+   "date": "2026-10-29",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2026-10-29",
@@ -2363,9 +2378,24 @@
    "label": "NFP (Oct 2026)"
   },
   {
+   "date": "2026-11-09",
+   "type": "auction",
+   "label": "3y auction ($58bn)"
+  },
+  {
+   "date": "2026-11-10",
+   "type": "auction",
+   "label": "10y auction ($42bn)"
+  },
+  {
    "date": "2026-11-10",
    "type": "cpi",
    "label": "CPI (Oct 2026)"
+  },
+  {
+   "date": "2026-11-12",
+   "type": "auction",
+   "label": "30y auction ($25bn)"
   },
   {
    "date": "2026-11-13",

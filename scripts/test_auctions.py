@@ -2,7 +2,7 @@
 
 執行：python3 scripts/test_auctions.py
 """
-from auctions import term_label, to_row, wi_at_close
+from auctions import merge_rows, td_to_fiscal, term_label, to_row, wi_at_close
 from nowcast import parse
 
 # 2026-10-08 的 30 年期 reopening（Fiscal Data API 的欄位）
@@ -21,6 +21,19 @@ assert up["btc"] == "" and up["indirect_pct"] == "" and up["high_yield"] == "", 
 assert term_label({"security_type": "Note", "security_term": "1-Year 10-Month", "original_security_term": "2-Year", "reopening": "Yes", "floating_rate": "Yes"}) is None
 assert term_label({"security_type": "TIPS Note", "security_term": "5-Year", "reopening": "No", "floating_rate": "No", "inflation_index_security": "Yes"}) == "5y TIPS"
 assert term_label({"security_type": "Bill", "security_term": "6-Week"}) is None
+
+# TreasuryDirect 的格式（同一場 30y reopening）→ 跟 Fiscal Data 一樣的結果
+td = {"cusip": "912810UW6", "securityType": "Bond", "securityTerm": "29-Year 10-Month", "originalSecurityTerm": "30-Year", "reopening": "Yes",
+      "type": "Bond", "competitiveAuctionCloseDate": "2026-10-08T00:00:00", "issueDate": "2026-10-15T00:00:00", "offeringAmount": "22000000000",
+      "highYield": "5.618", "bidToCoverRatio": "2.54", "indirectBiddersCompetitiveParAwarded": "15866059500",
+      "directBiddersCompetitiveParAwarded": "4583044100", "primaryDealersCompetitiveParAwarded": "1490500000", "floatingRate": "No", "inflationProtected": "No"}
+assert to_row(td_to_fiscal(td)) == row, (to_row(td_to_fiscal(td)), row)
+tdu = to_row(td_to_fiscal({**td, "highYield": "", "bidToCoverRatio": "", "indirectBiddersCompetitiveParAwarded": ""}))
+assert tdu["btc"] == "" and tdu["high_yield"] == "", tdu
+assert to_row(td_to_fiscal({**td, "securityType": "Note", "inflationProtected": "Yes", "securityTerm": "5-Year", "reopening": "No", "originalSecurityTerm": ""}))["term"] == "5y TIPS"
+assert to_row(td_to_fiscal({**td, "floatingRate": "Yes"})) is None
+# 合併：有結果的蓋掉沒結果的，反過來不會
+assert merge_rows([up], [row]) == [row] and merge_rows([row], [up]) == [row]
 
 # 近似 tail：取收在 13:00 的那根 bar（2026-10-07 10y：1m 12:59 = 5.313）
 assert wi_at_close({"12:58": 5.316, "12:59": 5.313, "13:00": 5.313, "13:05": 5.292}, "1m") == 5.313
