@@ -86,6 +86,8 @@ def td_rows(get) -> list[dict]:
         except Exception as e:  # noqa: BLE001
             print(f"⚠ TreasuryDirect {path} 抓不到：{e}")
             continue
+        n = len(data) if isinstance(data, list) else f"{type(data).__name__} {str(data)[:200]}"
+        print(f"TreasuryDirect {path}: {n}" + (f" · e.g. {dict(list(data[0].items())[:12])}" if isinstance(data, list) and data else ""))
         out += [x for x in (to_row(td_to_fiscal(d)) for d in (data if isinstance(data, list) else [])) if x and x["auction_date"]]
     return out
 
