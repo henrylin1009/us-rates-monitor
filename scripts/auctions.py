@@ -1,6 +1,7 @@
 """財政部 coupon 標售結果（docs/data/auctions.csv）。
 
-來源：Treasury Fiscal Data API（auctions_query，免金鑰）。只留 nominal notes / bonds 和 TIPS，
+來源：TreasuryDirect 的 TA_WS API（當天就有結果）＋ Treasury Fiscal Data API（auctions_query，免金鑰，有完整歷史）。
+2026-11 發現 Fiscal Data 落後好幾週（結果停在 10/8），所以最近 90 天和已公告的用 TreasuryDirect 蓋過去。只留 nominal notes / bonds 和 TIPS，
 不要 bill（太多）和 FRN（沒有殖利率）。已公告但還沒標的也會在裡面（結果欄位是空的），行事曆和「下一次」用。
 
 得標比例的分母是 competitive accepted（不含 SOMA 和 non-competitive），和 sell-side 的寫法一樣：
@@ -54,18 +55,72 @@ def to_row(r: dict) -> dict | None:
     return out
 
 
+TD = "https://www.treasurydirect.gov/TA_WS/securities/"
+# TreasuryDirect 的欄位名 → Fiscal Data 的欄位名，之後共用 to_row
+TD_KEYS = {"securityTerm": "security_term", "originalSecurityTerm": "original_security_term", "reopening": "reopening",
+           "floatingRate": "floating_rate", "inflationIndexSecurity": "inflation_index_security", "cusip": "cusip",
+           "offeringAmount": "offering_amt", "highYield": "high_yield", "bidToCoverRatio": "bid_to_cover_ratio",
+           "competitiveAccepted": "comp_accepted", "indirectBidderAccepted": "indirect_bidder_accepted",
+           "directBidderAccepted": "direct_bidder_accepted", "primaryDealerAccepted": "primary_dealer_accepted"}
+
+
+def td_to_fiscal(d: dict) -> dict:
+    """TreasuryDirect 一筆 → Fiscal Data 的格式（日期 '2026-10-08T00:00:00' 只留日期，空字串當 null）。"""
+    r = {v: (d.get(k) if d.get(k) not in ("", None) else "null") for k, v in TD_KEYS.items()}
+    tips = d.get("inflationIndexSecurity") == "Yes" or d.get("tips") == "Yes" or d.get("type") == "TIPS"
+    st = d.get("securityType") or d.get("type") or ""
+    r["security_type"] = ("TIPS " + st) if tips and st in ("Note", "Bond") else st
+    if tips:
+        r["inflation_index_security"] = "Yes"
+    r["auction_date"] = (d.get("auctionDate") or "")[:10]
+    r["issue_date"] = (d.get("issueDate") or "")[:10]
+    return r
+
+
+def td_rows(get) -> list[dict]:
+    """最近 90 天標完的 + 已公告還沒標的。抓不到就回空 list（用 Fiscal Data 的）。"""
+    out = []
+    for path, days in (("auctioned", 90), ("announced", 30)):
+        try:
+            data = get(TD + path, params={"format": "json", "days": days}).json()
+        except Exception as e:  # noqa: BLE001
+            print(f"⚠ TreasuryDirect {path} 抓不到：{e}")
+            continue
+        out += [x for x in (to_row(td_to_fiscal(d)) for d in (data if isinstance(data, list) else [])) if x and x["auction_date"]]
+    return out
+
+
+def merge_rows(base: list[dict], fresh: list[dict]) -> list[dict]:
+    """同一場標售（日期 + CUSIP）：有結果的優先，都有結果就用 TreasuryDirect 的。"""
+    m = {(r["auction_date"], r["cusip"]): r for r in base}
+    for r in fresh:
+        k, old = (r["auction_date"], r["cusip"]), m.get((r["auction_date"], r["cusip"]))
+        if old is None or r["btc"] != "" or old["btc"] == "":
+            m[k] = r
+    return list(m.values())
+
+
 def update_auctions(get, read_csv, write_csv) -> None:
     rows, page = [], 1
-    while True:
-        r = get(URL, params={"filter": f"security_type:in:(Note,Bond,TIPS Note,TIPS Bond),auction_date:gte:{SINCE}",
-                             "sort": "auction_date", "page[size]": 500, "page[number]": page}).json()
-        rows += [x for x in (to_row(d) for d in r.get("data", [])) if x]
-        if page >= r.get("meta", {}).get("total-pages", 1):
-            break
-        page += 1
+    try:
+        while True:
+            r = get(URL, params={"filter": f"security_type:in:(Note,Bond,TIPS Note,TIPS Bond),auction_date:gte:{SINCE}",
+                                 "sort": "auction_date", "page[size]": 500, "page[number]": page}).json()
+            rows += [x for x in (to_row(d) for d in r.get("data", [])) if x]
+            if page >= r.get("meta", {}).get("total-pages", 1):
+                break
+            page += 1
+    except Exception as e:  # noqa: BLE001
+        print(f"⚠ Fiscal Data 標售抓不到：{e}")
+    # TreasuryDirect 只補最近的；舊檔裡有、兩個 API 都沒回的（例如 Fiscal Data 整個掛掉）保留
+    if not rows:
+        rows = read_csv("auctions.csv")
+    td = td_rows(get)
+    rows = merge_rows(rows, td)
     if not rows:
         print("⚠ 標售資料是空的，保留舊檔")
         return
+    print(f"TreasuryDirect：{len(td)} 筆")
     rows.sort(key=lambda x: (x["auction_date"], x["term"]))
     write_csv("auctions.csv", rows, COLS)
     done = [x for x in rows if x["btc"] != ""]
