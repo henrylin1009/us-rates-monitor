@@ -244,41 +244,42 @@
 </div>
 
 <div class="page" id="pg-inflation" data-page="inflation">
+  <div class="page-switch">
+    <div class="seg" id="inf-idx"><button data-v="cpi" class="on">CPI</button><button data-v="pce">PCE</button></div>
+    <span class="muted">News leads with CPI; the Fed's 2% target is on PCE. The whole page follows this switch.</span>
+  </div>
+  <section class="panel" id="p-latest">
+    <div class="panel-head"><div><h2 id="lat-title">Latest release</h2><p class="hint">The four numbers every news story leads with: headline and core, month on month and year on year, each against what forecasters expected. Core strips out food and energy, which swing with oil and weather, so it is the better read of underlying inflation. Actuals are the published, rounded print (the unrounded value from the index is in brackets). Below: how markets moved that day, the 3-month pace, and what comes next.</p></div></div>
+    <div id="lat-card"></div>
+  </section>
   <section class="panel">
     <div class="panel-head">
-      <div class="hero-title">
-        <h2>Core PCE and Core CPI</h2>
-        <p class="takeaway" id="infl-take2"></p>
-        <p class="dline" id="infl-date2"></p>
-      </div>
-      <div class="seg-col">
-        <div class="seg" id="i-views"><button data-v="mm">m/m</button><button data-v="yoy" class="on">YoY</button><button data-v="a3">3m annualized</button><button data-v="a6">6m annualized</button><button data-v="trend">Trend</button></div>
-        <div class="seg" id="i-years"><button data-v="5" class="on">5Y</button><button data-v="10">10Y</button><button data-v="25">25Y</button></div>
-      </div>
+      <div><h2 id="trend-title">Headline and core</h2><p class="hint">Headline includes everything; core leaves out food and energy. Y/Y is the number in the news; Monthly is the raw monthly change (2% a year is about 0.17% a month, the dashed line); 3-month pace annualizes the last three months, so it turns earlier than Y/Y.</p><p class="dline" id="infl-date2"></p></div>
+      <div class="seg" id="i-views"><button data-v="yoy" class="on">Y/Y</button><button data-v="mm">Monthly</button><button data-v="a3">3-month pace</button></div>
     </div>
-    <p class="hint">The Fed targets 2% on PCE; core strips out food and energy. m/m is the raw monthly print (what the headlines report), shown for the last 2 years; 2% a year is about 0.17% a month. CPI for Oct 2025 was never published (government shutdown), so Oct and Nov 2025 have no CPI m/m bar. Annualized rates turn earlier than YoY. Dotted lines are headline (with food and energy), shown on the YoY and annualized views. Open diamonds are the Fed's own year-end projection (SEP median). Hollow bars (m/m) and dashed lines with open circles are the Cleveland Fed nowcast for months not yet published, from oil and gasoline prices and whatever CPI and PPI data are already out; hover for the value. Desks use it as the model's expectation going into a release. Trend compares core PCE with two measures that ignore the oddest items each month: the Dallas Fed's trimmed-mean PCE (drops the biggest movers at both ends) and the Cleveland Fed's median CPI (the middle item); when they sit below core, a few items are pushing core up. All YoY.</p>
     <div class="chart" id="c-infl"></div>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Inflation surprises</h2><p class="hint">Each release against what the market expected, Bloomberg ECO style: the folded table lists the latest prints and what comes next; the chart is one indicator's history as bars (actual) and ticks (forecast).</p></div></div>
+    <div class="panel-head"><div><h2 id="moved-title">What moved this month</h2><p class="hint">Each item's own price change in the latest month (seasonally adjusted, m/m), the dot is the month before, and the dashed line is the 2%-a-year pace. Food and energy are outside core; under core, the three blocks the Fed talks about (goods, housing, services excluding housing) and, indented, the items desks watch inside them. Bars longer than the axis show their value at the edge.</p><p class="dline" id="moved-date"></p></div></div>
+    <div class="chart tall" id="c-moved"></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><div><h2>Hotter or cooler than expected</h2><p class="hint">Each bar is the published number minus the forecast, the way the news reports it: up (orange) = hotter than expected, down (teal) = cooler. Hover a bar for the actual, the forecast and how the 2-year yield moved that day.</p></div></div>
     <div id="sur-inflation"></div>
   </section>
-  <section class="panel" id="p-parts">
-    <div class="panel-head"><div><h2>Breakdown</h2><p class="hint" id="cpi-hint"></p><p class="hint" id="pce-hint"></p><p class="hint" id="super-hint">Services inflation without housing, the part most tied to wages. The PCE version (core services excluding housing and energy) is the one Powell means by supercore; the CPI line is CPI services less rent of shelter, a close approximation. Both YoY.</p><p class="dline" id="pce-date"></p><p class="dline" id="super-date"></p></div>
-      <div class="seg-col">
-        <div class="seg" id="bd-index"><button data-v="cpi" class="on">CPI</button><button data-v="pce">PCE</button></div>
-        <div class="seg" id="bd-views"><button data-v="time" class="on">Monthly</button><button data-v="yoy">Core YoY</button><button data-v="rank">Ranked</button><button data-v="lines">Lines</button><button data-v="heat">Heatmap</button><button data-v="super">Supercore</button></div>
-      </div></div>
-    <div class="bd-cpi"><div class="chart" id="c-cpi-parts"></div><div id="cpi-table"></div></div>
-    <div class="bd-pce" hidden><div class="chart" id="c-pce-parts"></div><div id="pce-table"></div></div>
-    <div class="bd-super" hidden><div class="chart" id="c-super"></div></div>
-  </section>
   <section class="panel" id="p-exp">
-    <div class="panel-head"><div><h2>Inflation expectations</h2><p class="hint">Market pricing from breakevens (Treasury yield minus TIPS yield), last 5 years. The 5y5y forward is the market's view of average inflation five to ten years out, past the current cycle; it is the Fed's main gauge of whether long-run expectations stay anchored, with roughly 2.2 to 2.5% counting as normal (breakevens run on CPI, which sits above the 2% PCE target). The 5y breakeven reacts to the current inflation story, such as oil and tariffs.</p><p class="dline" id="exp-date"></p></div></div>
-    <div class="chart" id="c-exp"></div>
+    <div class="panel-head"><div><h2>Long-run inflation expectations</h2><p class="hint">Market pricing from breakevens (Treasury yield minus TIPS yield), last 5 years. The 5y5y forward is the market's view of average inflation five to ten years out; it is the Fed's main gauge of whether long-run expectations stay anchored, with roughly 2.2 to 2.5% counting as normal (breakevens run on CPI, which sits above the 2% PCE target). The 5y breakeven reacts to the current story, such as oil.</p><p class="dline" id="exp-date"></p></div></div>
+    <div class="chart short" id="c-exp"></div>
   </section>
   <details class="panel more" id="p-deep" data-fold="deep">
-    <summary><h2>Deep dive</h2> <span class="muted">CPI vs PCE gap · PPI</span></summary>
+    <summary><h2>More</h2> <span class="muted">core by block · supercore · CPI vs PCE gap · PPI</span></summary>
+    <h3 class="sub">Core inflation by block, y/y</h3>
+    <p class="hint note" id="coreyoy-hint"></p>
+    <div class="chart" id="c-coreyoy"></div>
+    <h3 class="sub">Services excluding housing (supercore), y/y</h3>
+    <p class="hint note">Services inflation without housing, the part most tied to wages. The PCE version is the one Powell means by supercore; the CPI line is CPI services less rent of shelter, a close approximation.</p>
+    <p class="dline" id="super-date"></p>
+    <div class="chart short" id="c-super"></div>
     <h3 class="sub">What explains the CPI vs PCE gap</h3>
     <p class="hint note" id="wedge-hint"></p>
     <p class="dline" id="wedge-date"></p>
@@ -291,38 +292,37 @@
 </div>
 
 <div class="page" id="pg-jobs" data-page="jobs">
+  <section class="panel" id="p-jlatest">
+    <div class="panel-head"><div><h2 id="jlat-title">Latest jobs report</h2><p class="hint">The numbers the news leads with on jobs Friday: payrolls (jobs added that month), the unemployment rate and wage growth, each against what forecasters expected. For unemployment, a higher number than expected is the dovish (teal) surprise. Each report also revises the two months before, which can move markets as much as the new month.</p></div></div>
+    <div id="jlat-card"></div>
+  </section>
   <section class="panel">
     <div class="panel-head">
-      <div class="hero-title">
-        <h2>Unemployment and participation</h2>
-        <p class="takeaway" id="jobs-take2"></p>
-        <p class="dline" id="jobs-date2"></p>
-      </div>
-      <div class="seg" id="u-views"><button data-v="part" class="on">Participation</button><button data-v="prime">Prime-age employment</button></div>
+      <div><h2>Trend</h2><p class="hint" id="j-hint"></p><p class="dline" id="jobs-date2"></p></div>
+      <div class="seg" id="j-views"><button data-v="nfp" class="on">Payrolls</button><button data-v="u">Unemployment</button><button data-v="wage">Wages</button></div>
     </div>
-    <p class="hint">Unemployment is the Fed's employment target. The right-hand line tells you the quality of a move. Participation: unemployment falling because people leave the labor force is weaker than it looks. Prime-age employment (share of 25 to 54 year olds with a job) is the measure many Fed officials and economists trust most, because it isn't dragged down by an ageing population or moved by who counts as looking for work. Open diamonds are the Fed's year-end projection (SEP median).</p>
     <div class="chart" id="c-jobs"></div>
     <p class="sahm" id="sahm"></p>
   </section>
   <section class="panel">
-    <div class="panel-head"><div><h2>Nonfarm payrolls</h2><p class="hint">Jobs added each month (thousands), last 2 years, with the 3-month average to smooth the noise. Each report also revises the two previous months, and the net revision often moves markets as much as the new month; hover a bar to see it. What counts as a good number has changed: with much lower immigration, the labor force barely grows, so payroll gains of roughly 0 to 50k a month are enough to keep unemployment steady (the breakeven pace, down from 150k or more in 2022-24). Judge a print against that, not against old norms.</p><p class="dline" id="nfp-date"></p></div></div>
-    <div class="chart short" id="c-nfp"></div>
-  </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>Wages vs services inflation</h2><p class="hint">Wages are not part of CPI, but they are most of the cost of services, so the Fed watches wage growth against supercore. Three ways to measure wages, all YoY: average hourly earnings (monthly, jobs report, distorted by who is working), the ECI (quarterly, the Fed's preferred, holds job mix fixed), and the Atlanta Fed tracker (median wage growth of the same people a year apart, 3-month average). Roughly 3 to 3.5% wage growth is consistent with 2% inflation.</p><p class="dline" id="wage-date"></p></div></div>
-    <div class="chart" id="c-ahe"></div>
+    <div class="panel-head"><div><h2>Stronger or weaker than expected</h2><p class="hint">Each bar is the published number minus the forecast, as the news reports it. Orange = hawkish for rates (more jobs, lower unemployment, faster wages), teal = dovish. Hover a bar for the actual, the forecast and the 2-year yield's move that day.</p></div></div>
+    <div id="sur-jobs"></div>
   </section>
   <section class="panel">
     <div class="panel-head"><div><h2>Jobless claims</h2><p class="hint">The most timely labor signal: weekly, out every Thursday. Initial claims are new layoffs; continuing claims are people still drawing benefits, so they rise when the unemployed take longer to find work. Low initial claims with high continuing claims is the "low hire, low fire" pattern: few layoffs, but hard to get hired.</p><p class="dline" id="claims-date"></p></div></div>
     <div class="chart short" id="c-claims"></div>
   </section>
-  <section class="panel">
-    <div class="panel-head"><div><h2>Jobs surprises</h2><p class="hint">Each release against what the market expected: the folded table lists the latest prints and what comes next; the chart is one indicator's history as bars (actual) and ticks (forecast). For unemployment and claims, a higher number is a dovish surprise.</p></div></div>
-    <div id="sur-jobs"></div>
-  </section>
-  <details class="panel more" data-fold="jolts">
-    <summary><h2>JOLTS: openings per unemployed and quits</h2> <span class="muted">secondary</span></summary>
-    <p class="hint">Openings divided by the number of unemployed (V/U) says how tight the labor market is: around 1 is balanced, near 2 in 2022 was overheated. The quits rate (share of workers quitting each month) tracks wage growth, because people quit when better jobs are easy to find. Noisy and about two months behind, so desks rarely trade it.</p>
+  <details class="panel more" data-fold="jmore">
+    <summary><h2>More</h2> <span class="muted">participation · wage measures · JOLTS</span></summary>
+    <h3 class="sub">Participation and prime-age employment</h3>
+    <p class="hint note">Unemployment falling because people leave the labor force is weaker than it looks, so desks check participation. The prime-age employment rate (share of 25 to 54 year olds with a job) is the measure many Fed officials trust most, because it isn't dragged down by an ageing population.</p>
+    <div class="chart short" id="c-part"></div>
+    <h3 class="sub">Wages vs services inflation</h3>
+    <p class="hint note">Wages are most of the cost of services, so the Fed watches wage growth against supercore. Three ways to measure wages, all YoY: average hourly earnings (monthly, jobs report), the ECI (quarterly, the Fed's preferred), and the Atlanta Fed tracker. Roughly 3 to 3.5% wage growth is consistent with 2% inflation.</p>
+    <p class="dline" id="wage-date"></p>
+    <div class="chart short" id="c-ahe"></div>
+    <h3 class="sub">JOLTS: openings per unemployed and quits</h3>
+    <p class="hint note">Openings divided by the number of unemployed (V/U): around 1 is balanced, near 2 in 2022 was overheated. The quits rate tracks wage growth, because people quit when better jobs are easy to find. About two months behind, so desks rarely trade it.</p>
     <p class="dline" id="jolts-date"></p>
     <div class="chart short" id="c-jolts"></div>
   </details>
