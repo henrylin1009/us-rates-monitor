@@ -1,6 +1,6 @@
 {
  "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar; data releases from FRED; ISM computed (1st / 3rd business day); Chair speeches, testimony and Beige Book from the Fed's calendar; coupon auctions from Treasury once announced. Past events keep their existing labels.",
- "updated": "2026-11-12",
+ "updated": "2026-11-13",
  "events": [
   {
    "date": "2025-01-03",
@@ -2403,6 +2403,11 @@
    "label": "PPI (Oct 2026)"
   },
   {
+   "date": "2026-11-16",
+   "type": "chair",
+   "label": "Fed Chair Warsh speech"
+  },
+  {
    "date": "2026-11-17",
    "type": "ip",
    "label": "Industrial production (Oct 2026)"
@@ -2414,8 +2419,18 @@
   },
   {
    "date": "2026-11-18",
+   "type": "auction",
+   "label": "20y auction ($16bn)"
+  },
+  {
+   "date": "2026-11-18",
    "type": "minutes",
    "label": "FOMC minutes (Oct meeting)"
+  },
+  {
+   "date": "2026-11-19",
+   "type": "auction",
+   "label": "10y TIPS auction ($19bn, reopening)"
   },
   {
    "date": "2026-11-20",
@@ -2569,18 +2584,18 @@
   },
   {
    "date": "2027-11-17",
+   "type": "fomc",
+   "label": "FOMC decision"
+  },
+  {
+   "date": "2027-11-17",
    "type": "minutes",
    "label": "FOMC minutes (Oct meeting)"
   },
   {
    "date": "2027-12-08",
-   "type": "fomc",
-   "label": "FOMC decision"
-  },
-  {
-   "date": "2027-12-29",
    "type": "minutes",
-   "label": "FOMC minutes (Dec meeting)"
+   "label": "FOMC minutes (Nov meeting)"
   }
  ]
 }
