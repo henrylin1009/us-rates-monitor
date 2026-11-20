@@ -1,6 +1,6 @@
 {
  "_note": "Auto-updated: FOMC and minutes from the Fed's meeting calendar; data releases from FRED; ISM computed (1st / 3rd business day); Chair speeches, testimony and Beige Book from the Fed's calendar; coupon auctions from Treasury once announced. Past events keep their existing labels.",
- "updated": "2026-11-19",
+ "updated": "2026-11-20",
  "events": [
   {
    "date": "2025-01-03",
@@ -2436,6 +2436,21 @@
    "date": "2026-11-20",
    "type": "umich",
    "label": "UMich sentiment (Nov 2026)"
+  },
+  {
+   "date": "2026-11-23",
+   "type": "auction",
+   "label": "2y auction ($69bn)"
+  },
+  {
+   "date": "2026-11-24",
+   "type": "auction",
+   "label": "5y auction ($70bn)"
+  },
+  {
+   "date": "2026-11-25",
+   "type": "auction",
+   "label": "7y auction ($44bn)"
   },
   {
    "date": "2026-11-25",
